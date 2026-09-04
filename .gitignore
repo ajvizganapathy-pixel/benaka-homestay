@@ -1,0 +1,10 @@
+# Render working files — regenerate from render/run-chain.md, never commit
+render/raw/
+render/frames/
+render/jobs/
+assets/clips/
+*.mp4
+
+node_modules/
+__pycache__/
+.DS_Store
