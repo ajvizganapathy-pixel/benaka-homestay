@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Benaka Homestay — scroll-world harness</title>
+  <style>
+    /* Neutral grey only. No design decisions live here — this pass is the
+       camera mechanism, and anything that reads as styling would be UX. */
+    :root, .sw-root {
+      --sw-bg: #e9e9e7;
+      --sw-ink: #2a2a28;
+      --sw-ink-soft: #6e6e6a;
+      --sw-accent: #8a8a85;
+    }
+    html, body { margin: 0; background: var(--sw-bg); }
+
+    /* Chrome suppression. scrub-engine.js is copied verbatim and builds its
+       topbar, scroll hint, route rail, progress bar and particle host
+       unconditionally (the brand link renders whenever `brand` is set, and
+       `config.hint || 'scroll'` means an empty hint falls back to the default
+       text). Rather than fork the engine, this pass hides them here — the
+       mechanism is the deliverable, and every one of these is chrome. Delete
+       this block when the design pass begins. */
+    .sw-topbar, .sw-hint, .sw-route, .sw-scrollbar,
+    .sw-particles, .sw-copylayer { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="world"></div>
+  <script src="world.config.js"></script>
+  <script src="scrub-engine.js"></script>
+  <script>
+    mountScrollWorld(document.getElementById('world'), window.BENAKA_WORLD);
+  </script>
+</body>
+</html>
