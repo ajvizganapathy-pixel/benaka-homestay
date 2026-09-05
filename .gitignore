@@ -8,3 +8,6 @@ assets/clips/
 node_modules/
 __pycache__/
 .DS_Store
+.data/
+api/config.php
+assets/enhanced/
