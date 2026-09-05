@@ -34,7 +34,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "approach-road-01.jpg",
@@ -48,7 +49,8 @@
       "sceneRole": "start-canvas",
       "sceneBeat": 1,
       "sceneId": "01-approach-road",
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "bath-basin-01.jpg",
@@ -62,7 +64,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "bath-ensuite-01.jpg",
@@ -74,9 +77,10 @@
       "category": "bath",
       "description": "Ensuite with vessel basin, mirror, toilet and open shower area",
       "sceneRole": "start-canvas",
-      "sceneBeat": 6,
-      "sceneId": "06-bath-ensuite",
-      "note": null
+      "sceneBeat": 7,
+      "sceneId": "07-bath",
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "bath-geyser-01.jpg",
@@ -90,7 +94,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "bath-shower-01.jpg",
@@ -104,7 +109,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "bath-toilet-rotated-01.jpg",
@@ -118,7 +124,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": "frame is rotated 90 degrees; rotate before any use"
+      "note": "frame is rotated 90 degrees; rotate before any use",
+      "galleryGroup": "inside"
     },
     {
       "file": "cottages-pool-01.jpg",
@@ -132,7 +139,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "cottages-pool-02.jpg",
@@ -146,7 +154,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "cottages-pool-03.jpg",
@@ -160,7 +169,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "courtyard-cottages-pool-01.jpg",
@@ -174,7 +184,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "courtyard-pavilion-01.jpg",
@@ -188,7 +199,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "courtyard-pavilion-02.jpg",
@@ -199,10 +211,11 @@
       "orientation": "landscape",
       "category": "courtyard",
       "description": "Dining pavilion with tin roof across the open courtyard, hill behind",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null
+      "sceneRole": "start-canvas",
+      "sceneBeat": 4,
+      "sceneId": "04-buffet-table",
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "dorm-hall-01.jpg",
@@ -216,7 +229,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "exterior-mainhouse-court-01.jpg",
@@ -230,7 +244,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "exterior-mainhouse-front-01.jpg",
@@ -244,7 +259,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "exterior-mainhouse-front-02.jpg",
@@ -258,7 +274,8 @@
       "sceneRole": "start-canvas",
       "sceneBeat": 3,
       "sceneId": "03-courtyard-house",
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "exterior-mainhouse-hill-01.jpg",
@@ -272,7 +289,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "exterior-mainhouse-side-01.jpg",
@@ -286,7 +304,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "exterior-mainhouse-verandah-01.jpg",
@@ -300,7 +319,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "games-billiards-01.jpg",
@@ -312,9 +332,10 @@
       "category": "games",
       "description": "Billiards table under the main house stair, open verandah and cane chairs beyond",
       "sceneRole": "start-canvas",
-      "sceneBeat": 4,
-      "sceneId": "04-verandah-games",
-      "note": null
+      "sceneBeat": 5,
+      "sceneId": "05-billiards",
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "games-hall-01.jpg",
@@ -328,7 +349,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "garden-cottage-01.jpg",
@@ -342,7 +364,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "gate-arch-01.jpg",
@@ -356,7 +379,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "gate-arch-02.jpg",
@@ -370,7 +394,8 @@
       "sceneRole": "start-canvas",
       "sceneBeat": 2,
       "sceneId": "02-gate-arch",
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "gate-road-01.jpg",
@@ -384,7 +409,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "landscape-hills-01.jpg",
@@ -398,7 +424,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "outside"
     },
     {
       "file": "pool-headon-01.jpg",
@@ -412,7 +439,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-headon-02.jpg",
@@ -426,7 +454,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-hills-01.jpg",
@@ -440,7 +469,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-hills-02.jpg",
@@ -454,7 +484,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-hills-03.jpg",
@@ -468,7 +499,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-hills-04.jpg",
@@ -480,9 +512,10 @@
       "category": "pool",
       "description": "Pool with cottage roofs, water tower and the forested hill behind",
       "sceneRole": "start-canvas",
-      "sceneBeat": 7,
-      "sceneId": "07-pool-hills",
-      "note": null
+      "sceneBeat": 8,
+      "sceneId": "08-pool",
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-long-01.jpg",
@@ -496,7 +529,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "pool-threequarter-01.jpg",
@@ -510,7 +544,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "play"
     },
     {
       "file": "room-ac-double-01.jpg",
@@ -524,7 +559,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-double-connecting-01.jpg",
@@ -538,7 +574,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-double-desk-01.jpg",
@@ -552,7 +589,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-double-portrait-01.jpg",
@@ -566,7 +604,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-family-twin-01.jpg",
@@ -580,7 +619,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-family-twin-02.jpg",
@@ -594,7 +634,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-heritage-double-01.jpg",
@@ -608,7 +649,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-heritage-double-02.jpg",
@@ -620,9 +662,10 @@
       "category": "room",
       "description": "Heritage double with carved wheel headboard and textured wall, dressing mirror",
       "sceneRole": "start-canvas",
-      "sceneBeat": 5,
-      "sceneId": "05-room-heritage",
-      "note": null
+      "sceneBeat": 6,
+      "sceneId": "06-room",
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-heritage-double-03.jpg",
@@ -636,7 +679,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-heritage-vaulted-01.jpg",
@@ -650,7 +694,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-triple-01.jpg",
@@ -664,7 +709,8 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
     },
     {
       "file": "room-triple-02.jpg",
@@ -678,7 +724,25 @@
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
-      "note": null
+      "note": null,
+      "galleryGroup": "inside"
+    }
+  ],
+  "galleryGroups": [
+    {
+      "id": "outside",
+      "label": "Outside the house",
+      "blurb": "The road in, the arch, the courtyard and the grounds."
+    },
+    {
+      "id": "inside",
+      "label": "Inside the rooms",
+      "blurb": "Where you sleep, and the bathrooms attached."
+    },
+    {
+      "id": "play",
+      "label": "Pool and playroom",
+      "blurb": "The billiards table, the water, the afternoon."
     }
   ]
 }

@@ -1,0 +1,270 @@
+/* ============================================================================
+   Site chrome — everything the scrub engine does not provide.
+   The engine stays byte-identical to the skill; this file sits around it.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--s-bg);
+  color: var(--s-ink);
+  font-family: var(--s-font-micro);
+  font-size: var(--s-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img { max-width: 100%; display: block; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+/* Shared micro register. Every label on the page is one of these. */
+.micro {
+  font-family: var(--s-font-micro);
+  font-size: var(--s-micro);
+  font-weight: 500;
+  letter-spacing: var(--s-micro-track);
+  text-transform: uppercase;
+  color: var(--s-ink-soft);
+}
+.macro {
+  font-family: var(--s-font-macro);
+  font-size: var(--s-macro);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+/* Skip link — the page is one long scroll, so this matters. */
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  background: var(--s-accent); color: #fff; padding: 12px 18px;
+}
+.skip:focus { left: var(--s-rail); }
+
+:focus-visible { outline: 2px solid var(--s-accent-soft); outline-offset: 3px; }
+
+/* ---------------------------------------------------------------------------
+   1. Engine overrides
+   The engine pins its copy at left: clamp(18px,5vw,64px) — directly under the
+   booking rail. Push it clear. This is the only collision between the two.
+   ------------------------------------------------------------------------ */
+.sw-topbar, .sw-hint, .sw-route, .sw-scrollbar, .sw-particles { display: none !important; }
+.sw-copy { left: calc(var(--s-rail) + var(--s-gut)) !important; }
+.sw-copylayer::before {
+  left: var(--s-rail);
+  /* The engine's stock scrim is tuned for its cream default. On a dark ground
+     over blown-out monsoon photographs (white bedding, white skies) it leaves
+     the copy barely legible, so this one runs wider and deeper. */
+  width: min(70vw, 1020px);
+  background: linear-gradient(90deg,
+    var(--s-bg) 0%,
+    var(--s-bg) 34%,
+    color-mix(in srgb, var(--s-bg) 88%, transparent) 54%,
+    color-mix(in srgb, var(--s-bg) 52%, transparent) 74%,
+    color-mix(in srgb, var(--s-bg) 18%, transparent) 89%,
+    transparent 100%);
+}
+.sw-copy__title, .sw-copy__body, .sw-copy__eyebrow, .sw-copy__num {
+  text-shadow: 0 1px 24px color-mix(in srgb, var(--s-bg) 92%, transparent);
+}
+.sw-copy__num, .sw-copy__eyebrow {
+  font-family: var(--s-font-micro);
+  font-size: var(--s-micro);
+  letter-spacing: var(--s-micro-track);
+}
+.sw-copy__title { font-weight: 400; letter-spacing: -0.015em; }
+.sw-copy__body  { font-family: var(--s-font-micro); max-width: 34ch; }
+
+@media (max-width: 860px) {
+  .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
+  .sw-copylayer::before { left: 0; }
+}
+
+/* The canvas hands over to the gallery as a dissolve, not a cut. The engine
+   adds 1vh of track past the last beat so a clip can finish; with stills that
+   tail is dead black, so we spend it on the crossfade instead. site.js drives
+   --canvas-fade from scroll. */
+.sw-sky, .sw-stage, .sw-copylayer { opacity: var(--canvas-fade, 1); }
+body.past-canvas .sw-sky,
+body.past-canvas .sw-stage,
+body.past-canvas .sw-copylayer { pointer-events: none; }
+
+/* ---------------------------------------------------------------------------
+   2. Booking rail — owns the left edge for the whole scroll
+   ------------------------------------------------------------------------ */
+.rail {
+  position: fixed; top: 0; left: 0; bottom: 0; width: var(--s-rail);
+  z-index: 120;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: space-between; padding: 20px 0;
+  background: color-mix(in srgb, var(--s-bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid var(--s-line);
+}
+.rail__mark {
+  font-family: var(--s-font-macro); font-size: 1.35rem; line-height: 1;
+  color: var(--s-ink); text-decoration: none;
+}
+.rail__book {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  width: 100%; margin: 18px 0;
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--s-ink); transition: color var(--s-quick), background var(--s-quick);
+}
+.rail__book:hover { color: var(--s-accent-soft); background: color-mix(in srgb, var(--s-accent) 8%, transparent); }
+.rail__book span { transform: rotate(180deg); }
+.rail__progress { width: 1px; height: 64px; background: var(--s-line); position: relative; }
+.rail__progress i {
+  position: absolute; inset: 0 0 auto 0; height: 0; background: var(--s-accent);
+  transition: height .15s linear;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Hero — the name, once, over the first beats
+   ------------------------------------------------------------------------ */
+.hero {
+  position: fixed; inset: 0; z-index: 25;
+  /* The approach photograph has a blown-white monsoon sky exactly where the name
+     sits, and it is worse on a narrow viewport where the type gets bigger
+     relative to the frame. A soft centred vignette keeps the name legible over
+     any of the eight beats without flattening the photograph at the edges. */
+  background: radial-gradient(ellipse 95% 75% at 50% 46%,
+    color-mix(in srgb, var(--s-bg) 74%, transparent) 0%,
+    color-mix(in srgb, var(--s-bg) 46%, transparent) 52%,
+    transparent 100%);
+  display: grid; place-content: center; text-align: center;
+  padding-left: var(--s-rail); pointer-events: none;
+  transition: opacity .5s var(--s-ease);
+}
+.hero__eyebrow { display: block; margin-bottom: 22px; color: var(--s-ink-soft); }
+.hero__name {
+  font-family: var(--s-font-macro); font-size: var(--s-macro-lg);
+  line-height: .92; letter-spacing: -0.03em; margin: 0; color: var(--s-ink);
+  text-shadow: 0 4px 60px color-mix(in srgb, var(--s-bg) 80%, transparent);
+}
+.hero__name em { font-style: italic; color: var(--s-accent-soft); }
+.hero__sub { margin-top: 26px; color: var(--s-ink-soft); }
+.hero__scroll { margin-top: 54px; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
+.hero__scroll i {
+  width: 1px; height: 40px;
+  background: linear-gradient(var(--s-accent), transparent);
+  animation: drop 2.2s var(--s-ease) infinite;
+}
+@keyframes drop { 0%,100% { opacity:.25; transform: scaleY(.5); transform-origin: top; } 50% { opacity:1; transform: scaleY(1); } }
+
+/* ---------------------------------------------------------------------------
+   4. Page sections after the canvas
+   The engine's fixed layers paint the whole document, so anything below the
+   canvas needs its own stacking level and an opaque ground.
+   ------------------------------------------------------------------------ */
+.after {
+  position: relative; z-index: 30;
+  margin-left: var(--s-rail);
+  background: var(--s-bg);
+}
+.section { padding: var(--s-section) var(--s-gut); }
+.section__head { max-width: 62ch; margin-bottom: clamp(32px, 5vh, 64px); }
+.section__head .micro { display: block; margin-bottom: 18px; }
+.section__head p { color: var(--s-ink-soft); margin: 18px 0 0; max-width: 48ch; }
+
+/* Reveal on entry — quiet, and never load-bearing. */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--s-ease), transform .7s var(--s-ease); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ---------------------------------------------------------------------------
+   5. Tile gallery — three groups, mosaic cells
+   ------------------------------------------------------------------------ */
+.group + .group { margin-top: clamp(48px, 8vh, 96px); }
+.group__head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+.group__head h3 { font-family: var(--s-font-macro); font-weight: 400; font-size: clamp(1.5rem, 2.6vw, 2.1rem); margin: 0; }
+.group__head .count { color: var(--s-ink-faint); }
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: 116px;
+  grid-auto-flow: dense;   /* fill the holes the shape cycle leaves */
+  gap: 6px;
+}
+.tile {
+  position: relative; overflow: hidden; padding: 0;
+  background: var(--s-bg-raised); border-radius: var(--s-radius);
+  grid-column: span 1; grid-row: span 1;
+}
+.tile--w { grid-column: span 2; }
+.tile--t { grid-row: span 2; }
+.tile--b { grid-column: span 2; grid-row: span 2; }
+.tile img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .6s var(--s-ease), opacity .6s var(--s-ease);
+  opacity: .82;
+}
+.tile:hover img, .tile:focus-visible img { transform: scale(1.045); opacity: 1; }
+.tile figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--s-bg-sunk) 92%, transparent));
+  opacity: 0; transition: opacity var(--s-quick); text-align: left;
+}
+.tile:hover figcaption, .tile:focus-visible figcaption { opacity: 1; }
+
+@media (max-width: 720px) {
+  .tiles { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); grid-auto-rows: 92px; }
+}
+
+/* ---------------------------------------------------------------------------
+   6. Lightbox — horizontal carousel over one group
+   ------------------------------------------------------------------------ */
+.lb {
+  position: fixed; inset: 0; z-index: 200;
+  background: color-mix(in srgb, var(--s-bg-sunk) 96%, transparent);
+  display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden; transition: opacity .35s var(--s-ease), visibility .35s;
+}
+.lb.open { opacity: 1; visibility: visible; }
+.lb__bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px var(--s-gut); }
+.lb__close { padding: 8px 14px; border: 1px solid var(--s-line); border-radius: var(--s-radius); }
+.lb__close:hover { border-color: var(--s-accent); color: var(--s-accent-soft); }
+.lb__track {
+  flex: 1; display: flex; gap: 0; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.lb__track::-webkit-scrollbar { display: none; }
+.lb__slide {
+  flex: 0 0 100%; scroll-snap-align: center;
+  display: grid; place-items: center; padding: 0 var(--s-gut) 12px;
+}
+.lb__slide img { max-height: 76vh; width: auto; object-fit: contain; border-radius: var(--s-radius); }
+.lb__foot { padding: 12px var(--s-gut) 26px; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.lb__nav { display: flex; gap: 8px; }
+.lb__nav button { width: 42px; height: 42px; border: 1px solid var(--s-line); border-radius: var(--s-radius); display: grid; place-items: center; }
+.lb__nav button:hover { border-color: var(--s-accent); color: var(--s-accent-soft); }
+body.lb-open { overflow: hidden; }
+
+/* ---------------------------------------------------------------------------
+   7. Footer
+   ------------------------------------------------------------------------ */
+.foot { background: var(--s-bg-sunk); border-top: 1px solid var(--s-line); padding: var(--s-section) var(--s-gut) 40px; }
+.foot__grid { display: grid; gap: clamp(32px, 6vw, 80px); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.foot h2 { font-family: var(--s-font-macro); font-weight: 400; font-size: clamp(1.8rem, 4vw, 3rem); margin: 0 0 18px; }
+.foot dl { margin: 0; }
+.foot dt { margin-bottom: 6px; }
+.foot dd { margin: 0 0 20px; color: var(--s-ink); }
+.foot a { color: var(--s-ink); text-decoration: none; border-bottom: 1px solid var(--s-line); }
+.foot a:hover { border-color: var(--s-accent); color: var(--s-accent-soft); }
+.foot__bar { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--s-line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 15px 26px; border-radius: var(--s-radius);
+  background: var(--s-accent); color: #fff;
+  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: var(--s-micro-track); text-transform: uppercase;
+  transition: background var(--s-quick), transform var(--s-quick);
+}
+.btn:hover { background: var(--s-accent-soft); transform: translateY(-1px); }
+.btn--ghost { background: none; color: var(--s-ink); border: 1px solid var(--s-line); }
+.btn--ghost:hover { background: none; border-color: var(--s-accent); color: var(--s-accent-soft); }

@@ -1,0 +1,49 @@
+# Sherlock's Jungle Retreat — Apache config for Hostinger shared hosting.
+# Upload alongside the site in public_html.
+
+DirectoryIndex web/index.html index.html
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  # Photographs and fonts are content-addressed by name and never change in place.
+  ExpiresByType image/jpeg              "access plus 1 year"
+  ExpiresByType image/webp              "access plus 1 year"
+  ExpiresByType font/woff2              "access plus 1 year"
+  ExpiresByType video/mp4               "access plus 1 year"
+  # Code and data change on deploy, so keep these short.
+  ExpiresByType text/css                "access plus 1 day"
+  ExpiresByType application/javascript  "access plus 1 day"
+  ExpiresByType application/json        "access plus 1 hour"
+  ExpiresByType text/html               "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  <FilesMatch "\.woff2$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>
+
+# Never serve config or stored data, whatever the directory layout.
+<FilesMatch "^(config\.php|config\.example\.php)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 /\.data/
+RedirectMatch 404 /\.git
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Serve the site from / rather than /web/
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteRule ^$ web/index.html [L]
+</IfModule>

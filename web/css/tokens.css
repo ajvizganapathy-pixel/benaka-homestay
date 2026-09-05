@@ -1,0 +1,72 @@
+/* ============================================================================
+   Design tokens — Sherlock's Jungle Retreat
+   ----------------------------------------------------------------------------
+   TWO type registers, and nothing between them. That gap is the system: a large
+   editorial serif for anything that carries meaning, and a small tracked sans
+   for anything that labels. A third size in the middle is what makes a page
+   read as generated, so there isn't one.
+
+   The engine (scrub-engine.js) reads --sw-* directly, so setting them here
+   themes the canvas copy, its scrim and its title shadow without touching the
+   engine. Everything else is --s-*.
+   ========================================================================== */
+
+/* Both selectors, deliberately: the engine declares its own cream defaults on
+   .sw-root (scrub-engine.js:359). That is a closer ancestor to the canvas copy
+   than :root, and custom properties inherit by proximity — @layer does not enter
+   into it — so :root alone loses inside the canvas. */
+:root, .sw-root {
+  /* --- ground: dark slate, so the overcast photos read as lit windows ----- */
+  --s-bg:          #14171a;
+  --s-bg-raised:   #1b1f24;
+  --s-bg-sunk:     #0f1113;
+  --s-line:        #2a3037;
+
+  --s-ink:         #ecebe7;   /* warm off-white, never pure #fff */
+  --s-ink-soft:    #99a0a8;
+  --s-ink-faint:   #626a73;
+
+  /* terracotta, lifted from the pool deck tiles in the photographs */
+  --s-accent:      #c9683d;
+  --s-accent-soft: #e08b60;
+
+  /* --- type: the two registers ------------------------------------------- */
+  --s-font-macro: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --s-font-micro: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --s-macro:      clamp(2.2rem, 5.2vw, 4.2rem);   /* headlines */
+  --s-macro-lg:   clamp(3rem, 11vw, 8.5rem);      /* the name, once */
+  --s-micro:      0.75rem;                        /* labels, numbers, eyebrows */
+  --s-micro-track: 0.16em;
+  --s-body:       clamp(1rem, 1.1vw, 1.08rem);    /* prose only */
+
+  /* --- rhythm ------------------------------------------------------------- */
+  --s-rail:       64px;    /* the booking rail owns the left edge */
+  --s-gut:        clamp(20px, 5vw, 72px);
+  --s-section:    clamp(72px, 12vh, 144px);
+  --s-radius:     2px;     /* almost none — softness reads as template */
+
+  --s-ease:       cubic-bezier(.22, .61, .36, 1);
+  --s-slow:       .8s var(--s-ease);
+  --s-quick:      .28s var(--s-ease);
+
+  /* --- engine theme: the canvas copy inherits all of this ----------------- */
+  --sw-bg:           var(--s-bg);
+  --sw-ink:          var(--s-ink);
+  --sw-ink-soft:     var(--s-ink-soft);
+  --sw-accent:       var(--s-accent);
+  --sw-font-display: var(--s-font-macro);
+  --sw-font-body:    var(--s-font-micro);
+}
+
+@media (max-width: 720px) { :root, .sw-root { --s-rail: 48px; } }
+
+/* Motion is a garnish. If it isn't wanted, none of it is load-bearing. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

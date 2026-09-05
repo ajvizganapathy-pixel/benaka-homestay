@@ -1,37 +1,221 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Benaka Homestay — scroll-world harness</title>
-  <style>
-    /* Neutral grey only. No design decisions live here — this pass is the
-       camera mechanism, and anything that reads as styling would be UX. */
-    :root, .sw-root {
-      --sw-bg: #e9e9e7;
-      --sw-ink: #2a2a28;
-      --sw-ink-soft: #6e6e6a;
-      --sw-accent: #8a8a85;
-    }
-    html, body { margin: 0; background: var(--sw-bg); }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sherlock's Jungle Retreat — homestay in Coorg</title>
+<meta name="description" content="A homestay in Coorg, Karnataka. Eight rooms, a long verandah, a billiards table and a pool with the hill behind it.">
+<meta name="theme-color" content="#14171a">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Sherlock's Jungle Retreat">
+<meta property="og:description" content="A homestay in Coorg, Karnataka. Walk in from the road, through the arch, and out to the pool.">
+<meta property="og:image" content="assets/scenes/02-gate-arch.jpg">
+<meta property="og:type" content="website">
 
-    /* Chrome suppression. scrub-engine.js is copied verbatim and builds its
-       topbar, scroll hint, route rail, progress bar and particle host
-       unconditionally (the brand link renders whenever `brand` is set, and
-       `config.hint || 'scroll'` means an empty hint falls back to the default
-       text). Rather than fork the engine, this pass hides them here — the
-       mechanism is the deliverable, and every one of these is chrome. Delete
-       this block when the design pass begins. */
-    .sw-topbar, .sw-hint, .sw-route, .sw-scrollbar,
-    .sw-particles, .sw-copylayer { display: none !important; }
-  </style>
+<link rel="preload" href="fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/booking.css">
 </head>
 <body>
-  <div id="world"></div>
-  <script src="world.config.js"></script>
-  <script src="scrub-engine.js"></script>
-  <script>
-    mountScrollWorld(document.getElementById('world'), window.BENAKA_WORLD);
-  </script>
+
+<a class="skip" href="#gallery">Skip to the photographs</a>
+
+<!-- The booking rail rides the entire scroll, top to bottom, on the left. -->
+<nav class="rail" aria-label="Booking">
+  <a class="rail__mark" href="#top" aria-label="Sherlock's Jungle Retreat, back to top">S</a>
+  <button class="rail__book" data-open-booking aria-haspopup="dialog">
+    <span>Book your stay</span>
+  </button>
+  <div class="rail__progress" aria-hidden="true"><i data-progress></i></div>
+</nav>
+
+<!-- The name, held over the first beats, dissolving as the camera goes in. -->
+<div class="hero" id="top" data-hero>
+  <p class="hero__eyebrow micro">Coorg &middot; Karnataka</p>
+  <h1 class="hero__name">Sherlock&rsquo;s<br><em>Jungle Retreat</em></h1>
+  <p class="hero__sub micro">A homestay at the end of the road</p>
+  <span class="hero__scroll micro">Scroll to go in <i></i></span>
+</div>
+
+<!-- The scroll-scrubbed walkthrough. The engine owns this band. -->
+<main id="world"></main>
+
+<!-- Everything past the canvas. Own stacking level, opaque ground. -->
+<div class="after">
+
+  <section class="section" id="gallery" aria-labelledby="gallery-h">
+    <header class="section__head reveal">
+      <span class="micro">The photographs</span>
+      <h2 class="macro" id="gallery-h">Look around properly.</h2>
+      <p>Every picture on this page is the place as it is, taken on an ordinary wet week. Click any one to open it full size.</p>
+    </header>
+    <div data-gallery><noscript><p>Enable JavaScript to browse the photographs.</p></noscript></div>
+  </section>
+
+  <footer class="foot" id="visit" aria-labelledby="visit-h">
+    <div class="foot__grid">
+      <div class="reveal">
+        <span class="micro">Come and stay</span>
+        <h2 id="visit-h">Rooms are held on a message.</h2>
+        <p style="color:var(--s-ink-soft);max-width:38ch">Tell us who is coming and when. We reply on WhatsApp, usually the same day.</p>
+        <p style="margin-top:26px"><button class="btn" data-open-booking aria-haspopup="dialog">Book your stay</button></p>
+      </div>
+      <div class="reveal">
+        <dl>
+          <dt class="micro">Where</dt>
+          <dd>Kodagu (Coorg)<br>Karnataka, India</dd>
+          <dt class="micro">The property</dt>
+          <dd>Main house, cottage rooms,<br>pool, billiards, plantation</dd>
+        </dl>
+      </div>
+      <div class="reveal">
+        <dl>
+          <dt class="micro">Ask about</dt>
+          <dd>Rooms and rates<br>Meals and timings<br>Getting here</dd>
+          <dt class="micro">Reach us</dt>
+          <dd><a href="#" data-open-booking>Send a booking request</a></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="foot__bar">
+      <span class="micro">Sherlock&rsquo;s Jungle Retreat</span>
+      <span class="micro">Photographs taken on the property</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- Lightbox: horizontal carousel across one gallery group. -->
+<div class="lb" data-lightbox role="dialog" aria-modal="true" aria-label="Photograph viewer" hidden>
+  <div class="lb__bar">
+    <span class="micro" data-lb-group></span>
+    <button class="lb__close micro" data-lb-close>Close &times;</button>
+  </div>
+  <div class="lb__track" data-lb-track tabindex="0"></div>
+  <div class="lb__foot">
+    <span class="micro" data-lb-caption></span>
+    <span class="lb__nav">
+      <button data-lb-prev aria-label="Previous photograph">&larr;</button>
+      <span class="micro" data-lb-count style="display:grid;place-items:center;min-width:64px"></span>
+      <button data-lb-next aria-label="Next photograph">&rarr;</button>
+    </span>
+  </div>
+</div>
+
+<!-- Booking, login and OTP. -->
+<div class="bk" data-booking role="dialog" aria-modal="true" aria-labelledby="bk-h" hidden>
+  <div class="bk__scrim" data-bk-close></div>
+  <div class="bk__panel">
+    <div class="bk__head">
+      <div>
+        <span class="micro">Booking</span>
+        <h2 id="bk-h" data-bk-title>Who is coming?</h2>
+      </div>
+      <button class="bk__close" data-bk-close aria-label="Close booking">&times;</button>
+    </div>
+
+    <p class="bk__notice">
+      <strong>Not taking live bookings yet.</strong> The form works end to end, but
+      requests are not being delivered until the owner&rsquo;s WhatsApp number is
+      connected. Nothing you enter here is sent anywhere.
+    </p>
+
+    <div class="bk__steps" aria-hidden="true"><i class="done"></i><i></i><i></i></div>
+
+    <form data-bk-form novalidate>
+      <!-- Step 1 — who -->
+      <section class="step active" data-step="1">
+        <div class="field">
+          <label class="micro" for="bk-name">Your name</label>
+          <input id="bk-name" name="name" type="text" placeholder="e.g. Anjan Ganapathy" autocomplete="name" required>
+          <span class="err" data-err="name"></span>
+        </div>
+        <div class="field">
+          <label class="micro" for="bk-from">Where are you coming from?</label>
+          <input id="bk-from" name="from" type="text" placeholder="e.g. Bengaluru" autocomplete="address-level2" required>
+          <span class="err" data-err="from"></span>
+        </div>
+        <div class="field">
+          <label class="micro" for="bk-phone">Phone</label>
+          <div class="row">
+            <input id="bk-cc" name="cc" type="text" placeholder="+91" value="+91" aria-label="Country code">
+            <input id="bk-phone" name="phone" type="tel" placeholder="98765 43210" autocomplete="tel" required>
+          </div>
+          <span class="err" data-err="phone"></span>
+        </div>
+        <label class="check">
+          <input type="checkbox" name="waSame" checked data-wa-same>
+          <span>WhatsApp is the same number</span>
+        </label>
+        <div class="field" data-wa-field hidden>
+          <label class="micro" for="bk-wa">WhatsApp number</label>
+          <input id="bk-wa" name="whatsapp" type="tel" placeholder="98765 43210">
+          <span class="err" data-err="whatsapp"></span>
+        </div>
+        <div class="field">
+          <label class="micro" for="bk-email">Email</label>
+          <input id="bk-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+          <span class="err" data-err="email"></span>
+        </div>
+        <div class="field">
+          <label class="micro" for="bk-pass">Choose a password</label>
+          <input id="bk-pass" name="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" required>
+          <span class="hint">So you can come back and see your booking.</span>
+          <span class="err" data-err="password"></span>
+        </div>
+        <button class="btn" type="button" data-bk-next="1">Send me a code</button>
+        <p class="bk__alt">Been here before? <button type="button" data-bk-login>Log in instead</button></p>
+      </section>
+
+      <!-- Step 2 — OTP -->
+      <section class="step" data-step="2">
+        <p style="color:var(--s-ink-soft);margin-top:0">
+          We sent a six digit code to <strong data-bk-dest>your phone</strong>.
+        </p>
+        <div class="field">
+          <label class="micro" for="otp-0">Enter the code</label>
+          <div class="otp" data-otp>
+            <input id="otp-0" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 3">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 4">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 5">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 6">
+          </div>
+          <span class="err" data-err="otp"></span>
+        </div>
+        <div class="resend">
+          <span class="micro" data-otp-timer></span>
+          <button type="button" class="micro" data-otp-resend disabled>Resend code</button>
+        </div>
+        <button class="btn" type="button" data-bk-next="2">Confirm</button>
+        <p class="bk__alt"><button type="button" data-bk-back="1">Change my details</button></p>
+      </section>
+
+      <!-- Step 3 — done -->
+      <section class="step" data-step="3">
+        <div class="done-mark" aria-hidden="true">&check;</div>
+        <h3 class="macro" style="font-size:clamp(1.5rem,3vw,2rem)">That is all we need.</h3>
+        <p style="color:var(--s-ink-soft)">
+          Your details are ready to send. Once the owner&rsquo;s WhatsApp number is
+          connected, requests like this one go straight to their phone and you get
+          a reply the same day.
+        </p>
+        <div data-bk-summary style="margin:24px 0"></div>
+        <button class="btn btn--ghost" type="button" data-bk-close>Close</button>
+      </section>
+    </form>
+  </div>
+</div>
+
+<script src="world.config.js"></script>
+<script src="scrub-engine.js"></script>
+<script src="js/api.js"></script>
+<script src="js/site.js"></script>
+<script src="js/booking.js"></script>
 </body>
 </html>

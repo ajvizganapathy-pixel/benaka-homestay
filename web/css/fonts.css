@@ -1,0 +1,29 @@
+/* Self-hosted, latin subset. No third-party request at runtime: the page renders
+   its own type offline and on first paint, which matters more on shared hosting
+   than the convenience of a CDN link — and the CDN was unreachable from the
+   build environment anyway. Inter ships as one variable file covering 400–600. */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/inter-var.woff2') format('woff2-variations'),
+       url('../fonts/inter-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-400-italic.woff2') format('woff2');
+}
