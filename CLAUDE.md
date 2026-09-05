@@ -4,43 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A scroll-driven landing page for a homestay in Coorg (Kodagu), Karnataka, built
-on the `scroll-world` skill. Scroll drives a **camera**, not a scrollbar: the
-page scrubs pre-rendered video by scroll position so a single continuous camera
-flight travels from the road outside, through the gate, into a guest room, and
-back out to the pool.
+A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka, built on the
+`scroll-world` skill. Scroll drives a **camera**, not a scrollbar. Eight beats
+run from the road outside to the pool, then dissolve into a tiled gallery of the
+property's photographs, a footer, and a booking flow.
 
 Static and framework-free — plain HTML, one vanilla-JS engine, no build step, no
 package manifest, no tests. Serve the repo root over HTTP and open `/web/`.
 
-**The property is signed "Sherlock's Jungle Retreat" at its gate** (visible in
-`assets/raw/gate-arch-01.jpg` and `-02.jpg`), while the repo is named
-`benaka-homestay`. Confirm the intended public name before writing any copy or
-branding.
-
-## Current state: procedural pass only
-
-The page deliberately has **no UI and no UX**. No typography, palette, nav, copy,
-headlines or CTAs. `web/index.html` hides the chrome that the engine builds
-unconditionally, and every section in `web/world.config.js` omits `eyebrow`,
-`title`, `body`, `tags` and `cta`. This is intentional — the deliverable of this
-pass is the camera mechanism and its scroll pacing. **Do not add design until
-that is signed off.**
-
-No video exists yet either. Each section carries a `still` (a 16:9 canvas cut
-from the property's own photographs) and **no `clip`**. That works because
-`web/scrub-engine.js:201` (`if (reduce || s.loading || !s.clip) return;`) skips
-clip loading when `clip` is absent, so the section holds its still and still
-occupies its band in the scroll chain. Adding `clip:` later changes nothing else.
+The property is signed **Sherlock's Jungle Retreat** at its gate, which is what
+the site uses. The repo is still named `benaka-homestay`.
 
 ## Commands
 
 ```bash
-# serve and open the harness (engine loads clips as blobs, so byte-range
-# support is irrelevant — the stock server is fine)
 python3 -m http.server 8765     # then http://localhost:8765/web/index.html
 
-# regenerate a 16:9 scene canvas from a raw photo
+# re-cut a 16:9 scene canvas from a photograph
 ffmpeg -y -i assets/raw/<file>.jpg \
   -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1" \
   -q:v 2 assets/scenes/<NN-slug>.jpg
@@ -50,61 +30,100 @@ bash render/extract-handoff-frame.sh render/raw/leg-0N.mp4 render/frames/leg-0N-
 bash render/encode.sh
 ```
 
-There is no linter, test suite, or build. Verification is visual: drive the page
-in the pre-installed Chromium (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
-`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) via `playwright-core`, screenshot each
-section midpoint and each seam, and check that the sequence reads as one forward
-journey through one property.
+No linter, test suite or build. Verification is visual: drive the page in the
+pre-installed Chromium (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
+`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) via `playwright-core`.
 
-## Layout
+**When screenshotting the canvas, disable smooth scrolling and wait ~1.4s.** An
+instant `scrollTo` caught mid-flight shows dark bands that are not a layout bug —
+they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:auto!important}'})`.
+
+## Architecture
 
 ```
-assets/raw/       47 property photographs, renamed to content-derived slugs
-assets/scenes/    the 7 chosen start canvases, exactly 1920x1080
-assets/manifest.json   every image: dimensions, orientation, category, scene role
-web/              index.html + world.config.js + scrub-engine.js
-render/           the Higgsfield chain — authored but NOT executed
+web/index.html        page shell: hero, canvas mount, gallery, footer, booking
+web/world.config.js   the 8 beats and their copy
+web/scrub-engine.js   VERBATIM from the skill — do not edit
+web/css/              fonts, tokens, site chrome, booking
+web/js/               api adapter, site behaviour, booking flow
+web/fonts/            self-hosted woff2 (no CDN at runtime)
+assets/               raw/ photographs, scenes/ canvases, manifest.json
+api/                  booking.php + config.example.php — inert until configured
+render/               the Higgsfield chain: written, costed, NOT run
 ```
 
-`assets/manifest.json` is the source of truth for the image library. It was built
-by inspecting every photograph, not by inferring from filenames. Read it before
-picking images for anything.
+### Three things that will bite
 
-`web/scrub-engine.js` is copied **verbatim** from the `scroll-world` skill
-(`references/scrub-engine.js`) and must stay that way — it is config-driven and
-self-contained, and local changes would be lost on any re-copy. Suppress or
-extend its behaviour from `web/index.html` and `web/world.config.js` instead. Its
-header documents the full config surface and CSS custom properties.
+1. **`web/scrub-engine.js` must stay byte-identical to the skill's copy.** It is
+   config-driven and self-contained; local edits are lost on any re-copy. Suppress
+   or extend it from `web/css/site.css` and `web/world.config.js` instead. The
+   chrome it builds unconditionally (topbar, hint, route rail, particles) is
+   hidden in `site.css`.
 
-## The camera architecture (matters before touching render/)
+2. **Engine theme tokens must be set on `:root, .sw-root` — both.** The engine
+   declares its cream defaults on `.sw-root` (`scrub-engine.js:359`), which is a
+   *closer ancestor* to the canvas copy than `:root`. Custom properties inherit by
+   proximity, and `@layer` does not enter into it, so `:root` alone silently loses
+   inside the canvas and everything renders cream-on-cream. `web/css/tokens.css`
+   sets both.
 
-This build uses the skill's **architecture A — one continuous forward take**,
-chosen because the material is real photography. The consequences are not
-optional:
+3. **The page after the canvas needs its own stacking level.** The engine's
+   `.sw-sky` (z0), `.sw-stage` (z10) and `.sw-copylayer` (z20) are fixed and paint
+   for the whole document. `.after` sits at z30 with an opaque ground. This is
+   safe because `layout()` sizes only its own `.sw-track` from its own segment
+   widths and never reads `document.scrollHeight`, and every fixed layer is
+   `pointer-events: none`.
+
+### Type
+
+Two registers and nothing between them: an editorial serif (macro) and a small
+tracked sans (micro). A third size in the middle is what makes a page read as
+generated. The QA script asserts exactly two families render.
+
+Copy rule: plain English, short, and only about what is visible in the
+photographs. No invented distances, rates or amenities. If a sentence could
+describe any hotel anywhere, rewrite it.
+
+### Booking
+
+Every network call goes through `web/js/api.js`. `LIVE = false` today: calls hit a
+mock and the panel says plainly that requests are not delivered. `api/booking.php`
+is written against the WhatsApp Cloud API and refuses to run until
+`api/config.php` exists with `CONFIGURED => true`. Going live is those two flags —
+see `docs/DEPLOY-hostinger.md`.
+
+Never make the form claim a booking was received when it was not.
+
+## The camera architecture (before touching render/)
+
+**Architecture A — one continuous forward take**, because the material is real
+photography. Not optional:
 
 - **Legs chain from each other's actual last frame.** Leg *i*'s `start_image` is
   the PNG extracted from leg *i−1*'s rendered video, never the original
-  photograph. Using the photo instead is the single most common cause of a
-  visible pop at the seam.
-- **No `end_image`, ever.** An end-image of a wider shot forces the camera to
-  pull back, and a camera that reverses across a seam reads as a rewind stutter.
-- **No connectors.** Architecture A has none — the legs *are* the journey. Hence
-  `connectors: []` in the config, and skill Step 5 is skipped entirely.
-- **Legs are strictly sequential.** Leg *i* cannot start until leg *i−1* has
-  rendered and its last frame is extracted and eyeballed. This cannot be
-  parallelised.
+  photograph. Using the photo is the commonest cause of a visible seam pop.
+- **No `end_image`, ever.** It forces the camera to pull back, and a camera that
+  reverses across a seam reads as a rewind stutter.
+- **No connectors.** The legs *are* the journey — `connectors: []`, skill Step 5
+  skipped. There is therefore no connector slot to `null` out when a clip refuses
+  to render; a bad leg must be re-rolled, not skipped.
+- **Strictly sequential.** Leg *i* waits for leg *i−1* to render and its last
+  frame to be extracted and eyeballed.
+
+Enhancements to the photographs are **masked inpaints** on `nano_banana_2`
+(`is_inpaint: true` + a `mask` role). That is the only way to change part of a
+photograph while leaving the rest of the real image untouched — `seedream_v4_5`
+and `flux_kontext` take `image_references` only and would redraw the frame.
 
 ## Rendering environment
 
-The `higgsfield` CLI and `monid` are **not installed**, so the skill's
-`pipeline.md` bash scripts do not apply as written. Use the **Higgsfield MCP
-server** instead — `models_explore get seedance_2_0` confirms `start_image` and
-`end_image` roles, so frame-locking works over MCP. `ffmpeg`/`ffprobe` 6.1.1 are
-installed and do frame extraction and encoding.
+The `higgsfield` and `monid` CLIs are **not installed**, so the skill's
+`pipeline.md` bash scripts do not apply. Use the **Higgsfield MCP server** —
+`models_explore get seedance_2_0` confirms `start_image`/`end_image`, so
+frame-locking works over MCP. `ffmpeg`/`ffprobe` 6.1.1 are installed.
 
-Check `Higgs_field balance` before rendering anything. At the time this repo was
-scaffolded it read `credits: 0, plan: free` with unlimited generations
-unavailable, which is why `render/` is armed rather than fired. `render/COSTS.md`
-carries the calibration protocol — render one leg, diff the balance, extrapolate
-— and the NSFW-filter notes, which matter here because the bedroom, bathroom and
-pool legs are exactly the contexts Seedance's filter flags.
+**Do not spend credits without an explicit go.** At last check the account read
+`credits: 0, plan: free`. `render/COSTS.md` carries the estimate (≈610–805
+credits for 19 generations), the calibration protocol, and the NSFW-filter notes
+— which matter here because three legs now put people in frame and the bedroom,
+bathroom and pool are the contexts that filter flags hardest.
