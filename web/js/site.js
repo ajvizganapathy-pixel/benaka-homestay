@@ -1,6 +1,6 @@
 /* ============================================================================
    Site behaviour: mount the canvas, build the gallery, run the lightbox, drive
-   the rail, and hand off from canvas to page.
+   the book control, and hand off from canvas to page.
 
    scrub-engine.js is untouched. Everything here sits around it and reads its
    geometry from the DOM it built.
@@ -163,11 +163,10 @@
     $$('.reveal:not(.in)').forEach(n => io.observe(n));
   }
 
-  /* ---- 5. Hero fade, rail progress, canvas handoff ---------------------- */
+  /* ---- 5. Hero fade and the canvas-to-gallery handoff ------------------- */
   // The engine sizes only its own .sw-track and never reads document height, so
   // reading that track's height back is a safe way to know where the canvas ends.
   const hero = $('[data-hero]');
-  const bar  = $('[data-progress]');
   let ticking = false;
 
   function onScroll() {
@@ -177,11 +176,14 @@
     const canvasEnd = track ? track.offsetHeight : vh;
 
     // The name holds on landing, then dissolves across the first screen.
+    const t = clamp(y / (vh * 0.85));
     if (hero) {
-      const t = clamp(y / (vh * 0.85));
       hero.style.opacity = String(1 - t);
       hero.style.transform = `translateY(${-t * 26}px)`;
     }
+    // The copy scrim comes up as the hero goes down: beat 1 has no copy to
+    // serve, so it stays off there and the opening photograph reads clean.
+    document.documentElement.style.setProperty('--scrim-on', t.toFixed(3));
 
     // The engine appends 1vh of track past the final beat so a clip can finish.
     // With stills that tail is empty, so it becomes the dissolve: the stage
@@ -190,9 +192,6 @@
     const fade = clamp((y - fadeStart) / (vh * 0.9));
     document.documentElement.style.setProperty('--canvas-fade', (1 - fade).toFixed(3));
     document.body.classList.toggle('past-canvas', fade > 0.98);
-
-    const total = document.documentElement.scrollHeight - vh;
-    if (bar) bar.style.height = (total > 0 ? clamp(y / total) * 100 : 0) + '%';
 
     ticking = false;
   }

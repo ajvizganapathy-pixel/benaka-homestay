@@ -48,26 +48,46 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ---------------------------------------------------------------------------
    1. Engine overrides
    The engine pins its copy at left: clamp(18px,5vw,64px) — directly under the
-   booking rail. Push it clear. This is the only collision between the two.
+   book control's lane. Push it clear: this is the only collision between the two.
    ------------------------------------------------------------------------ */
 .sw-topbar, .sw-hint, .sw-route, .sw-scrollbar, .sw-particles { display: none !important; }
 .sw-copy { left: calc(var(--s-rail) + var(--s-gut)) !important; }
 .sw-copylayer::before {
   left: var(--s-rail);
-  /* The engine's stock scrim is tuned for its cream default. On a dark ground
-     over blown-out monsoon photographs (white bedding, white skies) it leaves
-     the copy barely legible, so this one runs wider and deeper. */
-  width: min(70vw, 1020px);
+  /* Beat 1 has no copy — the hero holds the name instead — so on that frame the
+     engine's always-on scrim is a dark band serving nothing. site.js fades it in
+     with the copy it exists to support, leaving the opening photograph clean. */
+  opacity: var(--scrim-on, 1);
+  transition: opacity .45s var(--s-ease);
+  /* The minimum needed to read type, and no more. The photograph is the hero:
+     this holds full ground only behind the narrow column the copy actually
+     occupies, then releases quickly so the frame stays open and undimmed. There
+     is no text-shadow anywhere to make up the difference — see below. */
+  width: min(52vw, 720px);
   background: linear-gradient(90deg,
     var(--s-bg) 0%,
-    var(--s-bg) 34%,
-    color-mix(in srgb, var(--s-bg) 88%, transparent) 54%,
-    color-mix(in srgb, var(--s-bg) 52%, transparent) 74%,
-    color-mix(in srgb, var(--s-bg) 18%, transparent) 89%,
+    color-mix(in srgb, var(--s-bg) 92%, transparent) 38%,
+    color-mix(in srgb, var(--s-bg) 58%, transparent) 62%,
+    color-mix(in srgb, var(--s-bg) 20%, transparent) 82%,
     transparent 100%);
 }
-.sw-copy__title, .sw-copy__body, .sw-copy__eyebrow, .sw-copy__num {
-  text-shadow: 0 1px 24px color-mix(in srgb, var(--s-bg) 92%, transparent);
+
+/* NO TEXT SHADOW ON STORY TYPOGRAPHY.
+   The engine ships a shadow on .sw-copy__title from inside @layer sw. A shadow
+   reads as the words sitting on top of the photograph rather than belonging to
+   it, and it smears a dark halo into the frame. !important is required here:
+   these are engine-injected rules and the override has to win outright.
+   Do not reintroduce a shadow, glow, outline or drop-shadow as a readability
+   patch — legibility is the scrim's job and the scrim's alone. */
+.sw-copy__title,
+.sw-copy__body,
+.sw-copy__eyebrow,
+.sw-copy__num,
+.sw-copy__tags li,
+.hero__name,
+.hero__eyebrow,
+.hero__sub {
+  text-shadow: none !important;
 }
 .sw-copy__num, .sw-copy__eyebrow {
   font-family: var(--s-font-micro);
@@ -92,35 +112,51 @@ body.past-canvas .sw-stage,
 body.past-canvas .sw-copylayer { pointer-events: none; }
 
 /* ---------------------------------------------------------------------------
-   2. Booking rail — owns the left edge for the whole scroll
+   2. Book control — a compact fixed button, not a sidebar
+   The left lane stays open: --s-rail only reserves clearance so the button
+   never sits over the story copy or the gallery. Nothing is painted in it.
    ------------------------------------------------------------------------ */
-.rail {
-  position: fixed; top: 0; left: 0; bottom: 0; width: var(--s-rail);
+.book {
+  position: fixed;
+  left: 0; top: 50%; transform: translateY(-50%);
   z-index: 120;
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: space-between; padding: 20px 0;
-  background: color-mix(in srgb, var(--s-bg) 82%, transparent);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid var(--s-line);
-}
-.rail__mark {
-  font-family: var(--s-font-macro); font-size: 1.35rem; line-height: 1;
-  color: var(--s-ink); text-decoration: none;
-}
-.rail__book {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  width: 100%; margin: 18px 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px 13px;
   writing-mode: vertical-rl; text-orientation: mixed;
   font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
-  letter-spacing: 0.34em; text-transform: uppercase;
-  color: var(--s-ink); transition: color var(--s-quick), background var(--s-quick);
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--s-ink);
+  background: color-mix(in srgb, var(--s-bg) 76%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--s-accent) 34%, transparent);
+  border-left: 0;
+  border-radius: 0 var(--s-radius) var(--s-radius) 0;
+  transition: padding var(--s-quick), background var(--s-quick),
+              border-color var(--s-quick), color var(--s-quick);
 }
-.rail__book:hover { color: var(--s-accent-soft); background: color-mix(in srgb, var(--s-accent) 8%, transparent); }
-.rail__book span { transform: rotate(180deg); }
-.rail__progress { width: 1px; height: 64px; background: var(--s-line); position: relative; }
-.rail__progress i {
-  position: absolute; inset: 0 0 auto 0; height: 0; background: var(--s-accent);
-  transition: height .15s linear;
+.book span { transform: rotate(180deg); }
+/* "your stay" is collapsed to nothing until hover, so the resting state is just
+   the word BOOK. Vertical text means the reveal grows downward, not sideways. */
+.book__more {
+  max-height: 0; overflow: hidden; opacity: 0;
+  color: var(--s-accent-soft);
+  transition: max-height .34s var(--s-ease), opacity .28s var(--s-ease),
+              margin var(--s-quick);
+}
+.book:hover, .book:focus-visible {
+  padding-right: 17px;
+  background: color-mix(in srgb, var(--s-bg) 88%, transparent);
+  border-color: var(--s-accent);
+  color: var(--s-accent-soft);
+}
+.book:hover .book__more, .book:focus-visible .book__more {
+  max-height: 8em; opacity: 1; margin-top: .6em;
+}
+.book:active { padding-right: 12px; background: color-mix(in srgb, var(--s-accent) 18%, var(--s-bg)); }
+
+@media (max-width: 720px) {
+  .book { padding: 16px 10px; letter-spacing: 0.16em; }
+  .book:hover .book__more, .book:focus-visible .book__more { max-height: 0; opacity: 0; margin-top: 0; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -128,13 +164,14 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
    ------------------------------------------------------------------------ */
 .hero {
   position: fixed; inset: 0; z-index: 25;
-  /* The approach photograph has a blown-white monsoon sky exactly where the name
-     sits, and it is worse on a narrow viewport where the type gets bigger
-     relative to the frame. A soft centred vignette keeps the name legible over
-     any of the eight beats without flattening the photograph at the edges. */
-  background: radial-gradient(ellipse 95% 75% at 50% 46%,
-    color-mix(in srgb, var(--s-bg) 74%, transparent) 0%,
-    color-mix(in srgb, var(--s-bg) 46%, transparent) 52%,
+  /* The approach photograph has a blown-white sky exactly where the name sits,
+     so some contrast is unavoidable. This is the least that still reads: a soft
+     pool tight around the name only, gone well before the edges of the frame,
+     so the photograph is never flattened. It replaces a text-shadow rather than
+     joining one. */
+  background: radial-gradient(ellipse 64% 56% at 50% 45%,
+    color-mix(in srgb, var(--s-bg) 54%, transparent) 0%,
+    color-mix(in srgb, var(--s-bg) 28%, transparent) 58%,
     transparent 100%);
   display: grid; place-content: center; text-align: center;
   padding-left: var(--s-rail); pointer-events: none;
@@ -144,7 +181,6 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
 .hero__name {
   font-family: var(--s-font-macro); font-size: var(--s-macro-lg);
   line-height: .92; letter-spacing: -0.03em; margin: 0; color: var(--s-ink);
-  text-shadow: 0 4px 60px color-mix(in srgb, var(--s-bg) 80%, transparent);
 }
 .hero__name em { font-style: italic; color: var(--s-accent-soft); }
 .hero__sub { margin-top: 26px; color: var(--s-ink-soft); }

@@ -33,6 +33,10 @@ editorial serif for anything that carries meaning, a small tracked sans for
 anything that labels. That gap is the whole system — a third size in the middle is
 what makes a page read as generated, so there isn't one.
 
+The type carries **no shadow, glow or outline** anywhere. Legibility comes from a
+narrow scrim behind the copy column and nothing else, so the photograph stays
+open and undimmed and the words belong to the frame rather than sitting on it.
+
 ## The photographs
 
 Past the last beat the camera dissolves into a tiled gallery of all 47
@@ -48,9 +52,10 @@ arrow keys, swipe, `Esc` to close.
 
 ## Booking
 
-A booking rail rides the left edge for the entire scroll, from the first frame to
-the footer. It opens a three-step request: who is coming, a code to their phone,
-and confirmation.
+A compact BOOK button stays fixed to the left edge for the entire scroll, from
+the first frame to the footer — a small persistent control, not a sidebar. It
+expands to BOOK YOUR STAY on hover and opens a three-step request: who is
+coming, a code to their phone, and confirmation.
 
 | | |
 |---|---|
@@ -66,8 +71,8 @@ pretends to have accepted a booking it did not.
 
 ![On a phone](docs/screenshots/11-mobile.jpg)
 
-The rail stays on the left, the copy clears it, and the type scales down with the
-viewport. No horizontal overflow at 360px through 2560px.
+The button stays on the left, the copy clears it, and the type scales down with
+the viewport. No horizontal overflow at 360px through 2560px.
 
 ## Layout
 

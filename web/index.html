@@ -24,14 +24,11 @@
 
 <a class="skip" href="#gallery">Skip to the photographs</a>
 
-<!-- The booking rail rides the entire scroll, top to bottom, on the left. -->
-<nav class="rail" aria-label="Booking">
-  <a class="rail__mark" href="#top" aria-label="Sherlock's Jungle Retreat, back to top">S</a>
-  <button class="rail__book" data-open-booking aria-haspopup="dialog">
-    <span>Book your stay</span>
-  </button>
-  <div class="rail__progress" aria-hidden="true"><i data-progress></i></div>
-</nav>
+<!-- A compact fixed control on the left edge. Not a sidebar: it reserves a
+     clear lane so it never sits over the story copy, but paints nothing in it. -->
+<button class="book" data-open-booking aria-haspopup="dialog" aria-label="Book your stay">
+  <span>Book<span class="book__more">your stay</span></span>
+</button>
 
 <!-- The name, held over the first beats, dissolving as the camera goes in. -->
 <div class="hero" id="top" data-hero>
