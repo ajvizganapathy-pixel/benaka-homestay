@@ -18,7 +18,7 @@ the site uses. The repo is still named `benaka-homestay`.
 ## Commands
 
 ```bash
-python3 -m http.server 8765     # then http://localhost:8765/web/index.html
+python3 -m http.server 8765     # then http://localhost:8765/ (root index.html redirects)
 
 # re-cut a 16:9 scene canvas from a photograph
 ffmpeg -y -i assets/raw/<file>.jpg \
@@ -41,6 +41,7 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 ## Architecture
 
 ```
+index.html            root redirect stub -> web/ (see the note under Layout)
 web/index.html        page shell: hero, canvas mount, gallery, footer, booking
 web/world.config.js   the 7 beats, their copy, and all scroll pacing
 web/scrub-engine.js   VERBATIM from the skill — do not edit
@@ -73,6 +74,18 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    safe because `layout()` sizes only its own `.sw-track` from its own segment
    widths and never reads `document.scrollHeight`, and every fixed layer is
    `pointer-events: none`.
+
+### Two entry points, on purpose
+
+The site is `web/index.html`. The root `index.html` is a redirect stub, not a
+copy — keep it that way, and never let the two drift.
+
+On Hostinger the stub is never reached for `/`: `.htaccess:4` sets
+`DirectoryIndex web/index.html index.html` and `.htaccess:47` rewrites `^$` to
+`web/index.html` **internally**, so the URL stays clean. The stub is the fallback
+for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
+non-Apache host, opening the files directly. It uses `location.replace()` so it
+leaves no history entry; `assign()` would trap the Back button.
 
 ### Nothing goes over the photographs
 

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sherlock's Jungle Retreat — homestay in Coorg</title>
+
+<!-- The site itself lives in web/. This stub only exists so that opening the
+     repository root gives the homestay rather than a directory listing.
+
+     On Hostinger it is never reached: .htaccess maps / to web/index.html with an
+     internal rewrite, so visitors get the site at a clean / with no hop. This is
+     the fallback for everywhere .htaccess does not apply — a local
+     python3 -m http.server, a non-Apache static host, or opening the files
+     directly. -->
+
+<link rel="canonical" href="web/">
+<meta http-equiv="refresh" content="0; url=web/">
+<link rel="icon" href="web/favicon.svg" type="image/svg+xml">
+
+<style>
+  /* The site's own ground, so the instant before the redirect is not a white
+     flash on the way in. */
+  html, body { height: 100%; margin: 0; background: #14171a; color: #ecebe7; }
+  body {
+    display: grid; place-content: center; gap: 18px; text-align: center;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  p { margin: 0; font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; color: #99a0a8; }
+  a { color: #e08b60; }
+</style>
+</head>
+<body>
+  <p>Sherlock&rsquo;s Jungle Retreat</p>
+  <!-- Last resort: shown only if both the meta refresh and the script are blocked. -->
+  <p><a href="web/">Open the site</a></p>
+
+<script>
+  // replace(), not assign() — this stub must not leave a history entry, or Back
+  // would land here and immediately throw the visitor forward again.
+  location.replace('web/');
+</script>
+</body>
+</html>

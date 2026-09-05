@@ -10,10 +10,18 @@ Put the repository contents into `public_html` so the tree looks like this:
 ```
 public_html/
   .htaccess
+  index.html      redirect stub -> web/ (fallback; see below)
   web/            index.html, css/, js/, fonts/, scrub-engine.js, world.config.js
-  assets/         raw/, scenes/, manifest.json   (clips/ later)
+  assets/         raw/, scenes/, clips/, manifest.json
   api/            booking.php, config.php        (config.php you create)
 ```
+
+Upload **both** `.htaccess` and the root `index.html`. They do different jobs:
+`.htaccess` is what gives you a clean `/` — it maps the root to `web/index.html`
+with an internal rewrite, so visitors never see `/web/` in the address bar. The
+root `index.html` only takes over if `.htaccess` is ever ignored (a server with
+`AllowOverride None`, or a move to non-Apache hosting), and then it redirects to
+`web/` rather than showing a directory listing.
 
 Use the hPanel File Manager or SFTP. The `.htaccess` at the root serves
 `web/index.html` at `/`, so visitors never see `/web/` in the address.

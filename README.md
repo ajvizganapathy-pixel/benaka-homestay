@@ -12,8 +12,13 @@ dependencies. Serve the repo over HTTP and open `/web/`.
 
 ```bash
 python3 -m http.server 8765
-# http://localhost:8765/web/index.html
+# http://localhost:8765/   — the root index.html sends you to the site
 ```
+
+The site itself lives in `web/`. The root `index.html` is a small redirect so
+that opening the repository root gives the homestay rather than a directory
+listing. On Hostinger it is never reached: `.htaccess` maps `/` to
+`web/index.html` internally, so visitors get a clean `/` with no hop.
 
 ## The walkthrough
 
