@@ -21,27 +21,31 @@ before committing to the full chain.
 
 | Item | Model | Gens | Credits each | Subtotal |
 |---|---|---:|---|---:|
-| Walkthrough legs (8 beats) | `seedance_2_0` std / 1080p / 8s | 8 | 40–55 | 320–440 |
+| Walkthrough legs (7 beats) | `seedance_2_0` std / 1080p / 8s | 7 | 40–55 | 280–385 |
 | Re-roll headroom (~15%) | same | 2 | 40–55 | 80–110 |
 | Re-rolls, filter-prone legs | same | 3 | 40–55 | 120–165 |
-| Bathroom masked inpaint | `nano_banana_2` 2k | 3 | ~15 | ~45 |
 | Buffet masked inpaint | `nano_banana_2` 2k | 3 | ~15 | ~45 |
-| **Total** | | **19** | | **≈ 610–805** |
+| **Total** | | **15** | | **≈ 525–705** |
 
-**Budget ~800 credits. The 1,000-credit pack covers it with headroom.**
+**Budget ~700 credits.** The bathroom beat was dropped from the journey, which
+removes one leg and one inpaint from the earlier 19-generation estimate.
+
+**Run previz first** (the agreed order): all 7 legs on `seedance_2_0_mini` at
+720p costs **≈120–160 credits** and shows the whole journey. Approve the pacing
+and the people shots there, then re-render finals at 1080p. It frame-locks
+identically, so nothing is thrown away.
 
 ## Three things that change the number
 
 1. **Unlimited generations may make this free.** Both models report
    `supports_unlim: true`; the account currently reports
-   `unlim.available: false`. On a plan where unlimited is active the whole build
-   costs **0 credits**. Check that before buying a pack — it may be cheaper
-   outright.
-2. **Previz at a quarter of the cost.** Run all 8 legs on `seedance_2_0_mini`
-   (720p) first for **≈130–180 credits**, approve the journey, then re-render
-   finals. It frame-locks the same way, so the draft translates directly.
+   `unlim.available: false` on a free plan. **If the Pro plan activates that
+   allowance the whole build costs 0 credits.** Re-read `balance` and
+   `models_explore get seedance_2_0` the moment Pro is live, and report before
+   spending anything.
+2. **Previz at a quarter of the cost** — see above; this is the agreed order.
 3. **People are what will cost you re-rolls.** Legs 04 (buffet), 05 (billiards)
-   and 08 (pool) put figures in frame. Bedroom, bathroom and pool are the three
+   and 07 (pool) put figures in frame. Bedroom, bathroom and pool are the three
    contexts the skill names as worst for Seedance's NSFW filter, and leg 08 adds
    a swimmer mid-dive. Those three extra re-rolls above are for exactly this.
 

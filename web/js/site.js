@@ -38,6 +38,10 @@
 
     const groups = data.galleryGroups || [];
     host.innerHTML = '';
+    // One block holding all three groups side by side, rather than stacked.
+    const block = document.createElement('div');
+    block.className = 'groups';
+    host.appendChild(block);
 
     groups.forEach(g => {
       const imgs = data.images.filter(i => i.galleryGroup === g.id);
@@ -71,7 +75,7 @@
         grid.appendChild(b);
       });
 
-      host.appendChild(sec);
+      block.appendChild(sec);
     });
 
     observeReveals();

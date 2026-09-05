@@ -76,9 +76,9 @@
       "orientation": "landscape",
       "category": "bath",
       "description": "Ensuite with vessel basin, mirror, toilet and open shower area",
-      "sceneRole": "start-canvas",
-      "sceneBeat": 7,
-      "sceneId": "07-bath",
+      "sceneRole": "reference",
+      "sceneBeat": null,
+      "sceneId": null,
       "note": null,
       "galleryGroup": "inside"
     },
@@ -512,8 +512,8 @@
       "category": "pool",
       "description": "Pool with cottage roofs, water tower and the forested hill behind",
       "sceneRole": "start-canvas",
-      "sceneBeat": 8,
-      "sceneId": "08-pool",
+      "sceneBeat": 7,
+      "sceneId": "07-pool",
       "note": null,
       "galleryGroup": "play"
     },

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka, built on the
-`scroll-world` skill. Scroll drives a **camera**, not a scrollbar. Eight beats
+`scroll-world` skill. Scroll drives a **camera**, not a scrollbar. Seven beats
 run from the road outside to the pool, then dissolve into a tiled gallery of the
 property's photographs, a footer, and a booking flow.
 
@@ -42,7 +42,7 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 
 ```
 web/index.html        page shell: hero, canvas mount, gallery, footer, booking
-web/world.config.js   the 8 beats and their copy
+web/world.config.js   the 7 beats, their copy, and all scroll pacing
 web/scrub-engine.js   VERBATIM from the skill — do not edit
 web/css/              fonts, tokens, site chrome, booking
 web/js/               api adapter, site behaviour, booking flow
@@ -73,6 +73,18 @@ render/               the Higgsfield chain: written, costed, NOT run
    safe because `layout()` sizes only its own `.sw-track` from its own segment
    widths and never reads `document.scrollHeight`, and every fixed layer is
    `pointer-events: none`.
+
+### Nothing goes over the photographs
+
+No text-shadow, glow, outline or scrim, anywhere. The engine ships a shadow on
+`.sw-copy__title` and a gradient on `.sw-copylayer::before` from inside
+`@layer sw`; both are overridden off with `!important` in `site.css`. **Do not
+reintroduce either as a readability patch.**
+
+Legibility instead comes from per-beat copy placement: each beat puts its copy
+where that photograph is already dark, measured with a luminance scan of the copy
+block over a grid on each canvas. The positions and their measured values are
+recorded in `site.css`. Re-run the scan if a canvas is ever re-cut.
 
 ### Type
 
@@ -123,7 +135,9 @@ The `higgsfield` and `monid` CLIs are **not installed**, so the skill's
 frame-locking works over MCP. `ffmpeg`/`ffprobe` 6.1.1 are installed.
 
 **Do not spend credits without an explicit go.** At last check the account read
-`credits: 0, plan: free`. `render/COSTS.md` carries the estimate (≈610–805
-credits for 19 generations), the calibration protocol, and the NSFW-filter notes
-— which matter here because three legs now put people in frame and the bedroom,
-bathroom and pool are the contexts that filter flags hardest.
+`credits: 0, plan: free`. `render/COSTS.md` carries the estimate (≈525–705
+credits for 15 generations, or ≈120–160 for a full previz pass first — the agreed
+order), the calibration protocol, and the NSFW-filter notes — which matter here
+because three legs put people in frame and the pool is the context that filter
+flags hardest. Check `unlim.available` first: both models support it, and an
+active allowance makes the chain free.

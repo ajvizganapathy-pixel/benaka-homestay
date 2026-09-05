@@ -1,7 +1,7 @@
 # Render chain — armed, not fired
 
-Architecture **A** (continuous forward walkthrough), **8 legs**, no connectors,
-plus two masked inpaints.
+Architecture **A** (continuous forward walkthrough), **7 legs**, no connectors,
+plus one masked inpaint (the buffet).
 
 **Nothing here has been executed.** At the time of writing, `Higgs_field balance`
 reported `credits: 0, subscription_plan_type: free`, and `models_explore get
@@ -53,7 +53,7 @@ rendered and its last frame is extracted. This cannot be parallelised.
 
 ### Legs 02–07
 
-For i = 2..8:
+For i = 2..7:
 
 1. `bash render/extract-handoff-frame.sh render/raw/leg-0<i-1>.mp4 render/frames/leg-0<i-1>-last.png`
 2. **Eyeball that frame before continuing.** It must read as a frame from a calm
@@ -70,20 +70,19 @@ forces the camera to pull back, and a camera that reverses across a seam reads a
 a rewind stutter. That is the skill's single most-cited failure. The legs still
 arrive at distinct rooms because the prompt steers the content.
 
-The scene canvases for legs 02–08 (`assets/scenes/02-…` … `08-…`) are **not**
+The scene canvases for legs 02–07 (`assets/scenes/02-…` … `07-…`) are **not**
 start images — they are the reference for what each leg should arrive at, and
 they stay wired as the engine's posters. Only leg 01 starts from a photo.
 
-## Before the chain — the two masked inpaints
+## Before the chain — the masked inpaint
 
-Run these first; leg 04 and leg 07 start from their output.
+Run this first; leg 04 starts from its output. (The bathroom inpaint is gone with the bathroom beat.)
 
 | Spec | Source | Mask | Output |
 |---|---|---|---|
 | `render/prompts/enhance-buffet.txt` | `assets/raw/courtyard-pavilion-02.jpg` | `render/masks/courtyard-pavilion-02-mask.png` | `assets/enhanced/courtyard-pavilion-02.jpg` |
-| `render/prompts/enhance-bath.txt` | `assets/raw/bath-ensuite-01.jpg` | `render/masks/bath-ensuite-01-mask.png` | `assets/enhanced/bath-ensuite-01.jpg` |
 
-Both use `nano_banana_2` with `is_inpaint: true` and a `mask` media role —
+It uses `nano_banana_2` with `is_inpaint: true` and a `mask` media role —
 confirmed present on that model via `models_explore get nano_banana_2`. **This is
 the whole reason that model is chosen.** Everything outside the mask is returned
 untouched, so the photograph stays the real room. `seedream_v4_5` and
