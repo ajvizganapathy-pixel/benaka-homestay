@@ -92,24 +92,29 @@ the viewport. No horizontal overflow at 360px through 2560px.
 | `render/` | the Higgsfield chain — written, costed, **not run** |
 | `docs/` | deployment guide and these screenshots |
 
-## The video chain
+## The walkthrough is rendered
 
-Today every beat holds a still. The camera moves because the engine scrubs, not
-because there is video yet.
+![Frames from the seven rendered legs](docs/screenshots/13-walkthrough.jpg)
 
-`render/` carries the whole chain ready to fire: seven leg prompts sharing one
-byte-identical style preamble, a masked inpaint that lays a buffet on the
-pavilion table, the run book, and the encode scripts. It has not been run — the
-Higgsfield account reads **0 credits on a free plan**.
+Seven 8-second legs at 1080p, rendered on **OpenArt / PixVerse V6** from the
+property's own photographs. One continuous forward journey: up the road, under
+the arch, across the courtyard, past a buffet being served, through the billiards
+game, into a room, and out to the pool for the last splash.
 
-**Estimated cost of the full build: ≈525–705 credits** across 15 generations,
-with a full previz pass on `seedance_2_0_mini` at **≈120–160** to approve the
-journey first. `render/COSTS.md` has the breakdown — including that both models
-report `supports_unlim: true`, so a plan with unlimited generations active would
-make the whole chain free.
+Each leg begins on the **actual last frame of the leg before it**, so the seams
+are frame-exact rather than cut — measured at 30.3 dB on the first handoff. Each
+also carries an **end frame** naming the next beat, which is what makes the
+journey provably visit all seven places; without it a single 5-second clip
+crossed three beats and would never have reached the room or the pool.
 
-When the clips land, each beat takes one added line in `web/world.config.js` and
-nothing else changes.
+Cost: **1,512 credits** for the seven legs, plus 90 on two probes that proved the
+mechanism before committing — **1,602 of a 12,000 balance**. `render/COSTS.md`
+records the per-leg maths and why Seedance 2.0 was ruled out at eight times the
+price.
+
+Desktop gets the 1080p masters; phones get 1280-wide encodes with a tighter GOP,
+which the engine serves automatically. The stills remain the posters and the
+reduced-motion fallback.
 
 ## A note on the name
 

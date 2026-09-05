@@ -1,13 +1,16 @@
 /* ============================================================================
    The walkthrough — eight beats, gate to pool.
    ----------------------------------------------------------------------------
-   Each section holds a `still` and no `clip` yet: scrub-engine.js:201 skips clip
-   loading when `clip` is absent, so the still holds its scroll band. When the
-   Higgsfield legs render, add `clip: '../assets/clips/leg-0N.mp4'` to each
-   section and change nothing else — pacing, copy and connectors all carry over.
+   Each section holds its rendered leg plus the still it was chained from. The
+   still stays as the poster and as the reduced-motion fallback; scrub-engine.js
+   scrubs the clip by scroll position. `clipMobile` is the same leg at 1280 wide
+   with a tighter GOP, which the engine serves automatically on phones.
 
    Architecture A (one continuous forward take) has no connectors; the legs are
-   the journey. Hence `connectors: []` and a short crossfade.
+   the journey. Hence `connectors: []` and a short crossfade — each leg starts
+   from the previous leg's actual last frame, so the seams are frame-exact and
+   the crossfade only has to cover the small drift where a leg lands on its
+   target beat.
 
    PACING: these scroll values are the whole answer to "it takes too much wheel".
    Total is ~5.8 viewport-heights across seven beats, down from 11.3 across
@@ -28,6 +31,8 @@ window.SHERLOCK_WORLD = {
   sections: [
     { id: 'approach', label: 'The road',
       still: '../assets/scenes/01-approach-road.jpg',
+      clip: '../assets/clips/leg-01.mp4',
+      clipMobile: '../assets/clips/leg-01-m.mp4',
       scroll: 0.9,
       // No copy here on purpose: the hero holds the name over this beat, and two
       // blocks of type on one screen is exactly the clutter we are avoiding.
@@ -35,6 +40,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'gate', label: 'The arch',
       still: '../assets/scenes/02-gate-arch.jpg',
+      clip: '../assets/clips/leg-02.mp4',
+      clipMobile: '../assets/clips/leg-02-m.mp4',
       scroll: 0.7,
       eyebrow: 'The gate',
       title: 'You will know it by the arch.',
@@ -42,6 +49,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'courtyard', label: 'The house',
       still: '../assets/scenes/03-courtyard-house.jpg',
+      clip: '../assets/clips/leg-03.mp4',
+      clipMobile: '../assets/clips/leg-03-m.mp4',
       scroll: 0.8, linger: 0.25,
       eyebrow: 'The house',
       title: 'Two floors and one long verandah.',
@@ -49,6 +58,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'table', label: 'The table',
       still: '../assets/scenes/04-buffet-table.jpg',
+      clip: '../assets/clips/leg-04.mp4',
+      clipMobile: '../assets/clips/leg-04-m.mp4',
       scroll: 0.7,
       eyebrow: 'Meals',
       title: 'Food comes out at the pavilion.',
@@ -56,6 +67,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'billiards', label: 'The table',
       still: '../assets/scenes/05-billiards.jpg',
+      clip: '../assets/clips/leg-05.mp4',
+      clipMobile: '../assets/clips/leg-05-m.mp4',
       scroll: 0.7,
       eyebrow: 'The playroom',
       title: 'There is a billiards table under the stairs.',
@@ -63,6 +76,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'room', label: 'The rooms',
       still: '../assets/scenes/06-room.jpg',
+      clip: '../assets/clips/leg-06.mp4',
+      clipMobile: '../assets/clips/leg-06-m.mp4',
       scroll: 0.9, linger: 0.35,
       eyebrow: 'The rooms',
       title: 'Old wood and thick walls.',
@@ -70,6 +85,8 @@ window.SHERLOCK_WORLD = {
 
     { id: 'pool', label: 'The pool',
       still: '../assets/scenes/07-pool.jpg',
+      clip: '../assets/clips/leg-07.mp4',
+      clipMobile: '../assets/clips/leg-07-m.mp4',
       scroll: 1.1, linger: 0.4,
       eyebrow: 'The pool',
       title: 'The water is the point.',

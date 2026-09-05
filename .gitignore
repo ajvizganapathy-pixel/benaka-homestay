@@ -2,8 +2,12 @@
 render/raw/
 render/frames/
 render/jobs/
-assets/clips/
 *.mp4
+
+# ...except the finished, encoded legs. They cost real credits to produce and
+# would otherwise be lost with this container.
+!assets/clips/
+!assets/clips/*.mp4
 
 node_modules/
 __pycache__/
