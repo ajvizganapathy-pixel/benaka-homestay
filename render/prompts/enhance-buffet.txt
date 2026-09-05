@@ -1,0 +1,23 @@
+MASKED INPAINT — nano_banana_2, is_inpaint: true, resolution 2k
+Source: assets/raw/courtyard-pavilion-02.jpg
+Mask:   render/masks/courtyard-pavilion-02-mask.png
+Out:    assets/enhanced/courtyard-pavilion-02.jpg
+
+WHY A MASK
+Same rule as the bathroom: the pavilion, its tin roof, the hill behind it and the
+wet courtyard are real and must stay real. Only the empty floor area under the
+roof is masked, and a laid buffet table is painted into it. Everything else is
+the original photograph.
+
+PROMPT
+The same pavilion under the same tin roof, same camera position, same overcast
+daylight. Add a long buffet table along the covered area, laid with a clean white
+cloth, covered stainless serving dishes with steam rising, a stack of plates at
+the near end, and a few simple folding chairs to one side. Keep the roof, the
+pillars, the railing, the courtyard and the hill behind exactly as they are.
+Photoreal, natural colour, no stylisation. Empty and unoccupied, no people, no
+figures, architectural, tasteful. No text, no captions, no logos.
+
+NOTE
+People arrive in the leg-04 video, not here. This still is the start frame, and
+the fewer figures in a start frame the more reliably the video chain holds.

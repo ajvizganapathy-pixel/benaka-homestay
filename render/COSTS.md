@@ -1,69 +1,75 @@
-# Cost state and calibration
+# Credits required for the build
 
-## Measured, at the time this chain was authored
+## Measured state
 
 ```
-Higgs_field balance  ->  { "credits": 0, "subscription_plan_type": "free" }
-models_explore get seedance_2_0  ->  supports_unlim: true,
-                                     unlim: { available: false, remaining: null }
+Higgs_field balance              -> { "credits": 0, "subscription_plan_type": "free" }
+models_explore get seedance_2_0  -> supports_unlim: true,
+                                    unlim: { available: false, remaining: null }
+models_explore get nano_banana_2 -> supports_unlim: true, is_inpaint + mask roles
 ```
 
-**Zero credits, free plan, unlimited generations not available.** The chain
-cannot render until this changes. Everything else in this repo is complete and
-does not depend on it.
+**Zero credits, free plan, unlimited generations unavailable.** Nothing below has
+been run. The site is complete and live-ready without any of it.
 
-## Shape of the spend
+## The estimate
 
-Architecture A, N = 7:
+There is no pricing API on the MCP server. These figures come from the
+`scroll-world` skill's own calibration (Plus plan, 2026-07: **standard video
+≈ 40–55 credits, still ≈ 15**) and must be re-checked with one real render
+before committing to the full chain.
 
-| Item | Count |
-|---|---|
-| Video generations (legs) | 7 |
-| Connectors | 0 — architecture A has none |
-| Still generations | 0 — the scene canvases are the property's own photographs |
-| Re-roll headroom (~15%) | ~1–2 |
-| **Total** | **~8–9 video generations** |
+| Item | Model | Gens | Credits each | Subtotal |
+|---|---|---:|---|---:|
+| Walkthrough legs (8 beats) | `seedance_2_0` std / 1080p / 8s | 8 | 40–55 | 320–440 |
+| Re-roll headroom (~15%) | same | 2 | 40–55 | 80–110 |
+| Re-rolls, filter-prone legs | same | 3 | 40–55 | 120–165 |
+| Bathroom masked inpaint | `nano_banana_2` 2k | 3 | ~15 | ~45 |
+| Buffet masked inpaint | `nano_banana_2` 2k | 3 | ~15 | ~45 |
+| **Total** | | **19** | | **≈ 610–805** |
 
-Using the property's real photographs instead of generated stills removes the
-`N` image generations the skill normally budgets for, and architecture A removes
-the `N−1` connectors. This chain is roughly half the generation count of the
-skill's default architecture-B build at the same N.
+**Budget ~800 credits. The 1,000-credit pack covers it with headroom.**
 
-## Calibrate, do not guess
+## Three things that change the number
 
-The CLI and MCP expose no pricing, and plans differ. Before committing to the
-full run:
+1. **Unlimited generations may make this free.** Both models report
+   `supports_unlim: true`; the account currently reports
+   `unlim.available: false`. On a plan where unlimited is active the whole build
+   costs **0 credits**. Check that before buying a pack — it may be cheaper
+   outright.
+2. **Previz at a quarter of the cost.** Run all 8 legs on `seedance_2_0_mini`
+   (720p) first for **≈130–180 credits**, approve the journey, then re-render
+   finals. It frame-locks the same way, so the draft translates directly.
+3. **People are what will cost you re-rolls.** Legs 04 (buffet), 05 (billiards)
+   and 08 (pool) put figures in frame. Bedroom, bathroom and pool are the three
+   contexts the skill names as worst for Seedance's NSFW filter, and leg 08 adds
+   a swimmer mid-dive. Those three extra re-rolls above are for exactly this.
 
-1. Render **one** leg.
-2. Diff `Higgs_field balance` before and after.
-3. Extrapolate to 7 and add the re-roll headroom.
-4. Warn before proceeding if the estimate exceeds ~70% of the balance.
+## Why this chain is cheaper than a stock scroll-world build
 
-For orientation only, observed on a Plus plan in 2026-07: a standard video was
-~40–55 credits. Do not treat that as this account's price — measure it.
+- The scene canvases are the property's own photographs, so the `N` still
+  generations a normal build needs are already zero.
+- Architecture A has no connectors, so the `N−1` connector clips are gone.
 
-A real `not_enough_credits` mid-run is recoverable (finished legs survive; resume
-after top-up) but wasteful, and on a sequential chain it strands the handoff.
+Roughly half the generation count of the skill's default architecture-B build at
+the same N.
 
-## NSFW false positives — budget for these
+## Handling an NSFW refusal
 
-Seedance's content filter flags innocuous footage, and **this build is unusually
-exposed to it**: legs 05 (bedroom), 06 (bathroom) and 07 (pool) are exactly the
-contexts the skill names as the touchy ones, along with trigger words like *bed*,
-*pool*, *shower* and *waterfall*.
+In order:
 
-Fixes, in order:
-
-1. **Re-roll.** It is often non-deterministic and passes on the 2nd–3rd try.
-2. **Strip trigger words** and lean on the preamble's existing "empty,
-   unoccupied, no people, no figures, architectural, tasteful" — already present
-   verbatim in every prompt file for this reason.
+1. **Re-roll.** Often non-deterministic; passes on the 2nd or 3rd try.
+2. **Lean on the wording already in the prompts.** Every people-carrying prompt
+   describes figures by action and dress, never by body, and carries "fully
+   clothed … documentary style, tasteful and respectful" verbatim for this
+   reason. Do not soften the scene by removing the clothing language — that is
+   the part doing the work.
 3. **Re-render that one leg on `kling3_0`** with the same start frame. A
-   different provider's filter often passes what Seedance blocks. Note the flag
-   differences: no `resolution` parameter, sound defaults on so pass it off, and
-   encode at whatever native resolution ffprobe reports — never upscale.
+   different provider's filter often passes what Seedance blocks. Note: no
+   `resolution` parameter, sound defaults on so pass it off, and encode at
+   whatever native resolution ffprobe reports — never upscale.
 
-Option 4 from the skill — setting a connector slot to `null` — **does not apply
-here**: architecture A has no connectors, so there is no seam the engine can
+The skill's fourth option — setting a connector slot to `null` — **does not apply
+here.** Architecture A has no connectors, so there is no seam for the engine to
 crossfade past. A leg that will not render must be re-rolled or dropped from the
 journey; it cannot be skipped.
