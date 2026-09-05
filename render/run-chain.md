@@ -1,118 +1,99 @@
-# Render chain — armed, not fired
+# Render chain — OpenArt / PixVerse V6
 
-Architecture **A** (continuous forward walkthrough), **7 legs**, no connectors,
-plus one masked inpaint (the buffet).
-
-**Nothing here has been executed.** At the time of writing, `Higgs_field balance`
-reported `credits: 0, subscription_plan_type: free`, and `models_explore get
-seedance_2_0` reported `unlim.available: false`. Read `COSTS.md`, then run this
-only on an explicit go.
-
-## Why MCP and not the CLI
-
-The `higgsfield` CLI is **not installed** in this environment and neither is
-`monid`, so the skill's `pipeline.md` bash scripts do not apply as written. The
-Higgsfield **MCP server** is available and does the same job. `models_explore get
-seedance_2_0` confirms the model's `medias.roles` include `start_image` and
-`end_image`, so frame-locking — the thing the whole method rests on — works over
-MCP.
-
-`ffmpeg`/`ffprobe` 6.1.1 **are** installed (via apt) and do the frame extraction
-and encoding.
+Seven legs, one continuous forward walkthrough from the road to the pool.
 
 ## Model and parameters
 
-Every parameter below was checked against `models_explore get seedance_2_0`; do
-not add flags that the schema does not list.
+```
+model  pixverseV6        mode  image2video
+params {
+  prompt,
+  startFrame: { type:"image", id, url, label },
+  endFrame:   { type:"image", id, url, label },   // omitted on the finale only
+  duration: 8, resolution: "1080p",
+  generateAudio: false, videoCount: 1
+}
+```
 
-| Parameter | Value | Why |
-|---|---|---|
-| model | `seedance_2_0` | Roster default; frame-locks via `start_image` |
-| `mode` | `std` | Required for 1080p |
-| `resolution` | `1080p` | Native; never downscale at render time |
-| `aspect_ratio` | `16:9` | Explicit — the default is `auto` and follows the input image |
-| `duration` | `8` | Legs want length; schema allows 4–15 |
-| `generate_audio` | `false` | Schema default is `true`; audio is wasted (we mute and `-an`) |
+Confirmed against `openart_model_form_get`: `startFrame` required, `endFrame`
+nullable, duration 1–15, resolution to 1080p, audio off by default.
+**216 credits per leg** (240 list, less the Plus MCP discount).
 
-**One model for the whole chain.** Mixing renderers keeps position continuity but
-the render-character shift reads as a pop. The one sanctioned exception is
-`kling3_0` for a single clip the Seedance NSFW filter refuses (see COSTS.md).
+## Getting frames to OpenArt
 
-## The chain
+OpenArt's uploader (`openart_upload_pick`) is a browser widget and cannot read
+files from this machine. The way in is that **this repository is public**, so any
+committed image has a raw URL that OpenArt accepts as a frame:
 
-Legs are **strictly sequential** — leg *i* cannot start until leg *i−1* has
-rendered and its last frame is extracted. This cannot be parallelised.
+```
+https://raw.githubusercontent.com/ajvizganapathy-pixel/benaka-homestay/main/<path>
+```
 
-### Leg 01 (the only leg that starts from a photo)
+Verified by probe: a foreign raw URL was accepted and frame 0 of the output
+matched the input at **30.6–32.9 dB**. Push a handoff frame and confirm its URL
+returns 200 before submitting the leg that uses it.
 
-1. `media_upload` → `assets/scenes/01-approach-road.jpg`
-2. `generate_video` with the parameters above, `start_image` = that upload,
-   `prompt` = contents of `render/prompts/leg-01.txt`
-3. `jobs_wait`, then **download the result immediately** — result URLs expire.
-   Save to `render/raw/leg-01.mp4`.
+## The shape of the chain
 
-### Legs 02–07
+Each leg travels from one beat to the next. Seven canvases give six transitions,
+plus an open-ended finale:
 
-For i = 2..7:
-
-1. `bash render/extract-handoff-frame.sh render/raw/leg-0<i-1>.mp4 render/frames/leg-0<i-1>-last.png`
-2. **Eyeball that frame before continuing.** It must read as a frame from a calm
-   forward glide — no sideways motion blur, no half-finished orbit, no drifted
-   angle (Seedance rotates slightly on long legs). A bad handoff frame poisons
-   every leg after it: re-roll leg *i−1* rather than building on it.
-3. `media_upload` that PNG
-4. `generate_video`, `start_image` = that upload, `prompt` =
-   `render/prompts/leg-0<i>.txt`, **and no `end_image`**
-5. `jobs_wait` → download to `render/raw/leg-0<i>.mp4`
-
-**No `end_image`, ever, on this architecture.** An end-image of a wider shot
-forces the camera to pull back, and a camera that reverses across a seam reads as
-a rewind stutter. That is the skill's single most-cited failure. The legs still
-arrive at distinct rooms because the prompt steers the content.
-
-The scene canvases for legs 02–07 (`assets/scenes/02-…` … `07-…`) are **not**
-start images — they are the reference for what each leg should arrive at, and
-they stay wired as the engine's posters. Only leg 01 starts from a photo.
-
-## Before the chain — the masked inpaint
-
-Run this first; leg 04 starts from its output. (The bathroom inpaint is gone with the bathroom beat.)
-
-| Spec | Source | Mask | Output |
+| leg | startFrame | endFrame | journey |
 |---|---|---|---|
-| `render/prompts/enhance-buffet.txt` | `assets/raw/courtyard-pavilion-02.jpg` | `render/masks/courtyard-pavilion-02-mask.png` | `assets/enhanced/courtyard-pavilion-02.jpg` |
+| 01 | canvas 01 | canvas 02 | road → the arch |
+| 02 | leg 01 last frame | canvas 03 | arch → the house |
+| 03 | leg 02 last frame | canvas 04 | courtyard → the pavilion |
+| 04 | leg 03 last frame | canvas 05 | the table → the playroom |
+| 05 | leg 04 last frame | canvas 06 | billiards → a room |
+| 06 | leg 05 last frame | canvas 07 | the room → the pool |
+| 07 | leg 06 last frame | *(none)* | the pool, the somersault, the hill |
 
-It uses `nano_banana_2` with `is_inpaint: true` and a `mask` media role —
-confirmed present on that model via `models_explore get nano_banana_2`. **This is
-the whole reason that model is chosen.** Everything outside the mask is returned
-untouched, so the photograph stays the real room. `seedream_v4_5` and
-`flux_kontext` accept only `image_references` and would redraw the entire frame.
+**Why an end frame here, when the earlier Higgsfield plan forbade one.** That
+rule came from Seedance, where an end-image made the camera pull back and the
+seam read as a rewind. PixVerse does not: a 45-credit probe (canvas 01 → canvas
+02) travelled forward the whole way and landed on the arch with no reversal.
+Without it the camera runs away — an open-ended 5s probe crossed three beats in
+one clip and would never have reached the room, the bath or the pool.
 
-Paint the masks by hand (any editor, white = repaint, black = keep) and keep them
-tight. After each, compare against the original at full size: if anything outside
-the mask has shifted, the mask leaked — redo it tighter.
+Anchoring also makes the journey *provably* visit all seven places, which
+open-ended prompting cannot guarantee.
 
-Then re-cut the affected scene canvases to 16:9 from the enhanced files and point
-`web/world.config.js` at them.
+**The seam is still frame-exact** because each leg starts from the previous
+leg's ACTUAL last frame, never from a canvas. The end frame only steers where a
+leg arrives; the start frame is what makes the join invisible. A leg lands near
+its target rather than on it (measured 19.7 dB, matching composition) — that is
+expected, and the engine's crossfade covers it.
+
+## Running a leg
+
+1. Submit with the parameters above.
+2. `openart_creation_get(historyId)` until COMPLETED — video usually outlasts one
+   poll window. Download the result URL promptly.
+3. `bash render/extract-handoff-frame.sh render/raw/leg-0N.mp4 assets/handoff/leg-0N-last.png`
+4. **Look at that frame before chaining.** It must read as a frame from a calm
+   forward glide: no sideways motion blur, no half-finished move, no drifted
+   horizon. A bad handoff frame poisons every leg after it — re-roll leg N rather
+   than building on it.
+5. Commit and push the frame, confirm its raw URL returns 200, then submit leg
+   N+1 with it as `startFrame`.
+
+**Strictly sequential.** Leg N+1 cannot start until leg N has rendered and its
+last frame is extracted, pushed and eyeballed.
+
+## People
+
+Legs 03, 04 and 07 put figures in frame — the buffet being served, the billiards
+game, the swimmer. The prompts describe figures by action and dress, never by
+body, and carry "fully clothed, documentary style, tasteful and respectful"
+deliberately: it is what keeps a content filter from refusing the clip. Do not
+soften it out.
 
 ## After the chain
 
 1. `bash render/encode.sh` → `assets/clips/leg-0N.mp4`
-2. Add `clip: '../assets/clips/leg-0N.mp4'` to the matching section in
-   `web/world.config.js`. Change nothing else: `connectors: []` and the
-   `crossfade`/`scroll`/`linger` pacing already tuned on the stills carry over
-   unchanged.
-3. QA the seams — screenshot just before and just after each one. Judge by
-   **composition, not raw PSNR**: a correctly frame-locked seam can read
-   18–25 dB from detail shimmer alone. A real mismatch shows as different
-   composition or props, not just softness.
-4. Confirm `video.seekable.end(0) > 0` in the console (blob loading working) and
-   that `currentTime` tracks scroll across each clip's band.
-
-## Not doing
-
-- **No connectors.** Architecture A has none; skill Step 5 is skipped entirely.
-- **No mobile chain.** The native 9:16 portrait chain roughly doubles the spend
-  and was not opted into. The engine's phone hardening (seek coalescing, iOS
-  priming, safe-area) is always on regardless, so a desktop-only build degrades
-  gracefully rather than breaking.
+2. Add one line per beat in `web/world.config.js`:
+   `clip: '../assets/clips/leg-0N.mp4'`. Nothing else changes — the pacing, the
+   per-beat copy positions and the gallery all carry over, and the stills remain
+   the posters and the reduced-motion fallback.
+3. Delete `assets/handoff/` once every leg is rendered; it exists only to give
+   the frames public URLs.

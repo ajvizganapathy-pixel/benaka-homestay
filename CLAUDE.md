@@ -49,7 +49,7 @@ web/js/               api adapter, site behaviour, booking flow
 web/fonts/            self-hosted woff2 (no CDN at runtime)
 assets/               raw/ photographs, scenes/ canvases, manifest.json
 api/                  booking.php + config.example.php — inert until configured
-render/               the Higgsfield chain: written, costed, NOT run
+render/               the OpenArt render chain: model, prompts, run book, costs
 ```
 
 ### Three things that will bite
@@ -109,35 +109,35 @@ Never make the form claim a booking was received when it was not.
 ## The camera architecture (before touching render/)
 
 **Architecture A — one continuous forward take**, because the material is real
-photography. Not optional:
+photography:
 
-- **Legs chain from each other's actual last frame.** Leg *i*'s `start_image` is
-  the PNG extracted from leg *i−1*'s rendered video, never the original
-  photograph. Using the photo is the commonest cause of a visible seam pop.
-- **No `end_image`, ever.** It forces the camera to pull back, and a camera that
-  reverses across a seam reads as a rewind stutter.
-- **No connectors.** The legs *are* the journey — `connectors: []`, skill Step 5
-  skipped. There is therefore no connector slot to `null` out when a clip refuses
-  to render; a bad leg must be re-rolled, not skipped.
-- **Strictly sequential.** Leg *i* waits for leg *i−1* to render and its last
-  frame to be extracted and eyeballed.
-
-Enhancements to the photographs are **masked inpaints** on `nano_banana_2`
-(`is_inpaint: true` + a `mask` role). That is the only way to change part of a
-photograph while leaving the rest of the real image untouched — `seedream_v4_5`
-and `flux_kontext` take `image_references` only and would redraw the frame.
+- **Legs chain from each other's actual last frame.** Leg *i*'s `startFrame` is
+  the PNG extracted from leg *i−1*'s rendered video, never a canvas. This is what
+  makes the seam invisible.
+- **Each leg carries an `endFrame`** — the next beat's canvas — so it lands on
+  that beat. Without it the camera runs away: an open-ended 5s probe crossed
+  three beats in one clip. (The earlier Higgsfield plan forbade end frames
+  because Seedance pulled back and the seam read as a rewind; PixVerse does not,
+  verified by probe.) The finale leg has no end frame.
+- **No connectors.** The legs *are* the journey — `connectors: []`.
+- **Strictly sequential.** Leg *i* waits for leg *i−1* to render, and its last
+  frame is eyeballed before chaining.
 
 ## Rendering environment
 
-The `higgsfield` and `monid` CLIs are **not installed**, so the skill's
-`pipeline.md` bash scripts do not apply. Use the **Higgsfield MCP server** —
-`models_explore get seedance_2_0` confirms `start_image`/`end_image`, so
-frame-locking works over MCP. `ffmpeg`/`ffprobe` 6.1.1 are installed.
+Generation runs on **OpenArt over MCP** — `pixverseV6`, `image2video`, 8s,
+1080p, 16:9, audio off. **216 credits per leg** (240 list, less the Plus
+account's 10% MCP discount).
 
-**Do not spend credits without an explicit go.** At last check the account read
-`credits: 0, plan: free`. `render/COSTS.md` carries the estimate (≈525–705
-credits for 15 generations, or ≈120–160 for a full previz pass first — the agreed
-order), the calibration protocol, and the NSFW-filter notes — which matter here
-because three legs put people in frame and the pool is the context that filter
-flags hardest. Check `unlim.available` first: both models support it, and an
-active allowance makes the chain free.
+**Getting frames to OpenArt:** its uploader is a browser widget that cannot read
+files from this machine. The way in is that this repository is public, so any
+committed image has a `raw.githubusercontent.com` URL that OpenArt accepts as a
+frame. Push a handoff frame and confirm its URL returns 200 before submitting the
+leg that uses it.
+
+`ffmpeg`/`ffprobe` 6.1.1 are installed and do frame extraction and encoding.
+
+**Spend deliberately.** Prove a mechanism on a 45-credit 540p probe before
+committing a 1,512-credit chain; read the balance before and after each leg. See
+`render/COSTS.md`, which also records why Seedance 2.0 was ruled out (1,440 per
+leg, eight times the cost) and that OpenArt has no masked-inpaint mode.

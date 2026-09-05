@@ -1,79 +1,64 @@
-# Credits required for the build
+# Credits — OpenArt
 
-## Measured state
+## Account
 
 ```
-Higgs_field balance              -> { "credits": 0, "subscription_plan_type": "free" }
-models_explore get seedance_2_0  -> supports_unlim: true,
-                                    unlim: { available: false, remaining: null }
-models_explore get nano_banana_2 -> supports_unlim: true, is_inpaint + mask roles
+openart_account_get -> { plan: "Plus", credits: 12000 }
 ```
 
-**Zero credits, free plan, unlimited generations unavailable.** Nothing below has
-been run. The site is complete and live-ready without any of it.
+Plus earns a **10% discount on MCP-originated generations**. Credits have no
+decimals, so the charge is `round(unitCredits × 0.9) × quantity` — quote that
+formula's result, not a mental "10% off".
 
-## The estimate
+## The chain
 
-There is no pricing API on the MCP server. These figures come from the
-`scroll-world` skill's own calibration (Plus plan, 2026-07: **standard video
-≈ 40–55 credits, still ≈ 15**) and must be re-checked with one real render
-before committing to the full chain.
+| | list | charged | ×7 legs |
+|---|---:|---:|---:|
+| **PixVerse V6, image2video, 8s, 1080p, 16:9, audio off** | 240 | **216** | **1,512** |
+| Re-roll budget (4 legs) | 240 | 216 ea | 864 |
+| **Worst case** | | | **≈2,376 of 12,000 (20%)** |
 
-| Item | Model | Gens | Credits each | Subtotal |
-|---|---|---:|---|---:|
-| Walkthrough legs (7 beats) | `seedance_2_0` std / 1080p / 8s | 7 | 40–55 | 280–385 |
-| Re-roll headroom (~15%) | same | 2 | 40–55 | 80–110 |
-| Re-rolls, filter-prone legs | same | 3 | 40–55 | 120–165 |
-| Buffet masked inpaint | `nano_banana_2` 2k | 3 | ~15 | ~45 |
-| **Total** | | **15** | | **≈ 525–705** |
+Cheaper settings for drafting a re-roll before committing at 1080p:
 
-**Budget ~700 credits.** The bathroom beat was dropped from the journey, which
-removes one leg and one inpaint from the earlier 19-generation estimate.
+| config | list | charged |
+|---|---:|---:|
+| 8s / 720p | 112 | 101 |
+| 5s / 540p | 50 | 45 |
 
-**Run previz first** (the agreed order): all 7 legs on `seedance_2_0_mini` at
-720p costs **≈120–160 credits** and shows the whole journey. Approve the pacing
-and the people shots there, then re-render finals at 1080p. It frame-locks
-identically, so nothing is thrown away.
+## Why PixVerse V6
 
-## Three things that change the number
+Its stated strength — stable, natural camera and shot motion — is what a chained
+walkthrough needs, and it holds the best cost-performance on the roster. It also
+spans 540p to 1080p and 1–15s, so a draft and its final run on the **same model**
+and there is no render-character shift between what gets approved and what ships.
 
-1. **Unlimited generations may make this free.** Both models report
-   `supports_unlim: true`; the account currently reports
-   `unlim.available: false` on a free plan. **If the Pro plan activates that
-   allowance the whole build costs 0 credits.** Re-read `balance` and
-   `models_explore get seedance_2_0` the moment Pro is live, and report before
-   spending anything.
-2. **Previz at a quarter of the cost** — see above; this is the agreed order.
-3. **People are what will cost you re-rolls.** Legs 04 (buffet), 05 (billiards)
-   and 07 (pool) put figures in frame. Bedroom, bathroom and pool are the three
-   contexts the skill names as worst for Seedance's NSFW filter, and leg 08 adds
-   a swimmer mid-dive. Those three extra re-rolls above are for exactly this.
+**Seedance 2.0 was ruled out on price:** 1,600 list / **1,440 charged** per leg at
+8s/1080p — 10,080 for a single pass, 84% of the balance with nothing left for
+re-rolls. Better at people, but not at eight times the cost.
 
-## Why this chain is cheaper than a stock scroll-world build
+Veo 3.1 (lite) ties PixVerse at 216 for the same config and is a fair
+alternative, but previz would have to run on a different model.
 
-- The scene canvases are the property's own photographs, so the `N` still
-  generations a normal build needs are already zero.
-- Architecture A has no connectors, so the `N−1` connector clips are gone.
+## Spent so far
 
-Roughly half the generation count of the skill's default architecture-B build at
-the same N.
+| what | result | charged |
+|---|---|---:|
+| Handoff probe — 540p/5s, startFrame only | frame-lock **30.6–32.9 dB**, foreign URL accepted | 45 |
+| End-frame probe — 540p/5s, start+end | see `run-chain.md` | 45 |
 
-## Handling an NSFW refusal
+## No masked inpaint on OpenArt
 
-In order:
+OpenArt's image models expose `text2image` / `image2image` with reference images
+— there is **no mask role**, so the masked inpaint the earlier plan used to dress
+the pavilion with a buffet is not available. The buffet arrives in leg 04's video
+prompt instead, generated in motion from the real pavilion photograph. That costs
+nothing extra and keeps an untouched photograph as the start frame, which is the
+better outcome anyway.
 
-1. **Re-roll.** Often non-deterministic; passes on the 2nd or 3rd try.
-2. **Lean on the wording already in the prompts.** Every people-carrying prompt
-   describes figures by action and dress, never by body, and carries "fully
-   clothed … documentary style, tasteful and respectful" verbatim for this
-   reason. Do not soften the scene by removing the clothing language — that is
-   the part doing the work.
-3. **Re-render that one leg on `kling3_0`** with the same start frame. A
-   different provider's filter often passes what Seedance blocks. Note: no
-   `resolution` parameter, sound defaults on so pass it off, and encode at
-   whatever native resolution ffprobe reports — never upscale.
+## Rules for spending
 
-The skill's fourth option — setting a connector slot to `null` — **does not apply
-here.** Architecture A has no connectors, so there is no seam for the engine to
-crossfade past. A leg that will not render must be re-rolled or dropped from the
-journey; it cannot be skipped.
+- Prove a mechanism on a 45-credit 540p probe before committing a 1,512 chain.
+- Read the balance before and after each leg; confirm the charge matches 216.
+- Draft a doubtful re-roll at 720p (101) before paying 216 for it.
+- Stop and check in if the running total approaches the estimate plus the
+  re-roll budget.
