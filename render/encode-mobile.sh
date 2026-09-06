@@ -5,13 +5,17 @@
 # files are a native 9:16 render, not a resize of the landscape master — see the
 # note at the foot of render/encode.sh for why the resize was a mistake.
 #
-# 810x1440 is the size, and it is a considered number. On a 390x844 phone
-# `object-fit: cover` scales a 9:16 clip by 0.44 and shows 82% of its width, so
-# 810 wide puts ~665 source pixels across 390 CSS pixels — 2.0x what the old
-# 16:9 mobile encode managed, at roughly 10MB a leg. The engine fetches one leg
-# at a time as you approach it, so that is 10MB, not 70MB, before the first
-# scene moves. If it ever proves heavy on mobile data, 720x1280 / crf 23 is the
-# fallback and is still 1.8x the old detail.
+# NATIVE RESOLUTION, no downscale. This used to write 810x1440 to save
+# bandwidth. On a 390x844 phone `object-fit: cover` scales a 9:16 clip by 0.44
+# and shows 82% of its width, so 810 wide put ~665 source pixels across 390 CSS
+# pixels; native 1080 puts 887 there. That is 1.33x more detail on the glass for
+# no credits at all — the single cheapest quality win available on this site,
+# and the reason to spend bytes rather than pixels.
+#
+# It costs about 14MB a leg instead of 8MB. The engine fetches one leg at a time
+# as you approach it, so that is 14MB before the first scene moves, not 100MB.
+# If mobile data ever proves the binding constraint, put `scale=810:1440` back
+# in the filter chain below and nothing else has to change.
 #
 # -g 4 for the same reason as the desktop encode, more so: a phone decoder's
 # seek cost is dominated by frames-from-keyframe, and this file gets scrubbed.
@@ -46,8 +50,8 @@ for src in "${legs[@]}"; do
   fi
   echo "mobile $(basename "$out")  <- $dims"
   ffmpeg -y -loglevel error -i "$src" -an \
-    -vf "scale=810:1440:flags=lanczos,unsharp=5:5:0.8:5:5:0.0" \
-    -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p \
+    -vf "unsharp=5:5:0.8:5:5:0.0" \
+    -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p \
     -g 4 -keyint_min 4 -sc_threshold 0 -movflags +faststart \
     "$out"
 done

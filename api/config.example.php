@@ -34,10 +34,16 @@ return [
     // business.facebook.com -> your WhatsApp Business Account -> API Setup
     // -----------------------------------------------------------------------
 
-    // The owner's number, which RECEIVES booking requests.
+    // Who RECEIVES booking requests. A LIST — the homestay is run by more than
+    // one person, and every number here gets the same message. Each send is
+    // recorded separately, so one unreachable number cannot lose the booking
+    // for the other.
     // Digits only, country code included, no '+' and no spaces.
-    // e.g. India 98765 43210 -> '919876543210'
-    'OWNER_WHATSAPP' => '',
+    // e.g. India 94486 47831 -> '919448647831'
+    'OWNER_WHATSAPP_NUMBERS' => [
+        // '919448647831',
+        // '918861070431',
+    ],
 
     // "Phone number ID" on the API Setup page. This is NOT the phone number —
     // it is a long numeric id belonging to the number that SENDS.
@@ -58,7 +64,7 @@ return [
 
     // -- Template 1: the owner's booking notification -----------------------
     // Category: UTILITY.  Language: English (en).
-    // Submit this body EXACTLY, with six variables:
+    // Submit this body EXACTLY, with seven variables:
     //
     //   New booking request from the Benaka By The Hills website.
     //
@@ -67,12 +73,14 @@ return [
     //   Phone: {{3}}
     //   WhatsApp: {{4}}
     //   Email: {{5}}
-    //   Received: {{6}}
+    //   Dates: {{6}}
+    //   Received: {{7}}
     //
     //   Reply to this guest on WhatsApp to confirm the stay.
     //
     // Sample values Meta will ask for: Anjan Ganapathy / Bengaluru /
-    // +919876543210 / +919876543210 / anjan@example.com / 6 Sep 2026, 14:20
+    // +919876543210 / +919876543210 / anjan@example.com /
+    // 12 Oct 2026 to 15 Oct 2026 (3 nights) / 6 Sep 2026, 14:20
     //
     // Rules that make Meta reject a template: it must not begin or end with a
     // variable, and two variables must not sit next to each other. The body

@@ -72,7 +72,7 @@
       <div class="reveal">
         <dl>
           <dt class="micro">Where</dt>
-          <dd>Kodagu (Coorg)<br>Karnataka, India</dd>
+          <dd>Near Irpu Falls<br>Kodagu (Coorg), Karnataka</dd>
           <dt class="micro">The property</dt>
           <dd>Main house, cottage rooms,<br>pool, billiards, plantation</dd>
         </dl>
@@ -82,15 +82,49 @@
           <dt class="micro">Ask about</dt>
           <dd>Rooms and rates<br>Meals and timings<br>Getting here</dd>
           <dt class="micro">Reach us</dt>
-          <dd><a href="#" data-open-booking aria-haspopup="dialog">Send a booking request</a></dd>
+          <dd><a href="tel:+919448647831">+91 94486 47831</a><br>
+              <a href="tel:+918861070431">+91 88610 70431</a></dd>
         </dl>
       </div>
     </div>
     <div class="foot__bar">
-      <span class="micro">Benaka&rsquo;s Jungle Retreat</span>
+      <span class="micro">Benaka By The Hills</span>
       <span class="micro">Photographs taken on the property</span>
     </div>
   </footer>
+
+  <!-- The venue, last thing on the page. Deliberately NOT an embedded Google
+       map: an iframe would need google.com added to the CSP and would set
+       third-party cookies on a site that has neither. An ordinary link opens
+       the visitor's own map app on a phone, which is what they want anyway. -->
+  <section class="venue" aria-labelledby="venue-h">
+    <div class="venue__mark">
+      <span class="venue__name" id="venue-h">Benaka</span>
+      <em class="venue__sub">By The Hills</em>
+    </div>
+
+    <address class="venue__where">
+      Near Irpu Falls<br>
+      Kodagu (Coorg), Karnataka, India
+    </address>
+
+    <div class="venue__contact">
+      <a class="venue__tel" href="tel:+919448647831">+91 94486 47831</a>
+      <a class="venue__tel" href="tel:+918861070431">+91 88610 70431</a>
+    </div>
+
+    <p class="venue__wa micro">
+      On WhatsApp:
+      <a href="https://wa.me/919448647831" rel="noopener">94486 47831</a>
+      <span aria-hidden="true">&middot;</span>
+      <a href="https://wa.me/918861070431" rel="noopener">88610 70431</a>
+    </p>
+
+    <a class="venue__map btn" href="https://maps.app.goo.gl/uStv3MLLcKzf7rU5A"
+       target="_blank" rel="noopener">
+      Open in Google Maps
+    </a>
+  </section>
 
 </div>
 
@@ -169,8 +203,33 @@
           <input id="bk-email" aria-describedby="err-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
           <span class="err" id="err-email" data-err="email" role="alert" aria-live="polite"></span>
         </div>
+        <!-- The dates the owner needs to answer at all. `min` is set to today
+             by booking.js, and the server checks both again. -->
+        <div class="field">
+          <label class="micro" for="bk-arrive">When would you like to come?</label>
+          <div class="row row--dates">
+            <span class="date">
+              <label class="hint" for="bk-arrive">Arriving</label>
+              <input id="bk-arrive" aria-describedby="err-arrival" name="arrival" type="date" required>
+            </span>
+            <span class="date">
+              <label class="hint" for="bk-leave">Leaving</label>
+              <input id="bk-leave" aria-describedby="err-departure" name="departure" type="date" required>
+            </span>
+          </div>
+          <span class="err" id="err-arrival" data-err="arrival" role="alert" aria-live="polite"></span>
+          <span class="err" id="err-departure" data-err="departure" role="alert" aria-live="polite"></span>
+          <span class="hint" data-bk-nights></span>
+        </div>
         <button class="btn" type="button" data-bk-next="1">Send me a code</button>
         <p class="bk__alt">We only use these to reply about your stay.</p>
+
+        <!-- Some people would simply rather call. -->
+        <div class="bk__call">
+          <span class="micro">Or call us</span>
+          <a href="tel:+919448647831">+91 94486 47831</a>
+          <a href="tel:+918861070431">+91 88610 70431</a>
+        </div>
       </section>
 
       <!-- Step 2 — OTP -->

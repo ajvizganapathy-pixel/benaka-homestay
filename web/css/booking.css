@@ -81,3 +81,38 @@
   border: 1px solid var(--s-accent); color: var(--s-accent-soft);
   display: grid; place-items: center; font-size: 1.5rem; margin-bottom: 22px;
 }
+
+/* Arrival and departure. Two native date inputs side by side: a real picker on
+   every phone, keyboard accessible for nothing, and it submits ISO whatever the
+   browser chooses to display. */
+/* auto-fit rather than 1fr 1fr: a native date input has an intrinsic minimum
+   width that a fixed two-column grid cannot shrink below, so on a 390px phone
+   the second field was being cut off by the panel edge. Below ~340px of usable
+   width the two fields stack instead. */
+.row--dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+.row--dates .date { display: grid; gap: 4px; min-width: 0; }
+.row--dates .hint { margin: 0; }
+.row--dates input[type="date"] {
+  width: 100%;
+  min-width: 0;            /* grid items default to min-content; let it shrink */
+  /* Safari on iOS shrinks a date input to its content without this. */
+  min-height: 46px;
+}
+/* The picker indicator is near-invisible on the dark panel by default. */
+.row--dates input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); opacity: .55; cursor: pointer;
+}
+.row--dates input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+/* Some people would simply rather call than fill in a form. */
+.bk__call {
+  margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--s-line);
+  display: grid; justify-items: center; gap: 6px; text-align: center;
+}
+.bk__call span { color: var(--s-ink-faint); }
+.bk__call a {
+  font-family: var(--s-font-macro); font-size: 1.15rem;
+  color: var(--s-ink); text-decoration: none;
+  border-bottom: 1px solid var(--s-line);
+}
+.bk__call a:hover { color: var(--s-accent-soft); border-color: var(--s-accent); }

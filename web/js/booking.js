@@ -74,6 +74,36 @@
     t.textContent = n === 1 ? 'Who is coming?' : n === 2 ? 'Check your phone' : 'Thank you';
   }
 
+  /* ---- dates -------------------------------------------------------------
+     No calendar library: <input type="date"> is a real date picker on every
+     phone and desktop that matters, it is keyboard accessible for free, and it
+     submits YYYY-MM-DD whatever the browser shows the visitor. The server
+     re-checks all of this — the endpoint is reachable without a browser. */
+  const arrive = $('#bk-arrive'), leave = $('#bk-leave'), nights = $('[data-bk-nights]');
+  const iso = d => d.toISOString().slice(0, 10);
+  const DAY = 86400000;
+
+  (function seedDates() {
+    const today = new Date();
+    arrive.min = iso(today);
+    leave.min  = iso(new Date(+today + DAY));
+  })();
+
+  function countNights() {
+    if (!arrive.value || !leave.value) { nights.textContent = ''; return; }
+    const n = Math.round((Date.parse(leave.value) - Date.parse(arrive.value)) / DAY);
+    nights.textContent = n > 0 ? (n === 1 ? 'One night' : n + ' nights') : '';
+  }
+  arrive.addEventListener('change', () => {
+    // Leaving can never be on or before arriving, so move the floor with it.
+    if (arrive.value) {
+      leave.min = iso(new Date(Date.parse(arrive.value) + DAY));
+      if (leave.value && leave.value <= arrive.value) leave.value = leave.min;
+    }
+    countNights();
+  });
+  leave.addEventListener('change', countNights);
+
   /* ---- WhatsApp-same-as-phone toggle ------------------------------------ */
   const waSame = $('[data-wa-same]'), waField = $('[data-wa-field]');
   waSame.addEventListener('change', () => { waField.hidden = waSame.checked; });
@@ -93,11 +123,12 @@
       cc: v('cc') || '+91', phone: v('phone'),
       whatsapp: waSame.checked ? v('phone') : v('whatsapp'),
       email: v('email'),
+      arrival: v('arrival'), departure: v('departure'),
     };
     let ok = true;
     const fail = (f, m) => { setErr(f, m); ok = false; };
 
-    ['name', 'from', 'phone', 'email'].forEach(f => setErr(f, ''));
+    ['name', 'from', 'phone', 'email', 'arrival', 'departure'].forEach(f => setErr(f, ''));
     setErr('whatsapp', '');
 
     if (d.name.length < 2)                      fail('name', 'Please tell us your name.');
@@ -106,6 +137,12 @@
     if (!waSame.checked && !/^\d[\d\s-]{6,15}$/.test(d.whatsapp))
                                                 fail('whatsapp', 'Or untick the box above.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) fail('email', 'That email does not look right.');
+    const today = iso(new Date());
+    if (!d.arrival)                  fail('arrival', 'Which day would you like to arrive?');
+    else if (d.arrival < today)      fail('arrival', 'That date has already passed.');
+    if (!d.departure)                fail('departure', 'And which day would you leave?');
+    else if (d.arrival && d.departure <= d.arrival)
+                                     fail('departure', 'Leaving day has to be after arriving day.');
 
     d.phone = d.cc + ' ' + d.phone;
     d.whatsapp = waSame.checked ? d.phone : d.cc + ' ' + d.whatsapp;
@@ -206,7 +243,7 @@
   /* Four states, told apart and told truthfully. The request is kept in every
      one of them, and none of them claims a delivery that did not happen. */
   const DELIVERY = {
-    sent:    'Sent to the owner on WhatsApp. You should hear back the same day.',
+    sent:    'Sent to the owner on WhatsApp. Confirmation will reach you shortly.',
     failed:  'Saved. WhatsApp delivery did not go through just now, so the owner ' +
              'will pick this up from the booking list instead — your request is not lost.',
     skipped: 'Saved, but not delivered: live booking is not switched on for this ' +
@@ -216,6 +253,7 @@
   function renderSummary(r) {
     const rows = [
       ['Name', details.name], ['From', details.from],
+      ['Dates', stayLine()],
       ['Phone', details.phone], ['WhatsApp', details.whatsapp],
       ['Email', details.email],
     ];
@@ -233,9 +271,18 @@
 
     const head = $('[data-step="3"] p', panel);
     if (head) head.textContent = status === 'sent'
-      ? 'Your request is with the owner.'
+      ? 'Your request is with the owner. Confirmation will reach you shortly.'
       : 'Your request has been saved.';
   }
+  /* The same one-line shape the owner's WhatsApp message carries, so the guest
+     is looking at exactly what was sent. */
+  function stayLine() {
+    const fmt = v => new Date(v + 'T00:00:00').toLocaleDateString('en-GB',
+      { day: 'numeric', month: 'short', year: 'numeric' });
+    const n = Math.round((Date.parse(details.departure) - Date.parse(details.arrival)) / 86400000);
+    return `${fmt(details.arrival)} to ${fmt(details.departure)} (${n} night${n === 1 ? '' : 's'})`;
+  }
+
   function escape_(s) {
     return String(s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

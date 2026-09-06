@@ -72,8 +72,10 @@ if php -r '
 # The property was re-signed BENAKA ByTheHills. The old name lived in visible
 # copy, in identifiers, in config keys and in three photographs; a half-done
 # rename is how a client finds someone else's brand on their own website.
-if git grep -niI 'sherlock' -- . >/dev/null 2>&1; then
-  bad "the old property name is still in the tree" "$(git grep -niI 'sherlock' -- . | head -5)"
+# Split so this line does not match its own pattern.
+OLDNAME='sherloc'\''k'\'''
+if git grep -niI "$OLDNAME" -- . >/dev/null 2>&1; then
+  bad "the old property name is still in the tree" "$(git grep -niI "$OLDNAME" -- . | head -5)"
 else
   ok "no trace of the old property name"
 fi
@@ -145,7 +147,7 @@ mkcfg() {  # mkcfg <name> <php-array-overrides>
   cat > "$TMP/cfg-$name.php" <<PHPCFG
 <?php return array_merge([
   'CONFIGURED' => true,
-  'OWNER_WHATSAPP' => '910000000000',
+  'OWNER_WHATSAPP_NUMBERS' => ['919448600001', '918861000002'],
   'WA_PHONE_ID' => 'test-phone-id',
   'WA_TOKEN' => 'test-token',
   'WA_API_VERSION' => 'v25.0',
@@ -240,14 +242,30 @@ call "{\"action\":\"status\",\"pad\":\"$(head -c 9000 /dev/zero | tr '\0' 'x')\"
 call '{"action":"nope"}';                            expect "unknown action"                 400 .reason unknown_action
 
 # --- validation ------------------------------------------------------------
-G='"from":"Bengaluru","phone":"+91 98765 43210","whatsapp":"+91 98765 43210","email":"guest@example.com"'
+ARR=$(date -u -d '+14 days' +%F); DEP=$(date -u -d '+17 days' +%F)
+G="\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"whatsapp\":\"+91 98765 43210\",\"email\":\"guest@example.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
 call "{\"action\":\"requestOtp\",\"name\":\"A\",$G}";        expect "name too short"   422 .field name
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"B\",\"phone\":\"+91 98765 43210\",\"email\":\"g@e.com\"}"
+call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"B\",\"phone\":\"+91 98765 43210\",\"email\":\"g@e.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
                                                              expect "origin too short" 422 .field from
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"12\",\"email\":\"g@e.com\"}"
+call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"12\",\"email\":\"g@e.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
                                                              expect "phone too short"  422 .field phone
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"email\":\"nope\"}"
+call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"email\":\"nope\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
                                                              expect "bad email"        422 .field email
+
+# --- dates -----------------------------------------------------------------
+NOW="\"name\":\"Anjan Ganapathy\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"whatsapp\":\"+91 98765 43210\",\"email\":\"guest@example.com\""
+call "{\"action\":\"requestOtp\",$NOW,\"departure\":\"$DEP\"}"
+                                                             expect "missing arrival"   422 .field arrival
+call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$ARR\"}"
+                                                             expect "missing departure" 422 .field departure
+call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"2020-01-01\",\"departure\":\"$DEP\"}"
+                                                             expect "arrival in the past" 422 .field arrival
+call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$DEP\",\"departure\":\"$ARR\"}"
+                                                             expect "departure before arrival" 422 .field departure
+call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$ARR\",\"departure\":\"$ARR\"}"
+                                                             expect "zero-night stay"   422 .field departure
+call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"2026-02-31\",\"departure\":\"$DEP\"}"
+                                                             expect "a date that does not exist" 422 .field arrival
 
 # --- the happy path --------------------------------------------------------
 GUEST="{\"name\":\"Anjan Ganapathy\",$G}"
@@ -287,7 +305,7 @@ REC="$TMP/data-live/bookings/$REQ.json"
 if [ -f "$REC" ]; then
   ok "booking persisted as $REQ.json"
   for k in id name origin phone whatsapp email verified verified_channel \
-           delivery_status wa_message_id created_at updated_at; do
+           arrival departure nights delivery_status deliveries created_at updated_at; do
     jq -e "has(\"$k\")" "$REC" >/dev/null && ok "record has $k" || bad "record missing $k"
   done
   jq -e 'has("password") or has("pass")' "$REC" >/dev/null \
@@ -297,22 +315,34 @@ else
   bad "booking was not persisted"
 fi
 
+# Two owner numbers: BOTH must have been written, each as its own send.
 OWNER=$(tail -1 "$OUT")
+TO_ALL=$(tail -2 "$OUT" | jq -r '.to' | sort | tr '\n' ' ')
 [ "$(printf '%s' "$OWNER" | jq -r '.payload.template.name')" = benaka_booking_request ] \
   && ok "owner notified with the booking template" || bad "owner template name"
-[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters | length')" = 6 ] \
-  && ok "owner message carries six fields" || bad "owner field count"
+[ "$TO_ALL" = "918861000002 919448600001 " ] \
+  && ok "both owner numbers were notified" || bad "owner recipients" "$TO_ALL"
+[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters | length')" = 7 ] \
+  && ok "owner message carries seven fields" || bad "owner field count"
 printf '%s' "$OWNER" | grep -q "$OTP" \
   && bad "the OTP leaked into the owner's message" || ok "owner message contains no OTP"
 printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[].text' \
   | grep -qP '[\n\t]' && bad "a template parameter contains a newline" \
   || ok "no template parameter contains a newline"
+printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[5].text' \
+  | grep -qE 'to .* \([0-9]+ nights?\)$' \
+  && ok "the stay dates reached the owner" \
+  || bad "stay parameter" "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[5].text')"
+jq -e '.deliveries | length == 2' "$REC" >/dev/null \
+  && ok "the record keeps a result per number" || bad "deliveries array"
+jq -e '.arrival and .departure and .nights' "$REC" >/dev/null \
+  && ok "the record keeps the dates" || bad "record dates"
 
 call "{\"action\":\"submitBooking\",${GUEST#\{}"
                                                              expect "code is spent after booking" 403 .reason unverified
 
 # --- attempt cap -----------------------------------------------------------
-G2='"from":"Mysuru","phone":"+91 90000 00002","whatsapp":"+91 90000 00002","email":"two@example.com"'
+G2="\"from\":\"Mysuru\",\"phone\":\"+91 90000 00002\",\"whatsapp\":\"+91 90000 00002\",\"email\":\"two@example.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
 GUEST2="{\"name\":\"Second Guest\",$G2}"
 call "{\"action\":\"requestOtp\",${GUEST2#\{}" >/dev/null
 for _ in 1 2 3 4 5; do call "{\"action\":\"verifyOtp\",\"code\":\"111111\",${GUEST2#\{}"; done
