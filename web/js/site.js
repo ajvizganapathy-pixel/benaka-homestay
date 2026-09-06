@@ -15,8 +15,31 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---- 1. Mount the walkthrough ---------------------------------------- */
+  // Scroll distances are in viewport-heights, so a phone's shorter viewport
+  // turns the same swipe into far more of the clip: the camera races and whole
+  // frames go past unseen. The engine also coalesces seeks on touch — it drops
+  // a queued seek while the decoder is still working — which compounds it.
+  // Giving each beat more travel on a phone is the half we control: more scroll
+  // per frame means every frame gets screen time under a slide.
+  const coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const phone = coarse || innerWidth <= 860;
+  const PHONE_PACE = 1.9;
+
   const world = $('#world');
-  if (world && window.SHERLOCK_WORLD) mountScrollWorld(world, window.SHERLOCK_WORLD);
+  if (world && window.SHERLOCK_WORLD) {
+    const cfg = window.SHERLOCK_WORLD;
+    if (phone) {
+      cfg.diveScroll = (cfg.diveScroll || 0.8) * PHONE_PACE;
+      cfg.sections = cfg.sections.map(sec => ({
+        ...sec,
+        scroll: (sec.scroll || 0.8) * PHONE_PACE,
+        // Linger remaps time so the camera settles mid-scene. On a phone that
+        // stall reads as the clip stopping, so ease it back rather than off.
+        linger: sec.linger ? sec.linger * 0.6 : sec.linger,
+      }));
+    }
+    mountScrollWorld(world, cfg);
+  }
 
   /* ---- 2. Gallery, built from the manifest ------------------------------ */
   // Tile shapes cycle so the mosaic never lines up into a plain grid. Wide and
@@ -71,7 +94,9 @@
                   loading="lazy" decoding="async" width="${im.width}" height="${im.height}">
              <figcaption class="micro">${esc(shortLabel(im))}</figcaption>
            </figure>`;
-        b.addEventListener('click', () => openLightbox(g, imgs, i));
+        // Read the index off the element, not the closure: a live tile may have
+        // turned over since it was built, and the click must open what is on it.
+        b.addEventListener('click', () => openLightbox(g, imgs, +b.dataset.index));
         grid.appendChild(b);
       });
 
@@ -79,6 +104,68 @@
     });
 
     observeReveals();
+    startLiveTiles(data);
+  }
+
+  /* ---- 2b. Live tiles ---------------------------------------------------
+     The wall turns over: every couple of seconds one tile flips to another
+     photograph from its own group and keeps it. Over a minute the whole grid
+     reshuffles, which is what makes it a live tile wall rather than a
+     contact sheet — and every photograph is still one click from the carousel.
+
+     It only runs while the gallery is actually on screen, and not at all under
+     prefers-reduced-motion. Whatever a tile is currently showing is what its
+     click opens, so the two never disagree.                                */
+  let liveTimer = null;
+  function startLiveTiles(data) {
+    if (reduced) return;
+    const gallery = $('[data-gallery]');
+    if (!gallery) return;
+
+    const byGroup = {};
+    (data.galleryGroups || []).forEach(g => {
+      byGroup[g.id] = data.images.filter(i => i.galleryGroup === g.id);
+    });
+
+    const turn = () => {
+      const tiles = $$('.tile', gallery);
+      if (!tiles.length) return;
+      const tile = tiles[Math.floor(Math.random() * tiles.length)];
+      const pool = byGroup[tile.dataset.group] || [];
+      if (pool.length < 2) return;
+
+      const showing = +tile.dataset.index;
+      let next = showing;
+      while (next === showing) next = Math.floor(Math.random() * pool.length);
+      const im = pool[next];
+      const img = tile.querySelector('img');
+      if (!img) return;
+
+      // Decode before showing it, so the tile never flashes empty mid-turn.
+      const incoming = new Image();
+      incoming.src = `../assets/raw/${encodeURIComponent(im.file)}`;
+      incoming.decode().catch(() => {}).then(() => {
+        img.classList.add('turning');
+        tile.classList.add('lit');
+        setTimeout(() => {
+          img.src = incoming.src;
+          img.alt = im.description;
+          tile.dataset.index = String(next);
+          tile.setAttribute('aria-label', `Open: ${im.description}`);
+          const cap = tile.querySelector('figcaption');
+          if (cap) cap.textContent = shortLabel(im);
+          img.classList.remove('turning');
+          setTimeout(() => tile.classList.remove('lit'), 900);
+        }, 620);
+      });
+    };
+
+    const io2 = new IntersectionObserver(entries => {
+      const onScreen = entries.some(e => e.isIntersecting);
+      clearInterval(liveTimer);
+      if (onScreen) liveTimer = setInterval(turn, 2200);
+    }, { rootMargin: '0px 0px -10% 0px' });
+    io2.observe(gallery);
   }
 
   const shortLabel = im => im.description.split(',')[0];

@@ -53,50 +53,27 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sw-topbar, .sw-hint, .sw-route, .sw-scrollbar, .sw-particles { display: none !important; }
 .sw-copy { left: calc(var(--s-rail) + var(--s-gut)) !important; }
 
-/* PER-BEAT COPY PLACEMENT.
-   With the scrim gone the copy must find its own contrast, so every beat puts it
-   where that photograph is already dark. The positions are measured, not
-   guessed: mean luminance of a 560x230 block — the copy's real footprint —
-   sampled on a 3x4 grid over each 1920x1080 canvas, darkest wins.
+/* ===========================================================================
+   NO SCRIM OVER THE PHOTOGRAPHS.
 
-     beat            zone            luminance (0-255)
-     2  gate         left,  middle   75
-     3  courtyard    right, lower    42
-     4  table        right, middle   69
-     5  billiards    centre, low     65
-     6  room         right, low      48
-     7  pool         left,  middle   73
+   The engine paints a dark left-to-right gradient behind the copy column
+   (.sw-copylayer::before, from inside @layer sw). It dimmed the left of every
+   frame for the whole scroll — the "black gradual shade" — and it is off.
 
-   Beats 3, 5 and 6 are bright down their whole left side — the white house, the
-   lit billiards room, the white bedding — which is why they sit right or centre.
-   The alternation reads as editorial rhythm rather than a fault.
-   Re-run the measurement (script in the commit message) if a canvas is re-cut.
-   Phones keep the engine's own bottom placement, so this is desktop only. */
-@media (min-width: 861px) {
-  .sw-copylayer .sw-copy { transform: none; }
-  /* 3 courtyard, 4 table, 6 room, 7 pool → right column */
-  .sw-copylayer .sw-copy:nth-child(3),
-  .sw-copylayer .sw-copy:nth-child(4),
-  .sw-copylayer .sw-copy:nth-child(6) { left: 63% !important; }
-  /* 5 billiards → centre */
-  .sw-copylayer .sw-copy:nth-child(5) { left: 35% !important; }
+   This rule has now been deleted twice by later edits to this file and had to be
+   restored both times, so it lives here, first, on its own, with a test guarding
+   it (see the shade check in the QA script). Do not fold it into another block.
+   Legibility is the per-beat copy placement below, and nothing else.
+   ======================================================================== */
+.sw-copylayer::before { display: none !important; }
 
-  .sw-copylayer .sw-copy:nth-child(2) { top: 28%; }   /* gate      */
-  .sw-copylayer .sw-copy:nth-child(3) { top: 48%; }   /* courtyard */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 28%; }   /* table     */
-  /* The low pair anchor from the bottom: a top-% put the block's tail past the
-     viewport edge and clipped the last line of body copy. */
-  .sw-copylayer .sw-copy:nth-child(5),
-  .sw-copylayer .sw-copy:nth-child(6) { top: auto; bottom: 7%; }
-  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* pool      */
-}
-
-/* NO TEXT SHADOW ON STORY TYPOGRAPHY.
-   The engine ships a shadow on .sw-copy__title from inside @layer sw, so this
-   override needs !important to win outright. A shadow reads as the words sitting
-   on top of the photograph rather than belonging to it, and smears a dark halo
-   into the frame. Nothing replaces it — not a glow, outline or drop-shadow.
-   Legibility is the per-beat placement above, and nothing else. */
+/* NO TEXT SHADOW ON STORY TYPOGRAPHY — the second half of the same idea, and it
+   lives here beside the scrim for the same reason: it has been deleted three
+   times by edits further down this file. The engine ships a shadow on
+   .sw-copy__title from inside @layer sw, so !important is required to beat it.
+   A shadow makes the words sit on top of the photograph and smears a dark halo
+   into the frame. Nothing replaces it — no glow, outline or drop-shadow.
+   tools/check-css-invariants.sh fails the build if either rule goes missing. */
 .sw-copy__title,
 .sw-copy__body,
 .sw-copy__eyebrow,
@@ -106,6 +83,55 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero__eyebrow,
 .hero__sub {
   text-shadow: none !important;
+}
+
+/* PER-BEAT COPY PLACEMENT.
+   With no scrim, the copy has to find its own contrast, so every beat puts it
+   where the picture behind it is darkest.
+
+   Measured against the RENDERED CLIPS, not the still canvases — the stills are
+   only posters now, and a spot that is dark on the poster can be a white wall
+   four seconds into the leg. And measured across the copy's whole visible
+   window, not one instant: each zone is scored by its WORST (brightest) moment
+   at t = 2.0, 3.5, 5.0 and 6.5s, and the zone whose worst case is darkest wins.
+   Optimising a single midpoint is what left beat 3 sitting on a white house.
+
+     beat            zone            worst-case luminance (0-255)
+     2  gate         right, lower     69
+     3  courtyard    left,  lower     64
+     4  table        left,  lower     69
+     5  billiards    right, low      147   <- see below
+     6  room         left,  middle    86
+     7  pool         left,  top       92
+
+   Re-run the measurement (script in the commit message) if a leg is re-rendered.
+   Phones keep the engine's own bottom placement, so this is desktop only. */
+@media (min-width: 861px) {
+  .sw-copylayer .sw-copy { transform: none; }
+
+  .sw-copylayer .sw-copy:nth-child(2) { left: 63% !important; }
+  .sw-copylayer .sw-copy:nth-child(5) { left: 55% !important; }
+
+  .sw-copylayer .sw-copy:nth-child(2) { top: auto; bottom: 22%; }  /* gate      */
+  .sw-copylayer .sw-copy:nth-child(3) { top: auto; bottom: 22%; }  /* courtyard */
+  /* Beat 4 rides the dark green hill across the top of the frame; the lower
+     half of that leg is pale wall and wet concrete for most of its length. */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 22%; bottom: auto; }  /* table     */
+  /* Beat 5 sits wholly on the green baize: the felt is a large, evenly lit,
+     mid-tone field, while the table body just below it is near-black. A block
+     spanning both cannot be one ink, so it is placed to clear the dark edge. */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 40%; bottom: auto; }  /* billiards */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 28%; }                /* room      */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 8%;  }                /* pool      */
+
+  /* Beat 5 is the one frame with nowhere dark to stand: the games room is lit
+     white for the whole leg, worst case 147, so light type cannot win on it.
+     Rather than lay a shade over the photograph, the ink flips — dark type on a
+     bright picture. Same two registers, opposite polarity. */
+  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__title { color: #14171a; }
+  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__body,
+  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__num { color: #2a3037; }
+  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__eyebrow { color: #8f3d18; }
 }
 
 /* Keep the block compact so it stays inside the measured dark zone. */
@@ -147,16 +173,16 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
   display: flex; align-items: center; justify-content: center;
   padding: 20px 13px;
   writing-mode: vertical-rl; text-orientation: mixed;
-  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--s-ink);
-  background: color-mix(in srgb, var(--s-bg) 76%, transparent);
-  backdrop-filter: blur(8px);
-  border: 1px solid color-mix(in srgb, var(--s-accent) 34%, transparent);
-  border-left: 0;
-  border-radius: 0 var(--s-radius) var(--s-radius) 0;
-  transition: padding var(--s-quick), background var(--s-quick),
-              border-color var(--s-quick), color var(--s-quick);
+  font-family: var(--s-font-micro);
+  font-size: calc(var(--s-micro) + 1px); font-weight: 800;
+  letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--s-accent-soft);
+  /* No panel, no blur, no border: the ask was a button and nothing else, so the
+     word itself is the control. Weight and tracking carry it instead of a box. */
+  background: none;
+  border: 0;
+  transition: padding var(--s-quick), color var(--s-quick),
+              letter-spacing var(--s-quick);
 }
 .book span { transform: rotate(180deg); }
 /* "your stay" is collapsed to nothing until hover, so the resting state is just
@@ -169,14 +195,13 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
 }
 .book:hover, .book:focus-visible {
   padding-right: 17px;
-  background: color-mix(in srgb, var(--s-bg) 88%, transparent);
-  border-color: var(--s-accent);
-  color: var(--s-accent-soft);
+  letter-spacing: 0.3em;
+  color: #fff;
 }
 .book:hover .book__more, .book:focus-visible .book__more {
   max-height: 8em; opacity: 1; margin-top: .6em;
 }
-.book:active { padding-right: 12px; background: color-mix(in srgb, var(--s-accent) 18%, var(--s-bg)); }
+.book:active { padding-right: 11px; color: var(--s-accent); }
 
 @media (max-width: 720px) {
   .book { padding: 16px 10px; letter-spacing: 0.16em; }
@@ -274,6 +299,11 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
   transition: transform .6s var(--s-ease), opacity .6s var(--s-ease);
   opacity: .82;
 }
+/* Live tiles: a tile turning over to show another photograph from its group.
+   The outgoing image fades and lifts, the incoming one settles in behind it. */
+.tile img.turning { opacity: 0; transform: scale(1.06); }
+.tile.lit { outline: 1px solid color-mix(in srgb, var(--s-accent) 55%, transparent); outline-offset: -1px; }
+.tile.lit img { opacity: 1; }
 .tile:hover img, .tile:focus-visible img { transform: scale(1.045); opacity: 1; }
 .tile figcaption {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px;

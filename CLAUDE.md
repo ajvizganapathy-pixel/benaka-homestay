@@ -30,6 +30,15 @@ bash render/extract-handoff-frame.sh render/raw/leg-0N.mp4 render/frames/leg-0N-
 bash render/encode.sh
 ```
 
+```bash
+bash tools/check-css-invariants.sh   # run after ANY edit to web/css/site.css
+```
+
+That check exists because two "off" switches in `site.css` — the engine's copy
+scrim and the typography text-shadow — have each been silently deleted by later
+edits to that file and only found again from a screenshot. They fail invisibly:
+nothing looks broken, the suppressed thing just quietly comes back.
+
 No linter, test suite or build. Verification is visual: drive the page in the
 pre-installed Chromium (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
 `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) via `playwright-core`.
@@ -89,15 +98,23 @@ leaves no history entry; `assign()` would trap the Back button.
 
 ### Nothing goes over the photographs
 
-No text-shadow, glow, outline or scrim, anywhere. The engine ships a shadow on
+No text-shadow, glow, outline or scrim, anywhere. **Both kill-rules sit together
+at the top of `site.css`; keep them there and run
+`tools/check-css-invariants.sh` after editing that file.** The engine ships a shadow on
 `.sw-copy__title` and a gradient on `.sw-copylayer::before` from inside
 `@layer sw`; both are overridden off with `!important` in `site.css`. **Do not
 reintroduce either as a readability patch.**
 
 Legibility instead comes from per-beat copy placement: each beat puts its copy
-where that photograph is already dark, measured with a luminance scan of the copy
-block over a grid on each canvas. The positions and their measured values are
-recorded in `site.css`. Re-run the scan if a canvas is ever re-cut.
+where the picture is darkest. Measure against the **rendered clips, not the still
+canvases** — the stills are only posters, and a spot that is dark on the poster
+can be a white wall four seconds into the leg. Measure across the copy's whole
+visible window and score each zone by its **worst** moment, not its average:
+optimising a midpoint is what left one beat sitting on a white house.
+
+Where a leg has nowhere dark at all — the lit games room, worst case 147 — the
+ink flips to dark rather than a shade going over the photograph. The positions
+and their measured values are recorded in `site.css`.
 
 ### Type
 
