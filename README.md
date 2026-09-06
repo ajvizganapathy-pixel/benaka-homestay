@@ -28,9 +28,13 @@ house, the table, the playroom, a room, the pool.
 | | |
 |---|---|
 | ![Through the arch](docs/screenshots/02-gate.jpg) | ![Meals at the pavilion](docs/screenshots/04-table.jpg) |
-| **The arch.** The name dissolves as the camera goes in. | **The table.** Where the buffet is laid. |
+| **The gate.** In under the arch, up to the house. | **The pavilion.** Served here, then in through the doors. |
 | ![The billiards table](docs/screenshots/05-billiards.jpg) | ![A room](docs/screenshots/06-room.jpg) |
-| **The playroom**, halfway down the scroll. | **The rooms.** Old wood, thick walls. |
+| **The playroom.** Past the table, through to the rooms. | **The rooms.** Out of the room and down to the water. |
+
+Each line names the journey its leg travels, not the place it starts from —
+every leg runs beat N to beat N+1, and copy that named only the start left the
+whole story reading half a beat behind the picture.
 
 ![The pool](docs/screenshots/07-pool.jpg)
 
@@ -40,11 +44,16 @@ anything that labels. That gap is the whole system — a third size in the middl
 what makes a page read as generated, so there isn't one.
 
 **Nothing is laid over the photographs** — no shadow, no glow, no scrim, no
-gradient. Instead each beat places its copy where that photograph is already
-dark, measured rather than guessed: mean luminance of the copy block sampled on
-a grid over every canvas, darkest position wins. Three beats are bright down
-their whole left side, so their copy sits right or centre, and the alternation
-reads as rhythm.
+gradient. Instead each beat places its copy where the picture is already dark,
+measured rather than guessed, by `tools/measure-copy-zones.py`: the browser's own
+`object-fit: cover` crop, four moments sampled across the leg, and every zone
+scored by its **worst** one. Measured against the moving clips, not the stills —
+a spot that is dark on the poster can be a white wall four seconds in.
+
+Each chain has one beat with nowhere dark at all. On the landscape chain it is
+the lit games room; on the portrait chain it is the white bedding and pale lime
+wall of the room. Both flip the ink to dark rather than put a shade over the
+photograph.
 
 ## The photographs
 
@@ -81,8 +90,10 @@ pretends to have accepted a booking it did not.
 
 ![On a phone](docs/screenshots/12-mobile.jpg)
 
-The button stays on the left, the copy clears it, and the type scales down with
-the viewport. No horizontal overflow at 360px through 2560px.
+Phones get the portrait chain, their own measured copy placement, and a longer
+scroll per beat so no frame is skipped. The button stays on the left, the copy
+clears it, and the type scales down with the viewport. No horizontal overflow at
+360px through 2560px.
 
 ## Layout
 

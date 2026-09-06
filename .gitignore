@@ -1,5 +1,6 @@
 # Render working files — regenerate from render/run-chain.md, never commit
 render/raw/
+render/raw-portrait/
 render/frames/
 render/jobs/
 *.mp4

@@ -147,9 +147,56 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sw-copy__body  { font-family: var(--s-font-micro); color: #f2f1ee; }
 .sw-copy__title { color: #fff; }
 
+/* PER-BEAT COPY PLACEMENT, PHONES.
+   Phones are served a different chain — native 9:16 legs, not a crop of the
+   landscape ones — so they need their own measurement. Same method, same
+   script, different pictures:
+
+     python3 tools/measure-copy-zones.py assets/clips/leg-0N-m.mp4 390 844 --rows 12
+
+   which runs the browser's own `object-fit: cover` maths (82% of frame width
+   visible at this size), samples t = 2.0/3.5/5.0/6.5s and scores each band by
+   its WORST moment. The window below is the darkest 25%-tall band in each leg;
+   the copy block is about that tall.
+
+     beat            top    worst-case luminance (0-255)
+     2  gate          58%     89
+     3  courtyard     42%    104
+     4  table         42%    124
+     5  billiards     58%    116
+     6  room          50%    153   <- see below
+     7  pool          34%     79
+
+   Cross-checked against the portrait POSTERS too — the frame that shows for a
+   moment before the clip paints, and the whole picture under prefers-reduced-
+   motion. At these positions the posters read 87 / 105 / 92 / 114 / 180 / 85,
+   so no beat is placed well on the clip and badly on its own poster. Beat 3
+   moved from 38% to 42% for exactly that: same 104 on the clip, 117 -> 105 on
+   the poster.
+
+   Note which beat is the problem one: on the landscape chain it is beat 5, the
+   lit games room. Here beat 5 has somewhere dark to stand and beat 6 does not —
+   the portrait room leg is white bedding and pale lime wall, nothing under 151
+   anywhere in frame. Different footage, different worst beat; that is exactly
+   why this cannot be shared with the desktop table above. */
 @media (max-width: 860px) {
   .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
   .sw-copylayer::before { left: 0; }
+
+  .sw-copylayer .sw-copy { bottom: auto; }
+  .sw-copylayer .sw-copy:nth-child(2) { top: 58%; }   /* gate      */
+  .sw-copylayer .sw-copy:nth-child(3) { top: 42%; }   /* courtyard */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 42%; }   /* table     */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 58%; }   /* billiards */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 50%; }   /* room      */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 34%; }   /* pool      */
+
+  /* Beat 6 is the one with nowhere dark: white type is 2.9:1 on it, dark type
+     is 6.1:1. The ink flips rather than anything going over the photograph. */
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__title { color: #14171a; }
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__body,
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__num { color: #2a3037; }
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__eyebrow { color: #8f3d18; }
 }
 
 /* The canvas hands over to the gallery as a dissolve, not a cut. The engine
