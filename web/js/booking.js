@@ -19,10 +19,21 @@
 
   let step = 1, details = null, opener = null, timer = null;
 
+  /* The panel's "not taking live bookings" notice is shown only while the
+     server itself reports it is not configured. It is never a hardcoded state
+     that someone has to remember to remove on the day they go live. */
+  const notice = $('[data-bk-notice]', panel);
+  SherlockAPI.ready.then(mode => { if (notice) notice.hidden = (mode === 'live'); });
+
   /* ---- open / close ------------------------------------------------------ */
+  // Everything outside the panel goes inert while it is open, so a screen
+  // reader cannot walk the page behind a modal that is visually covering it.
+  const outside = () => [...document.body.children].filter(n => n !== panel);
+
   function open() {
     opener = document.activeElement;
     panel.hidden = false;
+    outside().forEach(n => n.inert = true);
     requestAnimationFrame(() => {
       panel.classList.add('open');
       document.body.style.overflow = 'hidden';
@@ -32,6 +43,7 @@
   function close() {
     panel.classList.remove('open');
     document.body.style.overflow = '';
+    outside().forEach(n => n.inert = false);
     clearInterval(timer);
     setTimeout(() => { panel.hidden = true; }, 400);
     if (opener) opener.focus();
@@ -80,12 +92,12 @@
       name: v('name'), from: v('from'),
       cc: v('cc') || '+91', phone: v('phone'),
       whatsapp: waSame.checked ? v('phone') : v('whatsapp'),
-      email: v('email'), password: v('password'),
+      email: v('email'),
     };
     let ok = true;
     const fail = (f, m) => { setErr(f, m); ok = false; };
 
-    ['name', 'from', 'phone', 'email', 'password'].forEach(f => setErr(f, ''));
+    ['name', 'from', 'phone', 'email'].forEach(f => setErr(f, ''));
     setErr('whatsapp', '');
 
     if (d.name.length < 2)                      fail('name', 'Please tell us your name.');
@@ -94,7 +106,6 @@
     if (!waSame.checked && !/^\d[\d\s-]{6,15}$/.test(d.whatsapp))
                                                 fail('whatsapp', 'Or untick the box above.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) fail('email', 'That email does not look right.');
-    if (d.password.length < 8)                  fail('password', 'Eight characters or more.');
 
     d.phone = d.cc + ' ' + d.phone;
     d.whatsapp = waSame.checked ? d.phone : d.cc + ' ' + d.whatsapp;
@@ -113,7 +124,9 @@
       $('[data-bk-dest]').textContent = r.dest || d.phone;
       show(2); startResend(); otpBoxes[0].focus();
     } catch (err) {
-      setErr('phone', err.message);
+      const field = err.field && $(`[data-err="${err.field}"]`, panel) ? err.field : 'phone';
+      setErr(field, err.message);
+      $(`[name="${field}"]`, panel)?.focus();
     } finally {
       btn.disabled = false; btn.textContent = 'Send me a code';
     }
@@ -150,11 +163,20 @@
     };
     tick(); timer = setInterval(tick, 1000);
   }
-  $('[data-otp-resend]').addEventListener('click', async () => {
+  $('[data-otp-resend]').addEventListener('click', async e => {
     if (!details) return;
-    await SherlockAPI.requestOtp(details);
-    otpBoxes.forEach(b => (b.value = ''));
-    otpBoxes[0].focus(); startResend();
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    setErr('otp', '');
+    try {
+      await SherlockAPI.requestOtp(details);
+      otpBoxes.forEach(b => (b.value = ''));
+      otpBoxes[0].focus();
+      startResend();
+    } catch (err) {
+      setErr('otp', err.message);
+      btn.disabled = false;
+    }
   });
 
   /* ---- step 2 → confirm -------------------------------------------------- */
@@ -170,16 +192,26 @@
       renderSummary(r);
       show(3);
       clearInterval(timer);
+      $('[data-step="3"] h3', panel)?.focus();
     } catch (err) {
       setErr('otp', err.message);
+      otpBoxes[0].focus();
     } finally {
       btn.disabled = false; btn.textContent = 'Confirm';
     }
   });
 
   $('[data-bk-back="1"]').addEventListener('click', () => show(1));
-  $('[data-bk-login]').addEventListener('click', () =>
-    setErr('email', 'Accounts are not switched on yet — send a request instead.'));
+
+  /* Four states, told apart and told truthfully. The request is kept in every
+     one of them, and none of them claims a delivery that did not happen. */
+  const DELIVERY = {
+    sent:    'Sent to the owner on WhatsApp. You should hear back the same day.',
+    failed:  'Saved. WhatsApp delivery did not go through just now, so the owner ' +
+             'will pick this up from the booking list instead — your request is not lost.',
+    skipped: 'Saved, but not delivered: live booking is not switched on for this ' +
+             'site yet. Nothing you entered has been sent anywhere.',
+  };
 
   function renderSummary(r) {
     const rows = [
@@ -187,13 +219,22 @@
       ['Phone', details.phone], ['WhatsApp', details.whatsapp],
       ['Email', details.email],
     ];
+    const status = (r && r.deliveryStatus) || 'skipped';
+    const note = DELIVERY[status] || DELIVERY.skipped;
+    const ref = r && r.requestId && r.requestId !== 'preview'
+      ? `<p class="micro" style="color:var(--s-ink-faint);margin-top:10px">Reference ${escape_(r.requestId)}</p>`
+      : '';
+
     $('[data-bk-summary]').innerHTML =
       `<dl style="margin:0">${rows.map(([k, v]) =>
         `<dt class="micro" style="margin-bottom:4px">${k}</dt>
          <dd style="margin:0 0 14px">${escape_(v)}</dd>`).join('')}</dl>` +
-      (r && r.delivered === false
-        ? `<p class="micro" style="color:var(--s-ink-faint)">Held locally. Not delivered — WhatsApp is not connected yet.</p>`
-        : '');
+      `<p class="micro" style="color:var(--s-ink-soft)">${escape_(note)}</p>` + ref;
+
+    const head = $('[data-step="3"] p', panel);
+    if (head) head.textContent = status === 'sent'
+      ? 'Your request is with the owner.'
+      : 'Your request has been saved.';
   }
   function escape_(s) {
     return String(s).replace(/[&<>"']/g, c =>

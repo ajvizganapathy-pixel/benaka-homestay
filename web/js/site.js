@@ -193,6 +193,7 @@
        </div>`).join('');
 
     lb.hidden = false;
+    lbOutside().forEach(n => n.inert = true);
     requestAnimationFrame(() => {
       lb.classList.add('open');
       document.body.classList.add('lb-open');
@@ -204,9 +205,25 @@
   function closeLightbox() {
     lb.classList.remove('open');
     document.body.classList.remove('lb-open');
+    lbOutside().forEach(n => n.inert = false);
     setTimeout(() => { lb.hidden = true; lbTrack.innerHTML = ''; }, 350);
     if (lbOpener) lbOpener.focus();
   }
+
+  // The lightbox is a modal and has to behave like one: the page behind it goes
+  // inert, and Tab cycles inside it instead of walking out into the gallery
+  // tiles underneath. (The booking panel already did both; this did not.)
+  const lbOutside = () => [...document.body.children].filter(n => n !== lb);
+
+  lb.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || lb.hidden) return;
+    const f = [...lb.querySelectorAll('button,[tabindex]:not([tabindex="-1"]),a[href]')]
+      .filter(n => n.offsetParent !== null && !n.disabled);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
 
   function goTo(i, smooth = true) {
     lbIndex = (i + lbImages.length) % lbImages.length;

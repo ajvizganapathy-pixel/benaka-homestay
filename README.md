@@ -11,8 +11,16 @@ Static and framework-free — plain HTML, one vanilla-JS engine, no build step, 
 dependencies. Serve the repo over HTTP and open `/web/`.
 
 ```bash
-python3 -m http.server 8765
+php -S localhost:8765 -t .
 # http://localhost:8765/   — the root index.html sends you to the site
+```
+
+**`php -S`, not `python3 -m http.server`.** The static server cannot execute
+`api/booking.php`, so the booking form would silently stay in preview and the
+endpoint would never be exercised.
+
+```bash
+bash tools/test.sh   # the full suite: syntax, secrets, assets, and the live API
 ```
 
 The site itself lives in `web/`. The root `index.html` is a small redirect so
@@ -80,11 +88,29 @@ coming, a code to their phone, and confirmation.
 |---|---|
 | ![The footer](docs/screenshots/10-footer.jpg) | ![The booking panel](docs/screenshots/11-booking.jpg) |
 
-**Booking is deliberately inert.** The form works end to end against a mock, and
-says plainly on its face that requests are not being delivered yet. Switching it
-on is filling `api/config.php` with the owner's WhatsApp credentials and setting
-one flag — see [docs/DEPLOY-hostinger.md](docs/DEPLOY-hostinger.md). Nothing
-pretends to have accepted a booking it did not.
+**The server decides whether booking is live, not the JavaScript.** On load the
+page asks `api/booking.php` for its status. With no `api/config.php` it answers
+`live: false`, the page runs a local preview, and the panel says plainly that
+nothing is being delivered. Put a filled config on the server and the same page
+goes live — no source edit, no build step, no flag anyone can forget to flip.
+
+**Every WhatsApp message is an approved template.** Both messages the site sends
+are business-initiated, and Meta rejects free-form text outside the 24-hour
+window — worse, sending a verification code as free text is grounds for
+suspending the account. The guest's code goes out as an **authentication**
+template with a copy-code button; the owner's notification as a **utility**
+template with six fields. Setting up both is
+[docs/DEPLOY-hostinger.md](docs/DEPLOY-hostinger.md) §3.
+
+**A request is never lost and never oversold.** The record is written to disk
+before the send is attempted, and the guest is told which of four things
+happened: received and delivered, received but delivery failed, received but
+delivery is switched off, or the system is unreachable. Nothing claims a booking
+was delivered that was not.
+
+**No accounts, no passwords.** The form asks for a name, where you are coming
+from, a phone number, a WhatsApp number and an email. There is nothing else to
+store and nothing to leak.
 
 ## On a phone
 
@@ -107,6 +133,7 @@ clears it, and the type scales down with the viewport. No horizontal overflow at
 | `assets/clips/` | 14 rendered legs — `leg-0N.mp4` landscape, `leg-0N-m.mp4` portrait |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `api/` | the booking endpoint for Hostinger, inert until configured |
+| `tools/test.sh` | the production suite — php, node, curl, jq; no framework |
 | `render/` | the OpenArt render chain: prompts, run book, costs, encoders |
 | `docs/` | deployment guide and these screenshots |
 

@@ -18,7 +18,10 @@ the site uses. The repo is still named `benaka-homestay`.
 ## Commands
 
 ```bash
-python3 -m http.server 8765     # then http://localhost:8765/ (root index.html redirects)
+php -S localhost:8765 -t .      # then http://localhost:8765/ (root index.html redirects)
+                                # NOT python3 -m http.server: it cannot run api/booking.php,
+                                # so the booking form silently stays in preview.
+bash tools/test.sh              # syntax, secrets, assets, and the live booking API
 
 # re-cut a 16:9 scene canvas from a photograph
 ffmpeg -y -i assets/raw/<file>.jpg \
@@ -147,13 +150,34 @@ describe any hotel anywhere, rewrite it.
 
 ### Booking
 
-Every network call goes through `web/js/api.js`. `LIVE = false` today: calls hit a
-mock and the panel says plainly that requests are not delivered. `api/booking.php`
-is written against the WhatsApp Cloud API and refuses to run until
-`api/config.php` exists with `CONFIGURED => true`. Going live is those two flags —
-see `docs/DEPLOY-hostinger.md`.
+Every network call goes through `web/js/api.js`, and **the server decides the
+mode**: on load the page POSTs `{action:'status'}` and switches to live only if
+the endpoint says so. There is no `LIVE` constant to flip. Going live is one
+thing: `api/config.php` on the server with `CONFIGURED => true`.
 
-Never make the form claim a booking was received when it was not.
+**Every WhatsApp send is an approved template, and this is not negotiable.**
+Both messages are business-initiated, so Meta rejects free-form text outside the
+24-hour window, and sending an OTP as free text is grounds for suspending the
+WhatsApp account. The guest's code is an AUTHENTICATION template with a
+**COPY_CODE** button (one-tap needs an Android signing hash a website cannot
+have); the owner's notification is a UTILITY template with six single-line
+parameters — template values may not contain newlines, which is why the layout
+lives in the approved body.
+
+`WA_TRANSPORT` picks where a send goes: `cloud` (Meta), `log` (write the payload
+to the data dir — this is how `tools/test.sh` drives the whole journey with no
+credentials), or `off`.
+
+**The booking record is written before the send is attempted.** Losing a guest's
+request because an API was down is the one failure this endpoint exists to
+prevent. Never make the form claim a booking was received or delivered when it
+was not.
+
+There are no accounts and no passwords. A password field existed once, was
+required, was sent to the server, and was used by nothing — do not bring it back.
+
+`DATA_DIR` must resolve **outside** the document root; `booking.php` refuses to
+start otherwise.
 
 ## The camera architecture (before touching render/)
 

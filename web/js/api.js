@@ -1,65 +1,132 @@
 /* ============================================================================
    The adapter. Every network call the site makes goes through here.
    ----------------------------------------------------------------------------
-   TODAY: LIVE = false. Calls resolve against a local mock so the whole flow can
-   be walked and tested, and the booking panel says plainly that requests are not
-   being delivered. Nothing is faked at the user: no confirmation is claimed that
-   did not happen.
+   THE SERVER DECIDES THE MODE, NOT THIS FILE. On load we ask
+   api/booking.php for its status. If it answers live, every call is real. If
+   it answers not-configured, 404s, or cannot be reached at all, we fall back to
+   a local preview and the panel says plainly that nothing is being delivered.
 
-   TO GO LIVE: fill api/config.php with the owner's WhatsApp credentials, then
-   set LIVE = true here. Nothing else in the site changes — same five functions,
-   same shapes. That is the entire switch.
+   That means going live is exactly one thing: put a filled api/config.php on
+   the server with CONFIGURED => true. No source file is edited, no build step,
+   no flag anyone can forget to flip back.
+
+   Nothing secret ever reaches this file. The status reply carries only whether
+   the endpoint is live and which channel sends the code — no tokens, no phone
+   ids, no credentials of any kind.
    ========================================================================== */
 
 window.SherlockAPI = (function () {
   'use strict';
 
-  const LIVE     = false;             // flip to true once api/config.php is filled
-  const ENDPOINT = '../api/booking.php';
+  /* Resolve the endpoint from this script's own URL rather than from the
+     document's. The page can be served at /, at /web/, or from a subdirectory
+     depending on whether Apache rewrote the root, and a document-relative path
+     silently points somewhere different in each case. */
+  const ENDPOINT = (function () {
+    const self = document.currentScript
+      || document.querySelector('script[src$="js/api.js"]');
+    const here = (self && self.src) || document.baseURI;
+    try { return new URL('../../api/booking.php', here).href; }
+    catch (_) { return '../api/booking.php'; }
+  })();
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
+  let mode = 'unknown';          // unknown | live | preview
+  let channel = 'none';
+
+  /* One probe, at startup. Anything other than a clear "live" is a preview. */
+  const ready = (async function probe() {
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'status' }),
+      });
+      const data = await res.json();
+      if (data && data.ok && data.live) {
+        mode = 'live';
+        channel = data.otpChannel || 'whatsapp';
+      } else {
+        mode = 'preview';
+      }
+    } catch (_) {
+      mode = 'preview';          // no PHP, no network, no endpoint — all preview
+    }
+    // NOT data-booking: the panel already owns that attribute, and setting it
+    // on <html> makes document.querySelector('[data-booking]') return the root
+    // element instead of the panel.
+    document.documentElement.dataset.bookingMode = mode;
+    return mode;
+  })();
+
   async function post(action, payload) {
-    if (!LIVE) return mock(action, payload);
-    const res = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...payload }),
-    });
-    if (!res.ok) throw new Error('Could not reach the server. Try again in a moment.');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Something went wrong.');
+    await ready;
+    if (mode !== 'live') return mock(action, payload);
+
+    let res;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...payload }),
+      });
+    } catch (_) {
+      throw fault('We could not reach the server. Check your connection and try again.', 'offline');
+    }
+
+    let data = null;
+    try { data = await res.json(); } catch (_) { /* not JSON: handled below */ }
+
+    if (!data) {
+      throw fault('The server sent something we could not read. Please try again.', 'bad_response');
+    }
+    if (!data.ok) {
+      throw fault(data.error || 'Something went wrong.', data.reason || 'error', data.field);
+    }
     return data;
   }
 
-  /* The mock keeps the shapes identical to the PHP endpoint's replies, so
-     turning LIVE on is genuinely a one-line change and not a rewrite. */
+  function fault(message, reason, field) {
+    const e = new Error(message);
+    e.reason = reason;
+    if (field) e.field = field;
+    return e;
+  }
+
+  /* The preview keeps the shapes identical to the PHP endpoint's replies, so
+     nothing downstream can tell them apart except by what it is told. It never
+     claims a delivery: submitBooking always reports deliveryStatus 'skipped'. */
   async function mock(action, payload) {
     await wait(420);                            // a real network has weight
     switch (action) {
+      case 'status':
+        return { ok: true, live: false, otpChannel: 'none' };
       case 'requestOtp':
         sessionStorage.setItem('sh_otp', '123456');
-        return { ok: true, sent: true, dest: payload.whatsapp || payload.phone, mock: true };
+        return { ok: true, sent: true, channel: 'preview',
+                 dest: payload.whatsapp || payload.phone };
       case 'verifyOtp':
         if (payload.code !== sessionStorage.getItem('sh_otp')) {
-          throw new Error('That code is not right. In this preview the code is 123456.');
+          throw fault('That code is not right. In this preview the code is 123456.', 'bad_code');
         }
-        return { ok: true, verified: true, mock: true };
+        sessionStorage.removeItem('sh_otp');
+        return { ok: true, verified: true, channel: 'preview' };
       case 'submitBooking':
-        return { ok: true, delivered: false, reason: 'not_configured', mock: true };
-      case 'login':
-        throw new Error('Accounts are not switched on yet.');
+        return { ok: true, received: true, deliveryStatus: 'skipped',
+                 requestId: 'preview', reason: 'not_configured' };
       default:
-        throw new Error('Unknown action.');
+        throw fault('Unknown action.', 'unknown_action');
     }
   }
 
   return {
-    isLive:        () => LIVE,
+    ready,
+    mode:          () => mode,
+    isLive:        () => mode === 'live',
+    otpChannel:    () => channel,
     requestOtp:    d => post('requestOtp', d),
     verifyOtp:     d => post('verifyOtp', d),
-    register:      d => post('register', d),
-    login:         d => post('login', d),
     submitBooking: d => post('submitBooking', d),
   };
 })();

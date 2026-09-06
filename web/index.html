@@ -9,10 +9,18 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta property="og:title" content="Sherlock's Jungle Retreat">
 <meta property="og:description" content="A homestay in Coorg, Karnataka. Walk in from the road, through the arch, and out to the pool.">
-<meta property="og:image" content="assets/scenes/02-gate-arch.jpg">
+<!-- ../ so this resolves to /assets/ whether the page is served at / (the
+     production rewrite) or at /web/index.html (local, or a non-Apache host).
+     Replace with the absolute https://yourdomain/... URL once the domain is
+     live: most link-preview scrapers will not resolve a relative one. -->
+<meta property="og:image" content="../assets/scenes/02-gate-arch.jpg">
 <meta property="og:type" content="website">
+<meta property="og:url" content="/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="/">
 
 <link rel="preload" href="fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/instrument-serif-400-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="stylesheet" href="css/fonts.css">
@@ -74,7 +82,7 @@
           <dt class="micro">Ask about</dt>
           <dd>Rooms and rates<br>Meals and timings<br>Getting here</dd>
           <dt class="micro">Reach us</dt>
-          <dd><a href="#" data-open-booking>Send a booking request</a></dd>
+          <dd><a href="#" data-open-booking aria-haspopup="dialog">Send a booking request</a></dd>
         </dl>
       </div>
     </div>
@@ -115,7 +123,10 @@
       <button class="bk__close" data-bk-close aria-label="Close booking">&times;</button>
     </div>
 
-    <p class="bk__notice">
+    <!-- Shown only while the server reports it is not configured. api.js sets
+         data-booking-mode on <html> from the endpoint's own status reply, so this
+         can never be left saying the wrong thing after going live. -->
+    <p class="bk__notice" data-bk-notice hidden>
       <strong>Not taking live bookings yet.</strong> The form works end to end, but
       requests are not being delivered until the owner&rsquo;s WhatsApp number is
       connected. Nothing you enter here is sent anywhere.
@@ -128,21 +139,21 @@
       <section class="step active" data-step="1">
         <div class="field">
           <label class="micro" for="bk-name">Your name</label>
-          <input id="bk-name" name="name" type="text" placeholder="e.g. Anjan Ganapathy" autocomplete="name" required>
-          <span class="err" data-err="name"></span>
+          <input id="bk-name" aria-describedby="err-name" name="name" type="text" placeholder="e.g. Anjan Ganapathy" autocomplete="name" required>
+          <span class="err" id="err-name" data-err="name" role="alert" aria-live="polite"></span>
         </div>
         <div class="field">
           <label class="micro" for="bk-from">Where are you coming from?</label>
-          <input id="bk-from" name="from" type="text" placeholder="e.g. Bengaluru" autocomplete="address-level2" required>
-          <span class="err" data-err="from"></span>
+          <input id="bk-from" aria-describedby="err-from" name="from" type="text" placeholder="e.g. Bengaluru" autocomplete="address-level2" required>
+          <span class="err" id="err-from" data-err="from" role="alert" aria-live="polite"></span>
         </div>
         <div class="field">
           <label class="micro" for="bk-phone">Phone</label>
           <div class="row">
             <input id="bk-cc" name="cc" type="text" placeholder="+91" value="+91" aria-label="Country code">
-            <input id="bk-phone" name="phone" type="tel" placeholder="98765 43210" autocomplete="tel" required>
+            <input id="bk-phone" aria-describedby="err-phone" name="phone" type="tel" placeholder="98765 43210" autocomplete="tel" required>
           </div>
-          <span class="err" data-err="phone"></span>
+          <span class="err" id="err-phone" data-err="phone" role="alert" aria-live="polite"></span>
         </div>
         <label class="check">
           <input type="checkbox" name="waSame" checked data-wa-same>
@@ -150,22 +161,16 @@
         </label>
         <div class="field" data-wa-field hidden>
           <label class="micro" for="bk-wa">WhatsApp number</label>
-          <input id="bk-wa" name="whatsapp" type="tel" placeholder="98765 43210">
-          <span class="err" data-err="whatsapp"></span>
+          <input id="bk-wa" aria-describedby="err-whatsapp" name="whatsapp" type="tel" placeholder="98765 43210">
+          <span class="err" id="err-whatsapp" data-err="whatsapp" role="alert" aria-live="polite"></span>
         </div>
         <div class="field">
           <label class="micro" for="bk-email">Email</label>
-          <input id="bk-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-          <span class="err" data-err="email"></span>
-        </div>
-        <div class="field">
-          <label class="micro" for="bk-pass">Choose a password</label>
-          <input id="bk-pass" name="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" required>
-          <span class="hint">So you can come back and see your booking.</span>
-          <span class="err" data-err="password"></span>
+          <input id="bk-email" aria-describedby="err-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+          <span class="err" id="err-email" data-err="email" role="alert" aria-live="polite"></span>
         </div>
         <button class="btn" type="button" data-bk-next="1">Send me a code</button>
-        <p class="bk__alt">Been here before? <button type="button" data-bk-login>Log in instead</button></p>
+        <p class="bk__alt">We only use these to reply about your stay.</p>
       </section>
 
       <!-- Step 2 — OTP -->
@@ -175,7 +180,7 @@
         </p>
         <div class="field">
           <label class="micro" for="otp-0">Enter the code</label>
-          <div class="otp" data-otp>
+          <div class="otp" data-otp aria-describedby="err-otp">
             <input id="otp-0" inputmode="numeric" maxlength="1" aria-label="Digit 1">
             <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
             <input inputmode="numeric" maxlength="1" aria-label="Digit 3">
@@ -183,7 +188,7 @@
             <input inputmode="numeric" maxlength="1" aria-label="Digit 5">
             <input inputmode="numeric" maxlength="1" aria-label="Digit 6">
           </div>
-          <span class="err" data-err="otp"></span>
+          <span class="err" id="err-otp" data-err="otp" role="alert" aria-live="polite"></span>
         </div>
         <div class="resend">
           <span class="micro" data-otp-timer></span>
@@ -196,12 +201,9 @@
       <!-- Step 3 — done -->
       <section class="step" data-step="3">
         <div class="done-mark" aria-hidden="true">&check;</div>
-        <h3 class="macro" style="font-size:clamp(1.5rem,3vw,2rem)">That is all we need.</h3>
-        <p style="color:var(--s-ink-soft)">
-          Your details are ready to send. Once the owner&rsquo;s WhatsApp number is
-          connected, requests like this one go straight to their phone and you get
-          a reply the same day.
-        </p>
+        <h3 class="macro" tabindex="-1" style="font-size:clamp(1.5rem,3vw,2rem)">That is all we need.</h3>
+        <!-- Replaced by booking.js with what actually happened to the request. -->
+        <p style="color:var(--s-ink-soft)">Your request has been saved.</p>
         <div data-bk-summary style="margin:24px 0"></div>
         <button class="btn btn--ghost" type="button" data-bk-close>Close</button>
       </section>
@@ -209,10 +211,10 @@
   </div>
 </div>
 
-<script src="world.config.js"></script>
-<script src="scrub-engine.js"></script>
-<script src="js/api.js"></script>
-<script src="js/site.js"></script>
-<script src="js/booking.js"></script>
+<script defer src="world.config.js"></script>
+<script defer src="scrub-engine.js"></script>
+<script defer src="js/api.js"></script>
+<script defer src="js/site.js"></script>
+<script defer src="js/booking.js"></script>
 </body>
 </html>

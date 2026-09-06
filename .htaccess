@@ -1,7 +1,109 @@
-# Sherlock's Jungle Retreat — Apache config for Hostinger shared hosting.
+# Sherlock's Jungle Retreat — Apache/LiteSpeed config for Hostinger shared hosting.
 # Upload alongside the site in public_html.
+#
+# Two things this file must never break: PHP execution under /api/, and the
+# fonts, stylesheets, clips and photographs the page needs. Every deny rule
+# below names a specific path or extension for exactly that reason.
 
 DirectoryIndex web/index.html index.html
+
+# A directory with no index must not list its contents. Without this,
+# /assets/raw/ hands a crawler the whole photograph library.
+Options -Indexes
+
+# ---------------------------------------------------------------------------
+# HTTPS. The booking form carries a guest's phone number and email; it has no
+# business travelling in the clear. HSTS is deliberately conservative at one
+# year with no preload — add `preload` only once you are certain every
+# subdomain is HTTPS, because it is very hard to undo.
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+  # One canonical URL. The site is served from / by the internal rewrite below;
+  # /web/ is the same page at a second address, so send it home.
+  RewriteRule ^web/?$ / [R=301,L]
+  RewriteRule ^web/index\.html$ / [R=301,L]
+
+  # Serve the site from / rather than /web/ — internal, so the address stays clean.
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteRule ^$ web/index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+  # Content Security Policy. Every value here is load-bearing:
+  #   script-src 'self'        no inline scripts anywhere in this site
+  #   style-src  'unsafe-inline'  scrub-engine.js injects its own <style> block,
+  #                            and the booking summary uses style attributes
+  #   media-src  blob:         the walkthrough clips are fetched and played as blobs
+  #   img-src    data: blob:   the favicon is inline SVG; decoded images use blobs
+  #   connect-src 'self'       the booking endpoint, and nothing else
+  # There are no third-party origins in this site at all, which is why every
+  # directive can be this tight.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+
+  <FilesMatch "\.woff2$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+
+  # The year-long expiry below is only an Expires header without this.
+  <FilesMatch "\.(jpg|jpeg|png|webp|svg|woff2|mp4)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Nothing that is not the website may be downloaded.
+# ---------------------------------------------------------------------------
+
+# Config and stored data, whatever the directory layout turns out to be.
+<FilesMatch "^(config\.php|config\.example\.php)$">
+  Require all denied
+</FilesMatch>
+
+# Dotfiles: .git, .data, .env, .gitignore, .htaccess itself.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 (?i)/\.(git|data|env|svn|hg)(/|$)
+
+# Editor leftovers, archives and dumps. A stray booking.php.bak would otherwise
+# be served as plain text, credentials and all.
+<FilesMatch "\.(bak|old|orig|save|swp|swo|sql|sqlite|log|ini|sh|py|md|yml|yaml|lock)$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "~$">
+  Require all denied
+</FilesMatch>
+
+# Build and authoring trees. These should not be uploaded at all — see
+# docs/DEPLOY-hostinger.md — but if one ever is, it is not public.
+RedirectMatch 404 (?i)^/(render|docs|tools)(/|$)
+RedirectMatch 404 (?i)^/assets/handoff(/|$)
+
+# ---------------------------------------------------------------------------
+# MIME types. ExpiresByType and Cache-Control only fire for types the server
+# already recognises; older Apache builds do not know webp or woff2.
+# ---------------------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType image/webp                 .webp
+  AddType image/svg+xml              .svg
+  AddType font/woff2                 .woff2
+  AddType video/mp4                  .mp4
+  AddType application/json           .json
+  AddType text/javascript            .js
+</IfModule>
+AddDefaultCharset UTF-8
 
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
@@ -13,37 +115,23 @@ DirectoryIndex web/index.html index.html
 
 <IfModule mod_expires.c>
   ExpiresActive On
-  # Photographs and fonts are content-addressed by name and never change in place.
+  # Photographs, clips and fonts are content-addressed by name and never change
+  # in place.
   ExpiresByType image/jpeg              "access plus 1 year"
   ExpiresByType image/webp              "access plus 1 year"
   ExpiresByType font/woff2              "access plus 1 year"
   ExpiresByType video/mp4               "access plus 1 year"
   # Code and data change on deploy, so keep these short.
   ExpiresByType text/css                "access plus 1 day"
+  ExpiresByType text/javascript         "access plus 1 day"
   ExpiresByType application/javascript  "access plus 1 day"
   ExpiresByType application/json        "access plus 1 hour"
   ExpiresByType text/html               "access plus 0 seconds"
 </IfModule>
 
+# Do not advertise the PHP version in response headers.
+# (ServerSignature is deliberately not set here: in .htaccess it needs
+# AllowOverride Indexes and a host without it answers 500 for every request.)
 <IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-  Header set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set X-Frame-Options "SAMEORIGIN"
-  <FilesMatch "\.woff2$">
-    Header set Access-Control-Allow-Origin "*"
-  </FilesMatch>
-</IfModule>
-
-# Never serve config or stored data, whatever the directory layout.
-<FilesMatch "^(config\.php|config\.example\.php)$">
-  Require all denied
-</FilesMatch>
-RedirectMatch 404 /\.data/
-RedirectMatch 404 /\.git
-
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  # Serve the site from / rather than /web/
-  RewriteCond %{REQUEST_URI} ^/$
-  RewriteRule ^$ web/index.html [L]
+  Header always unset X-Powered-By
 </IfModule>
