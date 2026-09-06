@@ -29,6 +29,24 @@ mkdir -p "$OUT_DIR"
 
 shopt -s nullglob
 legs=("$IN_DIR"/leg-*.mp4)
+
+# The raw directory is gitignored working state and survives between chains, so
+# a leg from a PREVIOUS run sits there looking exactly like a current one. It
+# would encode cleanly and chain visibly wrong. Refuse anything older than the
+# newest leg by more than an hour rather than shipping a mixed chain.
+if [ ${#legs[@]} -gt 1 ]; then
+  newest=0
+  for f in "${legs[@]}"; do t=$(stat -c %Y "$f"); [ "$t" -gt "$newest" ] && newest=$t; done
+  for f in "${legs[@]}"; do
+    t=$(stat -c %Y "$f")
+    if [ $((newest - t)) -gt 3600 ]; then
+      echo "REFUSING: $(basename "$f") is $(( (newest - t) / 3600 ))h older than the" >&2
+      echo "newest leg in $IN_DIR — that is a leg from an earlier chain. Delete it or" >&2
+      echo "re-render it; a mixed chain has a visible seam." >&2
+      exit 1
+    fi
+  done
+fi
 if [ ${#legs[@]} -eq 0 ]; then
   echo "no portrait legs found in $IN_DIR — nothing to encode" >&2
   exit 1
