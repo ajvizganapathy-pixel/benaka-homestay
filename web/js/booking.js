@@ -1,6 +1,6 @@
 /* ============================================================================
    Booking: who → code → done. Three steps, plain validation, no cleverness.
-   Every call goes through SherlockAPI so the mock and the live endpoint are
+   Every call goes through BenakaAPI so the mock and the live endpoint are
    interchangeable.
    ========================================================================== */
 
@@ -23,7 +23,7 @@
      server itself reports it is not configured. It is never a hardcoded state
      that someone has to remember to remove on the day they go live. */
   const notice = $('[data-bk-notice]', panel);
-  SherlockAPI.ready.then(mode => { if (notice) notice.hidden = (mode === 'live'); });
+  BenakaAPI.ready.then(mode => { if (notice) notice.hidden = (mode === 'live'); });
 
   /* ---- open / close ------------------------------------------------------ */
   // Everything outside the panel goes inert while it is open, so a screen
@@ -120,7 +120,7 @@
     details = d;
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const r = await SherlockAPI.requestOtp(d);
+      const r = await BenakaAPI.requestOtp(d);
       $('[data-bk-dest]').textContent = r.dest || d.phone;
       show(2); startResend(); otpBoxes[0].focus();
     } catch (err) {
@@ -169,7 +169,7 @@
     btn.disabled = true;
     setErr('otp', '');
     try {
-      await SherlockAPI.requestOtp(details);
+      await BenakaAPI.requestOtp(details);
       otpBoxes.forEach(b => (b.value = ''));
       otpBoxes[0].focus();
       startResend();
@@ -187,8 +187,8 @@
     if (code.length !== 6) { setErr('otp', 'All six digits, please.'); return; }
     btn.disabled = true; btn.textContent = 'Checking…';
     try {
-      await SherlockAPI.verifyOtp({ ...details, code });
-      const r = await SherlockAPI.submitBooking(details);
+      await BenakaAPI.verifyOtp({ ...details, code });
+      const r = await BenakaAPI.submitBooking(details);
       renderSummary(r);
       show(3);
       clearInterval(timer);

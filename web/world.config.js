@@ -35,7 +35,7 @@
    still.
    ========================================================================== */
 
-window.SHERLOCK_WORLD = {
+window.BENAKA_WORLD = {
   nav: false,
   atmosphere: false,
   diveScroll: 0.8,

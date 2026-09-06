@@ -89,10 +89,10 @@ This is the long pole. Do it first.
    Message templates). Both must be **APPROVED** before booking works.
 
    **a. The owner's notification.** Category **UTILITY**, language **English**,
-   name `sherlock_booking_request`. Body, verbatim:
+   name `benaka_booking_request`. Body, verbatim:
 
    ```
-   New booking request from the Sherlock's Jungle Retreat website.
+   New booking request from the Benaka By The Hills website.
 
    Guest: {{1}}
    Coming from: {{2}}
@@ -113,7 +113,7 @@ This is the long pole. Do it first.
    not in the data.
 
    **b. The guest's code.** Category **AUTHENTICATION**, language **English**,
-   name `sherlock_otp`. You do not write this body; Meta supplies fixed preset
+   name `benaka_otp`. You do not write this body; Meta supplies fixed preset
    text and you pick the options:
    - Code delivery: **Copy code**. Not one-tap autofill — that needs an Android
      app signing hash, which a website does not have.
@@ -165,7 +165,7 @@ sent anywhere.
    right; if you are unsure, set the absolute path from File Manager:
 
    ```php
-   'DATA_DIR' => '/home/uXXXXXXXX/domains/yourdomain.com/sherlock-data',
+   'DATA_DIR' => '/home/uXXXXXXXX/domains/yourdomain.com/benaka-data',
    ```
 
    The endpoint refuses to run if this resolves inside the document root, and
@@ -193,12 +193,12 @@ is the utility template, which approves faster), and you switch back to
 3. Enter it. The panel should say *"Sent to the owner on WhatsApp"* and show a
    reference beginning `bk_`.
 4. The owner's phone should have the booking, laid out as the template above.
-5. `sherlock-data/bookings/bk_….json` should exist, with
+5. `benaka-data/bookings/bk_….json` should exist, with
    `"delivery_status": "sent"`.
 
 If step 4 fails but the panel says *"Saved. WhatsApp delivery did not go through
 just now"* — that is the system working as designed. The request is not lost.
-Read `sherlock-data/error.log` and the record's `delivery_error` field; the
+Read `benaka-data/error.log` and the record's `delivery_error` field; the
 usual causes are an unapproved template, a wrong template name, an expired
 token, or no payment method on the WhatsApp account.
 
@@ -221,7 +221,7 @@ fixture with `WA_TRANSPORT => 'log'` — every send is written to
 `DATA_DIR/wa-outbox.log` as the exact payload it would have posted:
 
 ```bash
-SHERLOCK_CONFIG=/path/to/fixture-config.php php -S localhost:8765 -t .
+BENAKA_CONFIG=/path/to/fixture-config.php php -S localhost:8765 -t .
 ```
 
 That is how `tools/test.sh` drives the whole journey.

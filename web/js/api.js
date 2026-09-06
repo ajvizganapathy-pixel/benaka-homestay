@@ -15,7 +15,7 @@
    ids, no credentials of any kind.
    ========================================================================== */
 
-window.SherlockAPI = (function () {
+window.BenakaAPI = (function () {
   'use strict';
 
   /* Resolve the endpoint from this script's own URL rather than from the
@@ -103,14 +103,14 @@ window.SherlockAPI = (function () {
       case 'status':
         return { ok: true, live: false, otpChannel: 'none' };
       case 'requestOtp':
-        sessionStorage.setItem('sh_otp', '123456');
+        sessionStorage.setItem('bk_otp', '123456');
         return { ok: true, sent: true, channel: 'preview',
                  dest: payload.whatsapp || payload.phone };
       case 'verifyOtp':
-        if (payload.code !== sessionStorage.getItem('sh_otp')) {
+        if (payload.code !== sessionStorage.getItem('bk_otp')) {
           throw fault('That code is not right. In this preview the code is 123456.', 'bad_code');
         }
-        sessionStorage.removeItem('sh_otp');
+        sessionStorage.removeItem('bk_otp');
         return { ok: true, verified: true, channel: 'preview' };
       case 'submitBooking':
         return { ok: true, received: true, deliveryStatus: 'skipped',

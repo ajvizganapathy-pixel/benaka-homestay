@@ -12,7 +12,7 @@ property's photographs, a footer, and a booking flow.
 Static and framework-free — plain HTML, one vanilla-JS engine, no build step, no
 package manifest, no tests. Serve the repo root over HTTP and open `/web/`.
 
-The property is signed **Sherlock's Jungle Retreat** at its gate, which is what
+The property is signed **Benaka By The Hills** at its gate, which is what
 the site uses. The repo is still named `benaka-homestay`.
 
 ## Commands

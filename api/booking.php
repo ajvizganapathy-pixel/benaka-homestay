@@ -1,6 +1,6 @@
 <?php
 /**
- * Booking endpoint — Sherlock's Jungle Retreat.
+ * Booking endpoint — Benaka By The Hills.
  *
  * Actions: status | requestOtp | verifyOtp | submitBooking
  * Shapes match web/js/api.js exactly.
@@ -84,10 +84,10 @@ register_shutdown_function(function (): void {
 // ---------------------------------------------------------------------------
 // 1. Config
 // ---------------------------------------------------------------------------
-// SHERLOCK_CONFIG lets a test harness (tools/test.sh) point at a fixture, and
+// BENAKA_CONFIG lets a test harness (tools/test.sh) point at a fixture, and
 // lets a host that prefers environment configuration keep the file elsewhere.
 // In production it is unset and this is simply api/config.php.
-$configPath = getenv('SHERLOCK_CONFIG') ?: (__DIR__ . '/config.php');
+$configPath = getenv('BENAKA_CONFIG') ?: (__DIR__ . '/config.php');
 $cfg        = is_file($configPath) ? require $configPath : [];
 if (!is_array($cfg)) $cfg = [];
 
@@ -107,7 +107,7 @@ $CONFIGURED = (bool)cfg('CONFIGURED', false);
 // api/ sits inside public_html, so ../../ lands beside public_html rather than
 // inside it. A data directory inside the web root is one .htaccess mistake away
 // from serving every guest's details as JSON.
-$dataDir = rtrim((string)cfg('DATA_DIR', __DIR__ . '/../../sherlock-data'), '/');
+$dataDir = rtrim((string)cfg('DATA_DIR', __DIR__ . '/../../benaka-data'), '/');
 $LOG_TO  = $dataDir . '/error.log';
 
 // ---------------------------------------------------------------------------
@@ -315,12 +315,24 @@ function msisdn(string $s): string {
     return ltrim($d, '0') === '' ? '' : $d;
 }
 
+/**
+ * A stay date. Accepts only YYYY-MM-DD, which is what <input type="date">
+ * submits regardless of how the browser displays it, and checks the date is
+ * real — 2026-02-31 parses but does not exist.
+ */
+function stay_date(string $s): ?string {
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $s, $m)) return null;
+    return checkdate((int)$m[2], (int)$m[3], (int)$m[1]) ? $s : null;
+}
+
 function clean_details(array $in): array {
     $name  = trim((string)($in['name'] ?? ''));
     $from  = trim((string)($in['from'] ?? ''));
     $phone = msisdn((string)($in['phone'] ?? ''));
     $wa    = msisdn((string)($in['whatsapp'] ?? '')) ?: $phone;
     $email = trim((string)($in['email'] ?? ''));
+    $from_d = stay_date(trim((string)($in['arrival'] ?? '')));
+    $to_d   = stay_date(trim((string)($in['departure'] ?? '')));
 
     $bad = function (string $field, string $msg): never {
         reply(['ok' => false, 'error' => $msg, 'reason' => 'invalid', 'field' => $field], 422);
@@ -333,7 +345,29 @@ function clean_details(array $in): array {
     if (mb_strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL))
                                                         $bad('email', 'That email does not look right.');
 
-    return compact('name', 'from', 'phone', 'wa', 'email');
+    // Dates are checked again here and not only in the browser: the endpoint is
+    // reachable without one, and a booking with no dates is no use to the owner.
+    if ($from_d === null) $bad('arrival',   'Which day would you like to arrive?');
+    if ($to_d   === null) $bad('departure', 'And which day would you leave?');
+    $today = date('Y-m-d');
+    if ($from_d < $today)  $bad('arrival',   'That date has already passed.');
+    if ($to_d  <= $from_d) $bad('departure', 'Leaving day has to be after arriving day.');
+    if ((strtotime($to_d) - strtotime($from_d)) / 86400 > 60)
+                           $bad('departure', 'That is a very long stay — please call us to arrange it.');
+
+    $nights = (int)round((strtotime($to_d) - strtotime($from_d)) / 86400);
+
+    return compact('name', 'from', 'phone', 'wa', 'email') + [
+        'arrival'   => $from_d,
+        'departure' => $to_d,
+        'nights'    => $nights,
+        // One single-line value, because a WhatsApp template parameter may not
+        // contain a line break.
+        'stay'      => sprintf('%s to %s (%d night%s)',
+                               date('j M Y', strtotime($from_d)),
+                               date('j M Y', strtotime($to_d)),
+                               $nights, $nights === 1 ? '' : 's'),
+    ];
 }
 
 // ---------------------------------------------------------------------------
@@ -422,14 +456,31 @@ function wa_send_template(array $ctx, string $to, string $template, string $lang
     return ['status' => 'failed', 'error' => trim($err . ($sub !== null ? " (code $sub)" : ''))];
 }
 
+/**
+ * Who gets the booking notification. The homestay is run by more than one
+ * person, so this is a list. A single OWNER_WHATSAPP string is still accepted so
+ * an older config file keeps working rather than silently notifying nobody.
+ */
+function owner_numbers(): array {
+    $raw = cfg('OWNER_WHATSAPP_NUMBERS', null);
+    if ($raw === null) $raw = cfg('OWNER_WHATSAPP', '');
+    if (is_string($raw)) $raw = preg_split('/[\s,]+/', $raw) ?: [];
+    $out = [];
+    foreach ((array)$raw as $n) {
+        $n = msisdn((string)$n);
+        if (strlen($n) >= 8 && strlen($n) <= 15 && !in_array($n, $out, true)) $out[] = $n;
+    }
+    return $out;
+}
+
 function otp_via_email(string $to, string $code, int $minutes): array {
     $from = (string)cfg('OTP_EMAIL_FROM', '');
     if ($from === '') return ['status' => 'failed', 'error' => 'OTP_EMAIL_FROM is not set'];
-    $subject = 'Your code for Sherlock\'s Jungle Retreat';
+    $subject = 'Your code for Benaka\'s Jungle Retreat';
     $body = "Your verification code is $code.\n\n"
           . "It expires in $minutes minutes. If you did not ask for this, ignore this email.\n";
     $headers = "From: $from\r\nReply-To: $from\r\n"
-             . "Content-Type: text/plain; charset=utf-8\r\nX-Mailer: sherlock-booking\r\n";
+             . "Content-Type: text/plain; charset=utf-8\r\nX-Mailer: benaka-booking\r\n";
     $ok = @mail($to, $subject, $body, $headers);
     return $ok ? ['status' => 'sent', 'message_id' => 'mail']
                : ['status' => 'failed', 'error' => 'mail() refused the message'];
@@ -566,9 +617,11 @@ case 'submitBooking': {
         'verified'         => true,
         'verified_channel' => (string)($rec['channel'] ?? $otpChannel),
         'verified_at'      => date('c', (int)($rec['verified_at'] ?? time())),
+        'arrival'          => $d['arrival'],
+        'departure'        => $d['departure'],
+        'nights'           => $d['nights'],
         'delivery_status'  => 'pending',
-        'delivery_error'   => null,
-        'wa_message_id'    => null,
+        'deliveries'       => [],
         'created_at'       => $now,
         'updated_at'       => $now,
     ];
@@ -577,26 +630,49 @@ case 'submitBooking': {
     // The OTP is spent the moment it produces a booking — one code, one request.
     store_del($dataDir, 'otp', 'otp:' . $d['wa']);
 
-    // Six single-line parameters. No password (there is none), no OTP, nothing
-    // sensitive — just what the owner needs to call the guest back.
-    $send = wa_send_template($ctx, (string)cfg('OWNER_WHATSAPP', ''),
-        (string)cfg('WA_BOOKING_TEMPLATE', ''),
-        (string)cfg('WA_BOOKING_TEMPLATE_LANG', 'en'),
-        [['type' => 'body', 'parameters' => array_map(
-            fn($t) => ['type' => 'text', 'text' => $t],
-            [$d['name'], $d['from'], '+' . $d['phone'], '+' . $d['wa'], $d['email'],
-             date('j M Y, H:i')]
-        )]]);
+    // Seven single-line parameters. No password (there is none), no OTP, nothing
+    // sensitive — just what the owner needs to call the guest back and know
+    // which nights they are asking for.
+    $components = [['type' => 'body', 'parameters' => array_map(
+        fn($t) => ['type' => 'text', 'text' => $t],
+        [$d['name'], $d['from'], '+' . $d['phone'], '+' . $d['wa'], $d['email'],
+         $d['stay'], date('j M Y, H:i')]
+    )]];
 
-    $record['delivery_status'] = $send['status'];
-    $record['delivery_error']  = $send['error']      ?? null;
-    $record['wa_message_id']   = $send['message_id'] ?? null;
+    // The homestay is run by more than one person, so the request goes to every
+    // number on the list. One unreachable number must not lose the booking for
+    // the others, so each send is recorded on its own and the guest is told it
+    // arrived if ANY of them took it.
+    $recipients = owner_numbers();
+    if (!$recipients) {
+        log_line('no owner numbers configured; booking ' . $id . ' kept undelivered');
+    }
+    $deliveries = [];
+    foreach ($recipients as $to) {
+        $send = wa_send_template($ctx, $to,
+            (string)cfg('WA_BOOKING_TEMPLATE', ''),
+            (string)cfg('WA_BOOKING_TEMPLATE_LANG', 'en'),
+            $components);
+        $deliveries[] = [
+            'to'         => '+' . $to,
+            'status'     => $send['status'],
+            'message_id' => $send['message_id'] ?? null,
+            'error'      => $send['error'] ?? null,
+        ];
+        if ($send['status'] === 'failed') {
+            log_line(sprintf('owner notify failed for %s to +%s: %s',
+                             $id, $to, $send['error'] ?? '?'));
+        }
+    }
+
+    $statuses = array_column($deliveries, 'status');
+    $overall  = in_array('sent', $statuses, true) ? 'sent'
+              : (in_array('failed', $statuses, true) ? 'failed' : 'skipped');
+
+    $record['delivery_status'] = $overall;
+    $record['deliveries']      = $deliveries;
     $record['updated_at']      = date('c');
     atomic_write($dataDir . '/bookings/' . $id . '.json', $record);
-
-    if ($send['status'] === 'failed') {
-        log_line('owner notify failed for ' . $id . ': ' . ($send['error'] ?? '?'));
-    }
 
     // Truthful either way: the request is kept, and the guest is told exactly
     // what happened to the notification.
@@ -604,7 +680,8 @@ case 'submitBooking': {
         'ok'             => true,
         'requestId'      => $id,
         'received'       => true,
-        'deliveryStatus' => $send['status'],       // sent | failed | skipped
+        'deliveryStatus' => $overall,              // sent | failed | skipped
+        'notified'       => count(array_filter($statuses, fn($s) => $s === 'sent')),
     ]);
 }
 

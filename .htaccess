@@ -1,4 +1,4 @@
-# Sherlock's Jungle Retreat — Apache/LiteSpeed config for Hostinger shared hosting.
+# Benaka By The Hills — Apache/LiteSpeed config for Hostinger shared hosting.
 # Upload alongside the site in public_html.
 #
 # Two things this file must never break: PHP execution under /api/, and the

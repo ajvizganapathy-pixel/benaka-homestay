@@ -60,7 +60,7 @@ return [
     // Category: UTILITY.  Language: English (en).
     // Submit this body EXACTLY, with six variables:
     //
-    //   New booking request from the Sherlock's Jungle Retreat website.
+    //   New booking request from the Benaka By The Hills website.
     //
     //   Guest: {{1}}
     //   Coming from: {{2}}
@@ -78,7 +78,7 @@ return [
     // variable, and two variables must not sit next to each other. The body
     // above satisfies both. Values may not contain newlines — which is why the
     // line breaks live here, in the approved body, and not in the data.
-    'WA_BOOKING_TEMPLATE'      => 'sherlock_booking_request',
+    'WA_BOOKING_TEMPLATE'      => 'benaka_booking_request',
     'WA_BOOKING_TEMPLATE_LANG' => 'en',
 
     // -- Template 2: the guest's verification code --------------------------
@@ -91,7 +91,7 @@ return [
     //   * Tick "Add expiry time for the code" -> 10 minutes
     // Leave this blank and set OTP_CHANNEL to 'email' to launch before it is
     // approved. Approval usually takes minutes to a day.
-    'WA_OTP_TEMPLATE'      => 'sherlock_otp',
+    'WA_OTP_TEMPLATE'      => 'benaka_otp',
     'WA_OTP_TEMPLATE_LANG' => 'en',
 
     // How a send actually happens:
@@ -127,13 +127,13 @@ return [
     // On Hostinger, api/ is inside public_html, so the default lands one level
     // above it. Confirm the absolute path in hPanel's File Manager and set it
     // explicitly if you are unsure:
-    //     '/home/uXXXXXXXX/domains/yourdomain.com/sherlock-data'
+    //     '/home/uXXXXXXXX/domains/yourdomain.com/benaka-data'
     //
     // booking.php refuses to run if this resolves inside the document root, and
     // writes a deny rule into the directory as a second line of defence.
     // Back this folder up: it is where the bookings are.
     // -----------------------------------------------------------------------
-    'DATA_DIR' => __DIR__ . '/../../sherlock-data',
+    'DATA_DIR' => __DIR__ . '/../../benaka-data',
 
     // Timestamps on the owner's message use this zone.
     'TIMEZONE' => 'Asia/Kolkata',

@@ -26,8 +26,8 @@
   const PHONE_PACE = 1.9;
 
   const world = $('#world');
-  if (world && window.SHERLOCK_WORLD) {
-    const cfg = window.SHERLOCK_WORLD;
+  if (world && window.BENAKA_WORLD) {
+    const cfg = window.BENAKA_WORLD;
     if (phone) {
       cfg.diveScroll = (cfg.diveScroll || 0.8) * PHONE_PACE;
       cfg.sections = cfg.sections.map(sec => ({

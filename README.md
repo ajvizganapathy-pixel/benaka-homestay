@@ -1,4 +1,4 @@
-# Sherlock's Jungle Retreat
+# Benaka By The Hills
 
 A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka. Scroll drives a
 camera, not a scrollbar: it comes up the road, passes under the arch, runs the
@@ -181,5 +181,5 @@ reduced-motion fallback.
 
 ## A note on the name
 
-The property is signed **Sherlock's Jungle Retreat** at its gate, which is what
+The property is signed **Benaka By The Hills** at its gate, which is what
 the site uses. The repository is still named `benaka-homestay`.

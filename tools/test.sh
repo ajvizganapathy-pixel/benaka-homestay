@@ -1,5 +1,5 @@
 #!/bin/bash
-# Production test suite — Sherlock's Jungle Retreat.
+# Production test suite — Benaka By The Hills.
 #
 # No framework and no package manifest: this project is deliberately static and
 # framework-free, and its test suite has no business being the only thing that
@@ -69,6 +69,15 @@ if php -r '
   if (!empty($c["CONFIGURED"])) { fwrite(STDERR, "CONFIGURED is true\n"); exit(1); }
 ' 2>"$TMP/cfgerr"; then ok "config.example.php ships no values"; else bad "config.example.php" "$(cat "$TMP/cfgerr")"; fi
 
+# The property was re-signed BENAKA ByTheHills. The old name lived in visible
+# copy, in identifiers, in config keys and in three photographs; a half-done
+# rename is how a client finds someone else's brand on their own website.
+if git grep -niI 'sherlock' -- . >/dev/null 2>&1; then
+  bad "the old property name is still in the tree" "$(git grep -niI 'sherlock' -- . | head -5)"
+else
+  ok "no trace of the old property name"
+fi
+
 for f in index.html web/index.html web/scrub-engine.js web/world.config.js \
          api/booking.php api/config.example.php .htaccess assets/manifest.json; do
   [ -f "$f" ] && ok "present: $f" || bad "missing: $f"
@@ -87,7 +96,7 @@ missing=$(node -e '
   require("./web/world.config.js");
   const fs = require("fs"), path = require("path");
   const bad = [];
-  for (const s of window.SHERLOCK_WORLD.sections)
+  for (const s of window.BENAKA_WORLD.sections)
     for (const k of ["still","stillMobile","clip","clipMobile"])
       if (s[k]) {
         const p = path.join("web", s[k]);
@@ -95,7 +104,8 @@ missing=$(node -e '
       }
   console.log(bad.join("\n"));
 ')
-[ -z "$missing" ] && ok "all 28 world.config.js asset paths resolve" || bad "missing world assets" "$missing"
+n=$(node -e 'global.window={};require("./web/world.config.js");console.log(window.BENAKA_WORLD.sections.reduce((a,s)=>a+["still","stillMobile","clip","clipMobile"].filter(k=>s[k]).length,0))')
+[ -z "$missing" ] && ok "all $n world.config.js asset paths resolve" || bad "missing world assets" "$missing"
 
 missing=$(python3 - <<'PY'
 import json, os
@@ -104,7 +114,12 @@ bad = [i['file'] for i in m['images'] if not os.path.isfile('assets/raw/' + i['f
 print('\n'.join(bad))
 PY
 )
-[ -z "$missing" ] && ok "all 47 manifest photographs exist" || bad "missing photographs" "$missing"
+n=$(python3 -c "import json;print(len(json.load(open('assets/manifest.json'))['images']))")
+[ -z "$missing" ] && ok "all $n manifest photographs exist" || bad "missing photographs" "$missing"
+
+# manifest count must match what is actually in the array
+php -r '$m=json_decode(file_get_contents("assets/manifest.json"),true); exit($m["imageCount"]===count($m["images"])?0:1);' \
+  && ok "manifest imageCount matches the array" || bad "manifest imageCount is stale"
 
 # The CSP is script-src 'self'; an inline <script> would be blocked at runtime.
 if grep -nE '<script(?![^>]*src=)' web/index.html >/dev/null 2>&1 \
@@ -134,8 +149,8 @@ mkcfg() {  # mkcfg <name> <php-array-overrides>
   'WA_PHONE_ID' => 'test-phone-id',
   'WA_TOKEN' => 'test-token',
   'WA_API_VERSION' => 'v25.0',
-  'WA_BOOKING_TEMPLATE' => 'sherlock_booking_request',
-  'WA_OTP_TEMPLATE' => 'sherlock_otp',
+  'WA_BOOKING_TEMPLATE' => 'benaka_booking_request',
+  'WA_OTP_TEMPLATE' => 'benaka_otp',
   'WA_TRANSPORT' => 'log',
   'OTP_CHANNEL' => 'whatsapp',
   'OTP_TTL_SECONDS' => 600,
@@ -151,7 +166,7 @@ PHPCFG
 
 serve() {  # serve <config-name>
   [ -n "${SRV:-}" ] && { kill "$SRV" 2>/dev/null; wait "$SRV" 2>/dev/null; }
-  SHERLOCK_CONFIG="$TMP/cfg-$1.php" php -S "127.0.0.1:$PORT" -t "$ROOT" >"$TMP/srv.log" 2>&1 &
+  BENAKA_CONFIG="$TMP/cfg-$1.php" php -S "127.0.0.1:$PORT" -t "$ROOT" >"$TMP/srv.log" 2>&1 &
   SRV=$!
   for _ in $(seq 1 50); do
     curl -sf -o /dev/null "$ORIGIN/web/index.html" && return 0
@@ -283,7 +298,7 @@ else
 fi
 
 OWNER=$(tail -1 "$OUT")
-[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.name')" = sherlock_booking_request ] \
+[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.name')" = benaka_booking_request ] \
   && ok "owner notified with the booking template" || bad "owner template name"
 [ "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters | length')" = 6 ] \
   && ok "owner message carries six fields" || bad "owner field count"
