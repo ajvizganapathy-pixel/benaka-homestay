@@ -42,7 +42,7 @@ window.BENAKA_WORLD = {
   crossfade: 0.08,
 
   sections: [
-    { id: 'approach', label: 'The road',
+    { id: 'approach', label: 'The way in',
       still: '../assets/scenes/01-approach-road.jpg',
       stillMobile: '../assets/scenes/portrait/01-approach-road.jpg',
       clip: '../assets/clips/leg-01.mp4',
@@ -60,7 +60,7 @@ window.BENAKA_WORLD = {
       scroll: 0.7,
       eyebrow: 'The gate',
       title: 'In under the arch, up to the house.',
-      body: 'A sign that has taken a few monsoons, a short wet drive, and the house waiting at the top of it.' },
+      body: 'The name over the gate, a short wet drive, and the house waiting at the top of it.' },
 
     { id: 'courtyard', label: 'The house',
       still: '../assets/scenes/03-courtyard-house.jpg',
