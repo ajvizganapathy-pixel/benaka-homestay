@@ -135,3 +135,49 @@ follow if that chain is ever re-run:
 
 Measured landings against the target canvas: 16.6, 22.4, 19.0, 22.0, 20.6,
 16.0 dB. All seven chained on the first attempt; **no re-rolls, 1,512 credits.**
+
+
+## The BENAKA re-render (September 2026)
+
+The gate was re-signed **BENAKA ByTheHills**, so beats 01 and 02 carried a name
+the property no longer uses — in the footage, where no HTML edit reaches. The
+whole portrait chain was re-rendered (it chains sequentially, so changing leg 02
+changes everything after it) and the two landscape arch legs alongside it.
+
+### What changed in the anchors
+
+| | before | now |
+|---|---|---|
+| `scenes/01-approach-road.jpg` | a village road photograph | the owner's new arch photograph, 1600×900 → 1920×1080 |
+| `scenes/portrait/01-approach-road.jpg` | 9:16 crop, 2.13× upscale | generated wide 9:16 at 4K, downscaled |
+| `scenes/02-gate-arch.jpg` | old-sign photograph | generated close 16:9 at 4K, downscaled |
+| `scenes/portrait/02-gate-arch.jpg` | old-sign crop | generated close 9:16 at 4K, downscaled |
+
+See `render/prompts/canvas/` for the prompts and for the trap: the first attempt
+at beat 02 came back barely closer than beat 01, which leaves an eight-second
+leg with nowhere to travel. Beat 01 and beat 02 must read as **visibly different
+distances** from the arch.
+
+### Model: still PixVerse V6, and this is now a tested claim
+
+Kling 3.0 and Wan 2.7 were probed on the arch shot at 158 and 68 credits. Both
+**invented a second giant BENAKA sign** across the ironwork mid-clip and garbled
+the lettering; Wan also detached the arch from its legs. Both cost 252 a leg
+against PixVerse's 216. MiniMax H3 costs 810 a leg and was ruled out unprobed.
+
+**Do not switch model without re-probing the arch shot.** Sharpness is not the
+binding constraint here; holding a signboard still for eight seconds is.
+
+### Two takes where it matters
+
+Legs 01 and 02 were rendered with `videoCount: 2` and the better take kept,
+judged on measured frame-lock and landing rather than by eye — on leg 01 the
+take that *looked* better landed 3.5 dB worse. Legs 03–07 were single takes.
+
+### Measured
+
+| leg | frame-lock | landing |
+|---|---:|---:|
+| 01 | — (starts from a canvas) | 24.1 dB |
+| 02 | 34.4 dB | 27.1 dB |
+| 03 | 33.6 dB | 18.9 dB |

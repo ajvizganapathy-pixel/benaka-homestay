@@ -99,13 +99,15 @@ This is the long pole. Do it first.
    Phone: {{3}}
    WhatsApp: {{4}}
    Email: {{5}}
-   Received: {{6}}
+   Dates: {{6}}
+   Received: {{7}}
 
    Reply to this guest on WhatsApp to confirm the stay.
    ```
 
    Sample values when Meta asks: `Anjan Ganapathy`, `Bengaluru`,
-   `+919876543210`, `+919876543210`, `anjan@example.com`, `6 Sep 2026, 14:20`.
+   `+919876543210`, `+919876543210`, `anjan@example.com`,
+   `12 Oct 2026 to 15 Oct 2026 (3 nights)`, `6 Sep 2026, 14:20`.
 
    Two rules Meta enforces and this body respects: a template may not begin or
    end with a variable, and two variables may not be adjacent. Values may not
@@ -149,8 +151,16 @@ sent anywhere.
    hPanel's File Manager or SFTP, never through git. Every value is documented
    in the file itself.
 
-2. Fill in: `OWNER_WHATSAPP` (digits with country code, no `+`), `WA_PHONE_ID`,
-   `WA_TOKEN`, both template names, and `ALLOWED_ORIGINS`.
+2. Fill in: `OWNER_WHATSAPP_NUMBERS`, `WA_PHONE_ID`, `WA_TOKEN`, both template
+   names, and `ALLOWED_ORIGINS`.
+
+   `OWNER_WHATSAPP_NUMBERS` is a **list** — every number on it gets the same
+   message, each send recorded separately, so one unreachable phone cannot lose
+   a booking for the other. Digits with country code, no `+` and no spaces:
+
+   ```php
+   'OWNER_WHATSAPP_NUMBERS' => ['919448647831', '918861070431'],
+   ```
 
    `ALLOWED_ORIGINS` must list **every** origin the site is served from, scheme
    included and no trailing slash. If both the bare domain and the `www` one
@@ -190,9 +200,10 @@ is the utility template, which approves faster), and you switch back to
    number you can read WhatsApp on.
 2. The code should arrive from the business number, in an authentication
    message with a **Copy code** button.
-3. Enter it. The panel should say *"Sent to the owner on WhatsApp"* and show a
-   reference beginning `bk_`.
-4. The owner's phone should have the booking, laid out as the template above.
+3. Enter it. The panel should say *"Sent to the owner on WhatsApp. Confirmation
+   will reach you shortly."* and show a reference beginning `bk_`.
+4. **Both** owner phones should have the booking, laid out as the template
+   above, with the requested dates on the `Dates:` line.
 5. `benaka-data/bookings/bk_….json` should exist, with
    `"delivery_status": "sent"`.
 
@@ -254,3 +265,19 @@ Delete `api/`, and point the BOOK button at a click-to-chat link:
 The guest's own WhatsApp opens with a message ready to send. No credentials, no
 server, no cost — and no record kept, and nothing sent until the guest presses
 send themselves.
+
+
+---
+
+## 8. Optional: confirm back to the guest automatically
+
+The panel tells the guest that confirmation will reach them shortly, and today
+that confirmation is the owner replying by hand — which for a homestay taking a
+handful of bookings a week is the right amount of automation.
+
+If you ever want it sent automatically, it needs a **third** approved template
+(UTILITY, addressed to the guest, e.g. "We have your request for {{1}} — we will
+confirm within the day"), a `WA_GUEST_TEMPLATE` config key, and one more
+`wa_send_template()` call in `submitBooking` beside the owner loop. It is a
+small change; it is left undone because an automatic "we got it" that arrives
+before a human has looked at the dates is worth less than a real reply.

@@ -49,6 +49,31 @@ alternative, but previz would have to run on a different model.
 | **The 16:9 chain — 7 legs, 8s/1080p** | no re-rolls | **1,512** |
 | Portrait-aspect probe — 540p/5s, 1080×1920 frames | out **576×1024**, clean forward glide, landed under the arch | 45 |
 | **The portrait chain — 7 legs, 8s/1080p, 9:16** | | **1,512** |
+| Arch canvases — Nano Banana Pro, 4 images at 4K | first pair too close together, re-prompted | 288 |
+| Model probe — Kling 3.0, 5s/std | **hallucinated a second BENAKA sign** | 158 |
+| Model probe — Wan 2.7, 5s/720p | sign duplicated and drifted; "ByTheHillo" | 68 |
+| **The BENAKA portrait chain — 7 legs, two takes on 01 and 02** | | **1,944** |
+| Landscape arch legs 01 and 02, PixVerse | keeps the desktop chain one model throughout | 432 |
+
+## Why not the "better" model
+
+Kling 3.0 and Wan 2.7 both price at **252 charged** per 8s/1080p leg against
+PixVerse V6's **216** — 17% more for models described as sharper. Both were
+probed on the one shot that matters, the arch, and both **invented a second
+giant BENAKA sign** across the ironwork partway through the clip and mangled the
+lettering on it. MiniMax H3 was ruled out on price alone: **810 charged** for
+10s/2K, four times PixVerse.
+
+PixVerse V6 held "SHERLOCK'S JUNGLE RETREAT" legible across the entire first
+chain and holds "BENAKA ByTheHills" across this one. When there is a signboard
+in frame, stability is the quality that matters and PixVerse has it. The credits
+that would have gone on a sharper model went on **two takes of the arch legs**
+instead, which is a real quality lever on a stochastic model and cost nothing in
+correctness.
+
+The other quality gain this round cost **nothing at all**: the mobile encode
+stopped downscaling to 810x1440 and now ships the native 1080x1920 master at
+crf 20 — 887 source pixels across 390 CSS pixels instead of 665.
 
 ## The portrait chain
 

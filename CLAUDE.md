@@ -179,6 +179,30 @@ required, was sent to the server, and was used by nothing — do not bring it ba
 `DATA_DIR` must resolve **outside** the document root; `booking.php` refuses to
 start otherwise.
 
+### The arch, and the one thing that breaks it
+
+The property was re-signed **BENAKA ByTheHills** partway through. Beats 01 and
+02 are the arch beats, so the name is *in the footage* — no HTML edit fixes it,
+those legs have to be re-rendered.
+
+Two things learned doing it, both expensive to relearn:
+
+1. **PixVerse V6 is the model for this material, and the reason is text.** Kling
+   3.0 and Wan 2.7 both price at 252 a leg against PixVerse's 216 and are better
+   on paper. Probed on the arch shot, both **hallucinated a second giant BENAKA
+   sign across the arch** mid-clip and garbled the lettering. PixVerse held the
+   old sign for eight seconds across the whole first chain and holds this one.
+   Stability beats detail when there is a signboard in frame. Do not "upgrade"
+   the model without re-probing that shot.
+
+2. **Two beats need two visibly different distances.** The owner sent one
+   photograph of the arch. Cropping a second canvas out of a 1600×900 frame
+   upscales 2× exactly where the lettering is, and a first attempt at generating
+   one came back barely closer than beat 01 — an eight-second leg with nowhere
+   to travel. The canvases are Nano Banana Pro at 4K, **downscaled** into place,
+   with the prompt saying in as many words that the camera is *underneath* the
+   arch. See `render/prompts/canvas/`.
+
 ## The camera architecture (before touching render/)
 
 **Architecture A — one continuous forward take**, because the material is real

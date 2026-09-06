@@ -102,6 +102,12 @@ template with a copy-code button; the owner's notification as a **utility**
 template with six fields. Setting up both is
 [docs/DEPLOY-hostinger.md](docs/DEPLOY-hostinger.md) §3.
 
+**The request carries dates, and reaches both owners.** Arrival and departure
+are asked for in the form, checked in the browser and again on the server, and
+travel to WhatsApp as one single-line parameter. The notification goes to every
+number on the owner list, each send recorded separately, so one unreachable
+phone cannot lose a booking for the other.
+
 **A request is never lost and never oversold.** The record is written to disk
 before the send is attempted, and the guest is told which of four things
 happened: received and delivered, received but delivery failed, received but
@@ -129,6 +135,7 @@ clears it, and the type scales down with the viewport. No horizontal overflow at
 | `web/scrub-engine.js` | the scroll-scrub engine, byte-identical to the `scroll-world` skill |
 | `assets/raw/` | 47 property photographs, named for what they show |
 | `assets/scenes/` | the 7 walkthrough canvases, exactly 1920×1080 |
+| `render/prompts/canvas/` | how the two BENAKA arch canvases were made, and the trap in remaking them |
 | `assets/scenes/portrait/` | the same 7 beats at 1080×1920, anchoring the phone chain |
 | `assets/clips/` | 14 rendered legs — `leg-0N.mp4` landscape, `leg-0N-m.mp4` portrait |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
