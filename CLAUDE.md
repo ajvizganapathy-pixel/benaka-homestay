@@ -25,10 +25,17 @@ ffmpeg -y -i assets/raw/<file>.jpg \
   -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1" \
   -q:v 2 assets/scenes/<NN-slug>.jpg
 
+# re-cut the seven 9:16 canvases the PHONE chain is anchored to
+bash render/cut-portrait-canvases.sh
+
 # after the video chain renders (see render/run-chain.md)
-bash render/extract-handoff-frame.sh render/raw/leg-0N.mp4 render/frames/leg-0N-last.png
-bash render/encode.sh
+bash render/extract-handoff-frame.sh render/raw/leg-0N.mp4 assets/handoff/leg-0N-last.png
+bash render/encode.sh          # landscape masters  -> assets/clips/leg-0N.mp4
+bash render/encode-mobile.sh   # portrait for phones -> assets/clips/leg-0N-m.mp4
 ```
+
+`render/fetch-leg.sh` does the download, the frame extraction, the seam
+measurement and the contact strip in one go; pass `-p` for the portrait chain.
 
 ```bash
 bash tools/check-css-invariants.sh   # run after ANY edit to web/css/site.css
@@ -57,12 +64,13 @@ web/scrub-engine.js   VERBATIM from the skill — do not edit
 web/css/              fonts, tokens, site chrome, booking
 web/js/               api adapter, site behaviour, booking flow
 web/fonts/            self-hosted woff2 (no CDN at runtime)
-assets/               raw/ photographs, scenes/ canvases, manifest.json
+assets/               raw/ photographs, scenes/ canvases (+ scenes/portrait/),
+                      clips/ 14 legs, manifest.json
 api/                  booking.php + config.example.php — inert until configured
 render/               the OpenArt render chain: model, prompts, run book, costs
 ```
 
-### Three things that will bite
+### Four things that will bite
 
 1. **`web/scrub-engine.js` must stay byte-identical to the skill's copy.** It is
    config-driven and self-contained; local edits are lost on any re-copy. Suppress
@@ -83,6 +91,17 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    safe because `layout()` sizes only its own `.sw-track` from its own segment
    widths and never reads `document.scrollHeight`, and every fixed layer is
    `pointer-events: none`.
+
+4. **There are TWO rendered chains, and the phone one is not a resize.** Desktop
+   gets `clip` / `still` (16:9); a coarse-pointer or ≤860px viewport gets
+   `clipMobile` / `stillMobile`, which are a separately rendered native 9:16
+   chain. This is not an optimisation that can be undone with an encoder flag:
+   `object-fit: cover` shows only 25.8% of a 16:9 frame's width on a 390×844
+   phone, and a resize of that master to 1280 wide is an *upscale* — the fault
+   that made the phone build look dull. Set `clipMobile` and `stillMobile`
+   together, or the poster flashes a crop of the wrong picture. Landscape encodes
+   come from `render/encode.sh`, portrait from `render/encode-mobile.sh`, which
+   refuses a landscape input outright.
 
 ### Two entry points, on purpose
 

@@ -1,9 +1,9 @@
 # Sherlock's Jungle Retreat
 
 A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka. Scroll drives a
-camera, not a scrollbar: it comes up the road, passes under the arch, crosses the
-courtyard, sits down to a meal, plays a frame of billiards, looks into a room and
-its bathroom, and comes out at the pool.
+camera, not a scrollbar: it comes up the road, passes under the arch, runs the
+length of the verandah, crosses to the pavilion where meals are served, goes on
+through the billiards game, into a room, and out at the pool.
 
 ![The name over the road in](docs/screenshots/01-hero.jpg)
 
@@ -92,9 +92,11 @@ the viewport. No horizontal overflow at 360px through 2560px.
 | `web/scrub-engine.js` | the scroll-scrub engine, byte-identical to the `scroll-world` skill |
 | `assets/raw/` | 47 property photographs, named for what they show |
 | `assets/scenes/` | the 7 walkthrough canvases, exactly 1920×1080 |
+| `assets/scenes/portrait/` | the same 7 beats at 1080×1920, anchoring the phone chain |
+| `assets/clips/` | 14 rendered legs — `leg-0N.mp4` landscape, `leg-0N-m.mp4` portrait |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `api/` | the booking endpoint for Hostinger, inert until configured |
-| `render/` | the Higgsfield chain — written, costed, **not run** |
+| `render/` | the OpenArt render chain: prompts, run book, costs, encoders |
 | `docs/` | deployment guide and these screenshots |
 
 ## The walkthrough is rendered
@@ -117,8 +119,26 @@ mechanism before committing — **1,602 of a 12,000 balance**. `render/COSTS.md`
 records the per-leg maths and why Seedance 2.0 was ruled out at eight times the
 price.
 
-Desktop gets the 1080p masters; phones get 1280-wide encodes with a tighter GOP,
-which the engine serves automatically. The stills remain the posters and the
+## Phones get their own chain
+
+A 16:9 clip on a 390×844 phone is cropped by `object-fit: cover` to **25.8% of
+its width**, and the mobile encode used to resize the master to 1280 wide on top
+of that — cover's scale factor there is 1.18, an *upscale*, so 330 source pixels
+were being stretched across 390 CSS pixels. The phone build was softer than the
+desktop master it came from, and no encoder setting could fix it: the framing was
+never rendered.
+
+So the phone gets a **second, native 9:16 chain** — the same seven beats, the
+same journey, rendered portrait. It shows **82% of the frame** and puts **887
+source pixels** where 330 used to go. Same 216 credits a leg; a 45-credit probe
+confirmed PixVerse takes its aspect from the start frame before the chain was
+committed.
+
+![The same beat, 16:9 cropped to a phone and rendered 9:16](docs/screenshots/14-mobile-chain.jpg)
+
+Desktop gets the 1080p landscape masters; phones get the portrait legs at
+810×1440 with a tighter GOP, and a portrait poster to match, all served
+automatically by the engine. The stills remain the posters and the
 reduced-motion fallback.
 
 ## A note on the name

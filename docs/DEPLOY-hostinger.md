@@ -12,7 +12,7 @@ public_html/
   .htaccess
   index.html      redirect stub -> web/ (fallback; see below)
   web/            index.html, css/, js/, fonts/, scrub-engine.js, world.config.js
-  assets/         raw/, scenes/, clips/, manifest.json
+  assets/         raw/, scenes/ (+ scenes/portrait/), clips/, manifest.json
   api/            booking.php, config.php        (config.php you create)
 ```
 
@@ -31,8 +31,11 @@ production and `.data/` must live outside the web root (step 3).
 
 ## 2. Check it renders
 
-Open the domain. You should get the name over the road, then eight beats of
-walkthrough, then the tiled photographs, then the footer. If the type falls back
+Open the domain. You should get the name over the road, then seven beats of
+walkthrough, then the tiled photographs, then the footer. Check it on a phone
+too: phones are served a separate portrait chain (`assets/clips/leg-0N-m.mp4`
+and `assets/scenes/portrait/`), so if those did not upload the beats fall back to
+the landscape clips and go soft. If the type falls back
 to a system serif, `web/fonts/` did not upload — the fonts are self-hosted, there
 is no CDN to fall back to.
 

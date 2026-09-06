@@ -97,3 +97,41 @@ soften it out.
    the posters and the reduced-motion fallback.
 3. Delete `assets/handoff/` once every leg is rendered; it exists only to give
    the frames public URLs.
+
+## The portrait chain (phones)
+
+Same seven legs, same order, same handoff discipline — rendered natively 9:16
+because a 16:9 leg on a 390×844 phone survives `object-fit: cover` as 25.8% of
+its width, and nothing downstream can put back framing that was never rendered.
+
+`pixverseV6/image2video` has **no aspect-ratio field**: the output follows
+`startFrame`. Proved before spending, at 540p/5s for 45 credits — a 1080×1920
+start frame returned **576×1024**, travelling forward the whole way and landing
+under the arch. At 1080p the legs come back **1072×1920** (PixVerse rounds the
+width to a multiple of 16).
+
+What differs from the landscape run:
+
+| | landscape | portrait |
+|---|---|---|
+| canvases | `assets/scenes/NN-slug.jpg` 1920×1080 | `assets/scenes/portrait/NN-slug.jpg` 1080×1920, cut by `cut-portrait-canvases.sh` |
+| prompts | `render/prompts/leg-0N.txt` | `render/prompts/portrait/leg-0N.txt` — same text plus a line naming what fills the top and bottom of a tall frame |
+| raw output | `render/raw/` | `render/raw-portrait/` |
+| handoff frames | `leg-0N-last.png` | `leg-0N-last-p.png` (`fetch-leg.sh … -p`) |
+| encode | `render/encode.sh` | `render/encode-mobile.sh` → 810×1440 |
+
+Handoff frames are published to the **current branch** and read back from
+`raw.githubusercontent.com/<owner>/<repo>/<branch>/…`, so a chain no longer has
+to push to `main` between legs.
+
+Two prompts were corrected on the way through, and the landscape copies should
+follow if that chain is ever re-run:
+
+- **Leg 06** walked toward "the ensuite doorway", left over from the bathroom
+  beat that was dropped. Its end frame is the pool; it now walks to the water.
+- **Leg 04** ended "toward the house" while anchored on the billiards canvas. It
+  now names the games room, and this run actually produced the buffet — chafing
+  dishes, stacked plates, two people serving — which the landscape leg never did.
+
+Measured landings against the target canvas: 16.6, 22.4, 19.0, 22.0, 20.6,
+16.0 dB. All seven chained on the first attempt; **no re-rolls, 1,512 credits.**
