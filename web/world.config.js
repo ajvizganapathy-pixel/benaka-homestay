@@ -26,6 +26,13 @@
    photographs. No invented distances, prices or amenities. Nothing "nestled",
    nothing "unwinds". If a sentence could describe any hotel anywhere, it is
    wrong and gets rewritten.
+
+   And each line names the JOURNEY its leg travels, not the place it starts
+   from. Every leg runs beat N -> beat N+1: leg 02 is arch -> house, leg 05 is
+   billiards -> the rooms. Copy that named only the start left the whole story
+   reading half a beat behind the picture, which is exactly how it looked on a
+   phone. Check a rewrite against the clip at t = 2, 4 and 6s, not against the
+   still.
    ========================================================================== */
 
 window.SHERLOCK_WORLD = {
@@ -52,8 +59,8 @@ window.SHERLOCK_WORLD = {
       clipMobile: '../assets/clips/leg-02-m.mp4',
       scroll: 0.7,
       eyebrow: 'The gate',
-      title: 'You will know it by the arch.',
-      body: 'Red gates, a sign that has taken a few monsoons, and a drive that curves up to the house.' },
+      title: 'In under the arch, up to the house.',
+      body: 'A sign that has taken a few monsoons, a short wet drive, and the house waiting at the top of it.' },
 
     { id: 'courtyard', label: 'The house',
       still: '../assets/scenes/03-courtyard-house.jpg',
@@ -62,28 +69,28 @@ window.SHERLOCK_WORLD = {
       clipMobile: '../assets/clips/leg-03-m.mp4',
       scroll: 0.8, linger: 0.25,
       eyebrow: 'The house',
-      title: 'Two floors and one long verandah.',
-      body: 'Everyone ends up here. On the steps, in a chair, watching it rain on the brick.' },
+      title: 'Along the verandah, out to the pavilion.',
+      body: 'Two floors, a verandah the whole way along, and a brick yard that stays wet all monsoon.' },
 
-    { id: 'table', label: 'The table',
+    { id: 'table', label: 'The pavilion',
       still: '../assets/scenes/04-buffet-table.jpg',
       stillMobile: '../assets/scenes/portrait/04-buffet-table.jpg',
       clip: '../assets/clips/leg-04.mp4',
       clipMobile: '../assets/clips/leg-04-m.mp4',
       scroll: 0.7,
       eyebrow: 'Meals',
-      title: 'Food comes out at the pavilion.',
-      body: 'Served hot, eaten under a tin roof, with the hill sitting there and dripping.' },
+      title: 'Served at the pavilion, then in through the doors.',
+      body: 'Open on three sides, a tin roof over it, the hill dripping behind. Past it the floor turns to tile.' },
 
-    { id: 'billiards', label: 'The table',
+    { id: 'billiards', label: 'The playroom',
       still: '../assets/scenes/05-billiards.jpg',
       stillMobile: '../assets/scenes/portrait/05-billiards.jpg',
       clip: '../assets/clips/leg-05.mp4',
       clipMobile: '../assets/clips/leg-05-m.mp4',
       scroll: 0.7,
       eyebrow: 'The playroom',
-      title: 'There is a billiards table under the stairs.',
-      body: 'Cane chairs, the doors open to the yard, and an afternoon going nowhere.' },
+      title: 'Past the billiards table, through to the rooms.',
+      body: 'Cane chairs, a tiled floor, the stair going up, and an afternoon going nowhere.' },
 
     { id: 'room', label: 'The rooms',
       still: '../assets/scenes/06-room.jpg',
@@ -92,8 +99,8 @@ window.SHERLOCK_WORLD = {
       clipMobile: '../assets/clips/leg-06-m.mp4',
       scroll: 0.9, linger: 0.35,
       eyebrow: 'The rooms',
-      title: 'Old wood and thick walls.',
-      body: 'A carved headboard, a green almirah, and a window that opens onto the trees.' },
+      title: 'Out of the room and down to the water.',
+      body: 'A carved headboard, a green almirah, a window on the trees — and the pool waiting below.' },
 
     { id: 'pool', label: 'The pool',
       still: '../assets/scenes/07-pool.jpg',
