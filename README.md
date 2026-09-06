@@ -118,6 +118,16 @@ was delivered that was not.
 from, a phone number, a WhatsApp number and an email. There is nothing else to
 store and nothing to leak.
 
+## Where it is
+
+![The venue block](docs/screenshots/15-venue.jpg)
+
+The last block on the page: the name at the size it deserves, **Near Irpu Falls,
+Kodagu**, both numbers as tap-to-call, and one button out to Google Maps. Not an
+embedded map — an iframe would need google.com in the Content-Security-Policy
+and would set third-party cookies on a site that has neither, and on a phone a
+plain link opens the visitor's own map app anyway.
+
 ## On a phone
 
 ![On a phone](docs/screenshots/12-mobile.jpg)

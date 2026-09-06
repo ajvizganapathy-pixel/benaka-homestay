@@ -9,8 +9,12 @@ Two rules learned the hard way and encoded here:
 
   * measure the RENDERED CLIP, not the still canvas. A spot that is dark on the
     poster can be a white wall four seconds in.
-  * score each zone by its WORST (brightest) sampled moment, not its average.
-    Optimising a midpoint is what once left a beat sitting on a white house.
+  * score each zone by its WORST sampled moment, not its average. Optimising a
+    midpoint is what once left a beat sitting on a white house.
+
+Which moment is "worst" depends on the ink. Light type fails on the BRIGHTEST
+moment; dark type fails on the DARKEST one. Both are printed, as `max/min`:
+pick a zone with a low max for white type, or a high min for dark type.
 
 Zones are given in viewport fractions and are converted through the same
 `object-fit: cover` maths the browser uses, so a zone means the same thing here
@@ -61,15 +65,15 @@ def main():
         for c in range(cols):
             x0, x1 = int(ox + c*band_w), int(ox + (c+1)*band_w)
             y0, y1 = int(oy + r*band_h), int(oy + (r+1)*band_h)
-            worst = 0
+            means = []
             for f in frames:
                 tot = n = 0
                 for y in range(y0, y1, 3):
                     row = f[y*W + x0: y*W + x1]
                     tot += sum(row); n += len(row)
-                worst = max(worst, tot/max(n,1))
-            cells.append(worst)
-        print('row%d ' % r + ''.join('%10.0f' % v for v in cells))
+                means.append(tot/max(n,1))
+            cells.append((max(means), min(means)))
+        print('row%-2d ' % r + ''.join('%12s' % ('%.0f/%.0f' % v) for v in cells))
 
 if __name__ == '__main__':
     main()
