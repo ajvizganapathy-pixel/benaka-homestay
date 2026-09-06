@@ -1,12 +1,12 @@
 {
   "property": {
     "repoName": "benaka-homestay",
-    "signageName": "Sherlock's Jungle Retreat",
-    "signageNote": "The entrance arch in gate-arch-01/02 reads SHERLOCK'S JUNGLE RETREAT. Confirm the intended public name before any copy or branding work.",
+    "signageName": "BENAKA ByTheHills",
+    "signageNote": "The entrance arch reads BENAKA ByTheHills. The property was previously signed Sherlock's Jungle Retreat; every photograph showing that sign has been removed, and the walkthrough legs that showed it were re-rendered.",
     "region": "Coorg (Kodagu), Karnataka, India",
     "season": "monsoon / overcast, wet ground in most frames"
   },
-  "imageCount": 47,
+  "imageCount": 43,
   "categories": [
     "approach",
     "bath",
@@ -22,36 +22,6 @@
     "room"
   ],
   "images": [
-    {
-      "file": "approach-gate-wide-01.jpg",
-      "origin": "IMG-20260903-WA0011.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "approach",
-      "description": "Road approach with the gate arch mid-frame, hills and coconut palms",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null,
-      "galleryGroup": "outside"
-    },
-    {
-      "file": "approach-road-01.jpg",
-      "origin": "IMG-20260806-WA0004.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "approach",
-      "description": "Village road curving toward the property, hills and plantation behind, gate sign in the distance",
-      "sceneRole": "start-canvas",
-      "sceneBeat": 1,
-      "sceneId": "01-approach-road",
-      "note": null,
-      "galleryGroup": "outside"
-    },
     {
       "file": "bath-basin-01.jpg",
       "origin": "IMG-20260903-WA0013.jpg",
@@ -126,6 +96,21 @@
       "sceneId": null,
       "note": "frame is rotated 90 degrees; rotate before any use",
       "galleryGroup": "inside"
+    },
+    {
+      "file": "gate-arch-benaka-01.jpg",
+      "origin": "owner-supplied 2026-09",
+      "width": 1600,
+      "height": 900,
+      "aspect": 1.7778,
+      "orientation": "landscape",
+      "category": "gate",
+      "description": "The entrance arch head-on, BENAKA ByTheHills sign overhead, the drive running under it to the house",
+      "sceneRole": "scene",
+      "sceneBeat": 1,
+      "sceneId": "01-approach-road",
+      "note": "Also the source for the 02-gate-arch canvas at a tighter crop. Replaces every photograph that showed the old signage.",
+      "galleryGroup": "outside"
     },
     {
       "file": "cottages-pool-01.jpg",
@@ -361,51 +346,6 @@
       "orientation": "landscape",
       "category": "garden",
       "description": "Small green-tiled cottage behind garden trees and shrubs",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null,
-      "galleryGroup": "outside"
-    },
-    {
-      "file": "gate-arch-01.jpg",
-      "origin": "IMG-20260903-WA0024.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "gate",
-      "description": "Entrance arch head-on, SHERLOCK'S JUNGLE RETREAT sign, drive leading in",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null,
-      "galleryGroup": "outside"
-    },
-    {
-      "file": "gate-arch-02.jpg",
-      "origin": "IMG-20260903-WA0032.jpg",
-      "width": 1600,
-      "height": 900,
-      "aspect": 1.7778,
-      "orientation": "landscape",
-      "category": "gate",
-      "description": "Through the entrance arch, sign large overhead, drive and hill beyond",
-      "sceneRole": "start-canvas",
-      "sceneBeat": 2,
-      "sceneId": "02-gate-arch",
-      "note": null,
-      "galleryGroup": "outside"
-    },
-    {
-      "file": "gate-road-01.jpg",
-      "origin": "IMG-20260903-WA0025.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "gate",
-      "description": "Gate and arch from the roadside at an angle, grass in the foreground",
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
