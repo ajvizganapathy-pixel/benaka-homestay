@@ -1,10 +1,16 @@
 /* ============================================================================
-   The walkthrough — eight beats, gate to pool.
+   The walkthrough — seven beats, the road to the pool.
    ----------------------------------------------------------------------------
    Each section holds its rendered leg plus the still it was chained from. The
    still stays as the poster and as the reduced-motion fallback; scrub-engine.js
-   scrubs the clip by scroll position. `clipMobile` is the same leg at 1280 wide
-   with a tighter GOP, which the engine serves automatically on phones.
+   scrubs the clip by scroll position.
+
+   `clipMobile` / `stillMobile` are a SECOND, NATIVE 9:16 chain, not a resize of
+   the landscape one, and the engine serves them on a coarse-pointer viewport.
+   A 16:9 clip on a 390x844 phone is cropped by `object-fit: cover` to 25.8% of
+   its width; a portrait leg shows 82%, which is roughly 2.7x the detail on the
+   glass. Both must be set together — a portrait clip under a landscape poster
+   flashes a crop of the wrong picture before the first frame paints.
 
    Architecture A (one continuous forward take) has no connectors; the legs are
    the journey. Hence `connectors: []` and a short crossfade — each leg starts
@@ -31,6 +37,7 @@ window.SHERLOCK_WORLD = {
   sections: [
     { id: 'approach', label: 'The road',
       still: '../assets/scenes/01-approach-road.jpg',
+      stillMobile: '../assets/scenes/portrait/01-approach-road.jpg',
       clip: '../assets/clips/leg-01.mp4',
       clipMobile: '../assets/clips/leg-01-m.mp4',
       scroll: 0.9,
@@ -40,6 +47,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'gate', label: 'The arch',
       still: '../assets/scenes/02-gate-arch.jpg',
+      stillMobile: '../assets/scenes/portrait/02-gate-arch.jpg',
       clip: '../assets/clips/leg-02.mp4',
       clipMobile: '../assets/clips/leg-02-m.mp4',
       scroll: 0.7,
@@ -49,6 +57,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'courtyard', label: 'The house',
       still: '../assets/scenes/03-courtyard-house.jpg',
+      stillMobile: '../assets/scenes/portrait/03-courtyard-house.jpg',
       clip: '../assets/clips/leg-03.mp4',
       clipMobile: '../assets/clips/leg-03-m.mp4',
       scroll: 0.8, linger: 0.25,
@@ -58,6 +67,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'table', label: 'The table',
       still: '../assets/scenes/04-buffet-table.jpg',
+      stillMobile: '../assets/scenes/portrait/04-buffet-table.jpg',
       clip: '../assets/clips/leg-04.mp4',
       clipMobile: '../assets/clips/leg-04-m.mp4',
       scroll: 0.7,
@@ -67,6 +77,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'billiards', label: 'The table',
       still: '../assets/scenes/05-billiards.jpg',
+      stillMobile: '../assets/scenes/portrait/05-billiards.jpg',
       clip: '../assets/clips/leg-05.mp4',
       clipMobile: '../assets/clips/leg-05-m.mp4',
       scroll: 0.7,
@@ -76,6 +87,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'room', label: 'The rooms',
       still: '../assets/scenes/06-room.jpg',
+      stillMobile: '../assets/scenes/portrait/06-room.jpg',
       clip: '../assets/clips/leg-06.mp4',
       clipMobile: '../assets/clips/leg-06-m.mp4',
       scroll: 0.9, linger: 0.35,
@@ -85,6 +97,7 @@ window.SHERLOCK_WORLD = {
 
     { id: 'pool', label: 'The pool',
       still: '../assets/scenes/07-pool.jpg',
+      stillMobile: '../assets/scenes/portrait/07-pool.jpg',
       clip: '../assets/clips/leg-07.mp4',
       clipMobile: '../assets/clips/leg-07-m.mp4',
       scroll: 1.1, linger: 0.4,
