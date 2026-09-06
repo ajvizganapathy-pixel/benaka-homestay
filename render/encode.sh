@@ -33,20 +33,13 @@ done
 
 echo "done -> $OUT_DIR"
 
-# --- mobile encodes -----------------------------------------------------------
-# 96MB of 1080p is a lot for a guest on Indian mobile data. These are the same
-# clips at 720 wide with a tighter GOP: a phone decoder's seek cost scales with
-# frames-from-keyframe, so -g 4 scrubs smoother there despite the smaller file.
-# The engine serves them automatically on a coarse-pointer / <=860px viewport
-# and falls back to the desktop master when absent. No credits: ffmpeg only.
-mobile() {
-  for src in "$OUT_DIR"/leg-*.mp4; do
-    case "$src" in *-m.mp4) continue;; esac
-    out="${src%.mp4}-m.mp4"
-    echo "mobile $(basename "$out")"
-    ffmpeg -y -loglevel error -i "$src" -an -vf "scale=1280:-2" \
-      -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p \
-      -g 4 -keyint_min 4 -sc_threshold 0 -movflags +faststart "$out"
-  done
-}
-mobile
+# --- mobile encodes are NOT made from these masters ---------------------------
+# There used to be a mobile() here that rebuilt each leg at `scale=1280:-2`.
+# It made phones worse, not better. A 16:9 clip on a 390x844 phone is cropped by
+# `object-fit: cover` to 25.8% of its width, and cover's scale factor at 1280
+# wide is 1.18 — an UPSCALE. That is 330 source pixels stretched across 390 CSS
+# pixels, softer than the 1080p master it was derived from.
+#
+# The phone build is a separate NATIVE 9:16 chain instead. See
+# render/encode-mobile.sh, which reads render/raw-portrait/ and writes the
+# leg-0N-m.mp4 files the engine picks up on a coarse-pointer viewport.

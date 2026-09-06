@@ -3,7 +3,8 @@
 ## Account
 
 ```
-openart_account_get -> { plan: "Plus", credits: 12000 }
+openart_account_get -> { plan: "Plus", credits: 12000 }   at the first chain
+openart_account_get -> { plan: "Plus", credits: 10398 }   before the portrait chain
 ```
 
 Plus earns a **10% discount on MCP-originated generations**. Credits have no
@@ -45,6 +46,22 @@ alternative, but previz would have to run on a different model.
 |---|---|---:|
 | Handoff probe — 540p/5s, startFrame only | frame-lock **30.6–32.9 dB**, foreign URL accepted | 45 |
 | End-frame probe — 540p/5s, start+end | see `run-chain.md` | 45 |
+| **The 16:9 chain — 7 legs, 8s/1080p** | no re-rolls | **1,512** |
+| Portrait-aspect probe — 540p/5s, 1080×1920 frames | out **576×1024**, clean forward glide, landed under the arch | 45 |
+| **The portrait chain — 7 legs, 8s/1080p, 9:16** | | **1,512** |
+
+## The portrait chain
+
+`pixverseV6/image2video` has **no aspect-ratio field** — output aspect follows
+`startFrame`. That was an assumption worth 45 credits to test rather than 1,512
+to discover: a 540p/5s job with a 1080×1920 start frame came back **576×1024**,
+so a 1080p job returns 1080×1920. Same 216 a leg, same seven legs, **1,512**.
+
+Why it is worth spending at all: on a 390×844 phone the 16:9 chain is cropped by
+`object-fit: cover` to 25.8% of frame width, and the old mobile encode then
+*upscaled* that — 330 source pixels across 390 CSS pixels. A native 9:16 leg
+shows 82% of the frame and puts 887 there. The fix is not an encoder setting;
+there is no way to recover framing that was never rendered.
 
 ## No masked inpaint on OpenArt
 
