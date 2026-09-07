@@ -189,13 +189,28 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
   .sw-copylayer::before { left: 0; }
 
+  /* Placement re-derived on the CURRENT portrait clips with
+     tools/measure-copy-zones.py at 390x844. The number after each beat is the
+     BRIGHTEST moment anywhere under the block over the whole leg, which is what
+     cream type fails on — not the average, and not the still.
+
+     Beats 3, 4 and 7 moved because the footage under them changed: leg 03 now
+     ends inside the dining hall, leg 04 never leaves it, and the finale has a
+     swimmer and open water where it used to have sky. Beat 7 is the big one —
+     it was sitting at 72% on 168, and 42% puts it on 105.
+
+     Beat 6 stays where it is. Its darkest band is the very top (113), too high
+     to hold a title and a paragraph without clipping; everywhere a block
+     actually fits is 161-162. So it does not clear 4.5:1 against the small body
+     register at its worst moment, and that is recorded rather than fixed — the
+     kill-rules at the top of this file mean no scrim and no text-shadow, ever. */
   .sw-copylayer .sw-copy { bottom: auto; }
-  .sw-copylayer .sw-copy:nth-child(2) { top: 50%; }   /* gate      */
-  .sw-copylayer .sw-copy:nth-child(3) { top: 42%; }   /* courtyard */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 42%; }   /* table     */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 58%; }   /* billiards */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 33%; }   /* room      */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 72%; }   /* pool      */
+  .sw-copylayer .sw-copy:nth-child(2) { top: 50%; }   /* gate       */
+  .sw-copylayer .sw-copy:nth-child(3) { top: 50%; }   /* courtyard  116 */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 72%; }   /* table      118 */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 58%; }   /* billiards  126 */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 33%; }   /* room       162 - see above */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 42%; }   /* pool       105 */
 }
 
 /* The canvas hands over to the gallery as a dissolve, not a cut. The engine
