@@ -6,7 +6,7 @@
     "region": "Coorg (Kodagu), Karnataka, India",
     "season": "monsoon / overcast, wet ground in most frames"
   },
-  "imageCount": 43,
+  "imageCount": 42,
   "categories": [
     "approach",
     "bath",
@@ -286,21 +286,6 @@
       "orientation": "landscape",
       "category": "exterior",
       "description": "Main house from the side, external stair, balcony, basketball hoop, planters",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null,
-      "galleryGroup": "outside"
-    },
-    {
-      "file": "exterior-mainhouse-verandah-01.jpg",
-      "origin": "IMG-20260903-WA0026.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "exterior",
-      "description": "Main house with its full pillared verandah and upper balustrade, hill behind",
       "sceneRole": "reference",
       "sceneBeat": null,
       "sceneId": null,
