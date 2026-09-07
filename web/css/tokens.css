@@ -59,6 +59,50 @@
   --sw-font-body:    var(--s-font-micro);
 }
 
+/* ---------------------------------------------------------------------------
+   THE EDITORIAL LAYER — a second, LIGHT palette for the page around the canvas.
+
+   The canvas is video and wants a dark ground; the page around it is a property
+   brochure and wants paper. Rather than fork every rule, the light values are
+   declared on the page bands themselves and inherit down: `.before` and `.after`
+   redeclare the same --s-* names, so the gallery, footer and venue convert with
+   no rule changes at all, while the engine's fixed layers — which live OUTSIDE
+   those elements — keep the dark values from :root above.
+
+   This is the same proximity-inheritance behaviour documented at the top of this
+   file, used deliberately instead of being worked around.
+   ------------------------------------------------------------------------ */
+.before, .after {
+  --s-bg:          #f4f1ea;   /* ivory, warm; never #fff */
+  --s-bg-raised:   #eae4d8;
+  --s-bg-sunk:     #efe9dd;
+  --s-line:        #ddd5c5;
+
+  --s-ink:         #23292b;   /* muted charcoal, never #000 */
+  --s-ink-soft:    #5d6663;
+  --s-ink-faint:   #8b918c;
+
+  --s-accent:      #a8542c;   /* terracotta, darkened to hold on paper */
+  --s-accent-soft: #8f4522;
+}
+
+/* Deep forest green, the reference's second ground. Used for the handover band
+   and the closing bar, where the page needs to go quiet before and after the
+   canvas. Ink flips back to cream inside it. */
+.band--forest {
+  --s-bg:          #1c2f26;
+  --s-bg-raised:   #24392e;
+  --s-bg-sunk:     #16261e;
+  --s-line:        #33493d;
+  --s-ink:         #f1ece1;
+  --s-ink-soft:    #a9b6ac;
+  --s-ink-faint:   #7d8c82;
+  --s-accent:      #d9895e;
+  --s-accent-soft: #e8a988;
+  background: var(--s-bg);
+  color: var(--s-ink);
+}
+
 @media (max-width: 720px) { :root, .sw-root { --s-rail: 48px; } }
 
 /* Motion is a garnish. If it isn't wanted, none of it is load-bearing. */

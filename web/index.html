@@ -38,12 +38,98 @@
   <span>Book<span class="book__more">your stay</span></span>
 </button>
 
-<!-- The name, held over the first beats, dissolving as the camera goes in. -->
-<div class="hero" id="top" data-hero>
-  <p class="hero__eyebrow micro">Coorg &middot; Karnataka</p>
-  <h1 class="hero__name">Benaka<br><em>By The Hills</em></h1>
-  <p class="hero__sub micro">A homestay at the end of the road</p>
-  <span class="hero__scroll micro">Scroll to go in <i></i></span>
+<!-- ===========================================================================
+     THE EDITORIAL BAND — everything before the walkthrough.
+
+     Same stacking pattern as .after below, and for the same reason: the engine's
+     .sw-sky (z0), .sw-stage (z10) and .sw-copylayer (z20) are FIXED and paint
+     across the whole document, so anything that must sit above them needs its
+     own level and an opaque ground.
+
+     Its height is measured at mount and turned into the walkthrough's lead-in
+     hold, so the seven real beats still start where they always did. See the
+     note in web/js/site.js.
+     ======================================================================== */ -->
+<div class="before" data-before>
+
+  <!-- 1. The hero: the real gate, and the name over it. One screen, no more. -->
+  <header class="ed-hero" id="top">
+    <img class="ed-hero__img"
+         src="../assets/raw/gate-arch-benaka-01.jpg"
+         alt="The entrance arch at Benaka By The Hills, the drive running under it to the house"
+         width="1600" height="900" fetchpriority="high" decoding="async">
+    <div class="ed-hero__copy">
+      <p class="micro">Coorg &middot; Karnataka</p>
+      <h1 class="ed-hero__name">Benaka<br><em>By The Hills</em></h1>
+      <p class="ed-hero__line">A quiet homestay at the end of the road.</p>
+      <p class="micro ed-hero__where">Near Irpu Falls &middot; Kodagu</p>
+    </div>
+    <span class="ed-hero__scroll micro" aria-hidden="true">Scroll <i></i></span>
+  </header>
+
+  <!-- 2. What the place actually is, in real photographs. -->
+  <section class="ed-story" aria-labelledby="story-h">
+    <div class="ed-story__text reveal">
+      <p class="micro">Our story</p>
+      <h2 class="macro" id="story-h">A family house in Kodagu, kept as a homestay.</h2>
+      <p>Eight rooms, a verandah along the whole front, a courtyard that stays wet
+         all monsoon, and a hill behind it. Meals are cooked here and eaten
+         together. Nothing about it is hurried.</p>
+      <p class="ed-story__meta micro">Every photograph on this page was taken on the property.</p>
+    </div>
+    <div class="ed-story__plate">
+      <figure class="ed-plate ed-plate--lead reveal">
+        <img src="../assets/raw/exterior-mainhouse-front-02.jpg" alt="The main house across the courtyard, verandah and balcony along its full length" loading="lazy" decoding="async">
+      </figure>
+      <figure class="ed-plate ed-plate--tall reveal">
+        <img src="../assets/raw/courtyard-pavilion-01.jpg" alt="The open courtyard with the dining pavilion on one side" loading="lazy" decoding="async">
+      </figure>
+      <figure class="ed-plate ed-plate--small reveal">
+        <img src="../assets/raw/cottages-pool-02.jpg" alt="The cottage row and the pool seen through the trees" loading="lazy" decoding="async">
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3. The three sections of the property. These are the same three groups the
+       photograph wall below is built from, so the labels and the gallery never
+       drift apart — each one jumps to its group. -->
+  <section class="ed-three" aria-labelledby="three-h">
+    <header class="ed-three__head reveal">
+      <p class="micro">The property</p>
+      <h2 class="macro" id="three-h">Three parts to it.</h2>
+    </header>
+    <div class="ed-three__grid">
+      <a class="ed-card reveal" href="#gallery">
+        <figure><img src="../assets/raw/room-heritage-double-02.jpg" alt="A heritage double room with a carved headboard" loading="lazy" decoding="async"></figure>
+        <p class="micro">Inside the rooms</p>
+        <h3>Where you sleep.</h3>
+        <p class="ed-card__line">Carved headboards, tiled floors, a window on the trees, and a bathroom to each.</p>
+      </a>
+      <a class="ed-card reveal" href="#gallery">
+        <figure><img src="../assets/raw/pool-hills-04.jpg" alt="The pool with the cottage roofs and the hill behind" loading="lazy" decoding="async"></figure>
+        <p class="micro">Outside the house</p>
+        <h3>The grounds.</h3>
+        <p class="ed-card__line">A pool long enough to swim, a brick courtyard, and the plantation past the wall.</p>
+      </a>
+      <a class="ed-card reveal" href="#gallery">
+        <figure><img src="../assets/raw/games-billiards-01.jpg" alt="The billiards table in the games room under the stair" loading="lazy" decoding="async"></figure>
+        <p class="micro">Pool and playroom</p>
+        <h3>The afternoons.</h3>
+        <p class="ed-card__line">A billiards table under the stair, cane chairs, and food laid out when you want it.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- 4. The handover. From here the page stops being a brochure and the camera
+       takes over — so this is the last opaque thing before the canvas. -->
+  <section class="ed-enter band--forest" aria-labelledby="enter-h">
+    <p class="micro">Step inside</p>
+    <h2 class="macro" id="enter-h">Walk through Benaka.</h2>
+    <p class="ed-enter__line">Keep scrolling and the camera goes in from the road,
+       under the arch, through the house and out to the water.</p>
+    <span class="ed-enter__cue micro" aria-hidden="true">Keep scrolling <i></i></span>
+  </section>
+
 </div>
 
 <!-- The scroll-scrubbed walkthrough. The engine owns this band. -->

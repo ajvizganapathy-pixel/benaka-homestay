@@ -61,7 +61,7 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 
 ```
 index.html            root redirect stub -> web/ (see the note under Layout)
-web/index.html        page shell: hero, canvas mount, gallery, footer, booking
+web/index.html        page shell: editorial band, canvas mount, gallery, footer, booking
 web/world.config.js   the 7 beats, their copy, and all scroll pacing
 web/scrub-engine.js   VERBATIM from the skill — do not edit
 web/css/              fonts, tokens, site chrome, booking
@@ -106,6 +106,32 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    come from `render/encode.sh`, portrait from `render/encode-mobile.sh`, which
    refuses a landscape input outright.
 
+### The editorial band, and why the walkthrough has an eighth section
+
+The page opens as a property brochure — real photographs, ivory ground, editorial
+serif — and only then hands over to the canvas. That order exists because the
+client read the old build as an AI cinematic rather than as a real place.
+
+**The catch is that `scrub-engine.js` lays its segments out from zero
+(`let off = 0`, :187) and reads absolute `window.scrollY` (:223), so it assumes
+its track starts at the top of the document.** Anything above `#world` shifts
+every beat's trigger point, and the engine cannot be patched.
+
+So `web/js/site.js` measures the `.before` band at mount and prepends **one
+lead-in section** to the config, carrying beat 1's poster and **no clip**. It is
+pure scroll: the band spends it, and the seven real beats then begin unspent.
+Consequences to know:
+
+- there are **8 `.sw-copy` elements, not 7**, so every `nth-child()` beat
+  selector in `site.css` is offset by one;
+- `.sw-copy__num` is hidden, which is why the renumbering never shows;
+- `.before` and `.after` use `padding-left` for the book rail, not `margin-left`
+  — a margin left the rail transparent and the engine's fixed `.sw-stage`
+  painted a strip of canvas down the edge of the brochure;
+- both bands must restate `color: var(--s-ink)` as well as the token, because
+  `color` inherits as a computed value and `body` has already resolved the dark
+  theme's cream.
+
 ### Two entry points, on purpose
 
 The site is `web/index.html`. The root `index.html` is a redirect stub, not a
@@ -118,14 +144,26 @@ for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
 non-Apache host, opening the files directly. It uses `location.replace()` so it
 leaves no history entry; `assign()` would trap the Back button.
 
-### Nothing goes over the photographs
+### Nothing DIMS the photographs — but the type may carry a bounded shadow
 
-No text-shadow, glow, outline or scrim, anywhere. **Both kill-rules sit together
-at the top of `site.css`; keep them there and run
-`tools/check-css-invariants.sh` after editing that file.** The engine ships a shadow on
-`.sw-copy__title` and a gradient on `.sw-copylayer::before` from inside
-`@layer sw`; both are overridden off with `!important` in `site.css`. **Do not
-reintroduce either as a readability patch.**
+**The scrim is still banned outright.** The engine's `.sw-copylayer::before`
+gradient is overridden off with `!important` and must stay off: it dimmed the
+left of every frame for the whole scroll. No black gradients, no cinematic wash,
+nothing that darkens the picture as a whole.
+
+**The text-shadow ban was REVERSED**, on the client's explicit written
+instruction, after measurement showed placement alone could not carry it: with
+no shadow and no scrim, four of the seven beats sat at 3.2–4.0:1 against cream
+type on phones, and no position, ink colour or copy length reached 4.5:1 — the
+rooms the chain now shows are bright, white-plastered interiors.
+
+What replaced it is a **bound, not a licence**: blur only, no offset, alpha
+below 0.5, one layer, no outline, on the canvas copy only. That reads as ink
+printed onto the photograph; an offset or opaque shadow reads as a movie poster,
+which is exactly what the reversal was careful not to become.
+`tools/check-css-invariants.sh` now asserts the bound rather than absence, so the
+guard still fails the build if someone raises the alpha to rescue a beat. If a
+beat needs more than this, it needs different footage.
 
 Legibility instead comes from per-beat copy placement: each beat puts its copy
 where the picture is darkest. Measure against the **rendered clips, not the still

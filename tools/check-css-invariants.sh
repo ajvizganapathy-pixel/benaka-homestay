@@ -22,8 +22,25 @@ need() {   # need <description> <grep-pattern>
 echo "site.css invariants:"
 need "the engine's copy scrim is switched off" \
      '\.sw-copylayer::before[[:space:]]*\{[[:space:]]*display:[[:space:]]*none[[:space:]]*!important'
-need "story typography carries no text-shadow" \
-     'text-shadow:[[:space:]]*none[[:space:]]*!important'
+# The text-shadow rule was REVERSED on the client's instruction — see the long
+# comment beside it in site.css. It is no longer "must be absent"; it is "must
+# stay within the bound", which is the thing that actually protects the
+# photographs. A blurred, un-offset, low-alpha shadow reads as ink on the print;
+# an offset or opaque one reads as a movie poster, which is what the reversal
+# was careful not to become.
+if grep -qE 'text-shadow:[[:space:]]*0[[:space:]]+0[[:space:]]+[0-9]+px[[:space:]]+rgba\([0-9]+,[[:space:]]*[0-9]+,[[:space:]]*[0-9]+,[[:space:]]*0\.[0-4][0-9]?\)' "$CSS"; then
+  printf '  ok    canvas text-shadow is blur-only, no offset, alpha < 0.5\n'
+else
+  printf '  FAIL  canvas text-shadow is missing or outside its bound\n'; fail=1
+fi
+
+# Nothing may reintroduce a hard drop shadow or an outline as a second attempt
+# at legibility. One bounded shadow, or none.
+if grep -nE '(-webkit-text-stroke|text-shadow:[^;]*(px[[:space:]]+[0-9-]+px[[:space:]]+[0-9]+px[[:space:]]+rgba?\([^)]*(0\.[5-9]|1)\)|,))' "$CSS" | grep -v 'text-shadow:[[:space:]]*0[[:space:]]*0' >/dev/null; then
+  printf '  FAIL  a hard shadow, second shadow layer or text outline crept in\n'; fail=1
+else
+  printf '  ok    no hard shadow, stacked shadow or text outline\n'
+fi
 
 # The engine is copied verbatim from the scroll-world skill and must stay that
 # way; local edits are lost on any re-copy.

@@ -38,6 +38,33 @@
         linger: sec.linger ? sec.linger * 0.6 : sec.linger,
       }));
     }
+    // ---- The lead-in hold -------------------------------------------------
+    // scrub-engine.js lays its segments out from ZERO (`let off = 0`) and reads
+    // ABSOLUTE window.scrollY, so it assumes its track starts at the top of the
+    // document. The editorial band above it breaks that assumption: every beat
+    // would fire one band-height too early.
+    //
+    // The engine is byte-identical to the skill and cannot be patched, so the
+    // compensation goes in the config instead — one leading section holding
+    // beat 1's poster, sized to the band. It carries NO clip, so it loads no
+    // video and costs nothing; it is simply the scroll the editorial band spends.
+    //
+    // Measured rather than hard-coded because the band's height depends on the
+    // viewport and on how the copy wraps. A little extra is added so the band
+    // has always fully cleared before the first beat starts moving — the
+    // overshoot is a held still of the road, which is the handover we want.
+    const band = $('[data-before]');
+    if (band) {
+      const lead = band.getBoundingClientRect().height / innerHeight + 0.35;
+      const first = cfg.sections[0] || {};
+      cfg.sections = [{
+        id: 'lead-in',
+        still: first.still,
+        stillMobile: first.stillMobile,
+        scroll: lead,
+      }, ...cfg.sections];
+    }
+
     mountScrollWorld(world, cfg);
   }
 
@@ -274,24 +301,18 @@
   /* ---- 5. Hero fade and the canvas-to-gallery handoff ------------------- */
   // The engine sizes only its own .sw-track and never reads document height, so
   // reading that track's height back is a safe way to know where the canvas ends.
-  const hero = $('[data-hero]');
   let ticking = false;
 
   function onScroll() {
     const y     = window.scrollY;
     const vh    = window.innerHeight;
     const track = $('.sw-track');
-    const canvasEnd = track ? track.offsetHeight : vh;
-
-    // The name holds on landing, then dissolves across the first screen.
-    const t = clamp(y / (vh * 0.85));
-    if (hero) {
-      hero.style.opacity = String(1 - t);
-      hero.style.transform = `translateY(${-t * 26}px)`;
-    }
-    // The copy scrim comes up as the hero goes down: beat 1 has no copy to
-    // serve, so it stays off there and the opening photograph reads clean.
-    document.documentElement.style.setProperty('--scrim-on', t.toFixed(3));
+    // The track no longer starts at the top of the document — the editorial band
+    // sits above it — so the canvas ends at the track's own offset plus its
+    // height, not at its height alone. Reading the height alone faded the canvas
+    // out one band-height early.
+    const trackTop = track ? track.getBoundingClientRect().top + y : 0;
+    const canvasEnd = track ? trackTop + track.offsetHeight : vh;
 
     // The engine appends 1vh of track past the final beat so a clip can finish.
     // With stills that tail is empty, so it becomes the dissolve: the stage
@@ -300,6 +321,14 @@
     const fade = clamp((y - fadeStart) / (vh * 0.9));
     document.documentElement.style.setProperty('--canvas-fade', (1 - fade).toFixed(3));
     document.body.classList.toggle('past-canvas', fade > 0.98);
+
+    // The book control is fixed in the rail and crosses two very different
+    // grounds: ivory paper above and below the canvas, dark footage between.
+    // One colour cannot serve both, so the ground it is currently over is
+    // published as a class and the CSS picks the ink.
+    const band = $('[data-before]');
+    const bandEnd = band ? band.getBoundingClientRect().bottom + y : 0;
+    document.body.classList.toggle('on-paper', y + vh * 0.5 < bandEnd || fade > 0.5);
 
     ticking = false;
   }

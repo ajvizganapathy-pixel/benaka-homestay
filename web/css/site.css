@@ -67,23 +67,37 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    ======================================================================== */
 .sw-copylayer::before { display: none !important; }
 
-/* NO TEXT SHADOW ON STORY TYPOGRAPHY — the second half of the same idea, and it
-   lives here beside the scrim for the same reason: it has been deleted three
-   times by edits further down this file. The engine ships a shadow on
-   .sw-copy__title from inside @layer sw, so !important is required to beat it.
-   A shadow makes the words sit on top of the photograph and smears a dark halo
-   into the frame. Nothing replaces it — no glow, outline or drop-shadow.
-   tools/check-css-invariants.sh fails the build if either rule goes missing. */
+/* TEXT SHADOW — BOUNDED, NOT BANNED. A DELIBERATE REVERSAL, READ THIS FIRST.
+
+   This rule used to be `text-shadow: none !important` and sat here as the twin
+   of the scrim kill above. It was reversed on the client's explicit written
+   instruction, for a reason the measurements support: with no shadow and no
+   scrim, four of the seven beats measured 3.2-4.0:1 against cream type on
+   phones, and no placement, ink colour or copy length reached 4.5:1 — the rooms
+   the chain now shows are bright, white-plastered interiors.
+
+   THE SCRIM KILL ABOVE STAYS. The two rules are not the same thing and the
+   brief bans the scrim as firmly as this file did: no black gradients, no
+   cinematic wash, nothing that dims the photograph as a whole. A shadow is
+   local to the glyphs and leaves the picture visible between them.
+
+   The bound is what makes it safe, and the invariant check enforces it:
+   BLUR ONLY, NO OFFSET, LOW ALPHA. No hard drop-shadow, no second layer, no
+   outline, no glow. It should read as ink printed onto the photograph, and it
+   should be invisible as an effect. If you find yourself raising the alpha to
+   rescue a beat, the beat needs different footage, not a darker halo. */
 .sw-copy__title,
 .sw-copy__body,
 .sw-copy__eyebrow,
-.sw-copy__num,
-.sw-copy__tags li,
-.hero__name,
-.hero__eyebrow,
-.hero__sub {
-  text-shadow: none !important;
+.sw-copy__tags li {
+  text-shadow: 0 0 18px rgba(12, 14, 16, 0.42) !important;
 }
+
+/* The beat counter is interface, not story, and the editorial direction has no
+   place for it. Hiding it also makes the lead-in hold section invisible: with it
+   gone nothing on screen counts the beats, so the extra section that carries the
+   editorial band's scroll never shows up as "01 / 08". */
+.sw-copy__num { display: none !important; }
 
 /* PER-BEAT COPY PLACEMENT.
    With no scrim, the copy has to find its own contrast, so every beat puts it
@@ -109,29 +123,29 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 @media (min-width: 861px) {
   .sw-copylayer .sw-copy { transform: none; }
 
-  .sw-copylayer .sw-copy:nth-child(2) { left: 63% !important; }
-  .sw-copylayer .sw-copy:nth-child(5) { left: 55% !important; }
+  .sw-copylayer .sw-copy:nth-child(3) { left: 63% !important; }
+  .sw-copylayer .sw-copy:nth-child(6) { left: 55% !important; }
 
-  .sw-copylayer .sw-copy:nth-child(2) { top: auto; bottom: 22%; }  /* gate      */
-  .sw-copylayer .sw-copy:nth-child(3) { top: auto; bottom: 22%; }  /* courtyard */
+  .sw-copylayer .sw-copy:nth-child(3) { top: auto; bottom: 22%; }  /* gate      */
+  .sw-copylayer .sw-copy:nth-child(4) { top: auto; bottom: 22%; }  /* courtyard */
   /* Beat 4 rides the dark green hill across the top of the frame; the lower
      half of that leg is pale wall and wet concrete for most of its length. */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 22%; bottom: auto; }  /* table     */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 22%; bottom: auto; }  /* table     */
   /* Beat 5 sits wholly on the green baize: the felt is a large, evenly lit,
      mid-tone field, while the table body just below it is near-black. A block
      spanning both cannot be one ink, so it is placed to clear the dark edge. */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 40%; bottom: auto; }  /* billiards */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 28%; }                /* room      */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 8%;  }                /* pool      */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 40%; bottom: auto; }  /* billiards */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }                /* room      */
+  .sw-copylayer .sw-copy:nth-child(8) { top: 8%;  }                /* pool      */
 
   /* Beat 5 is the one frame with nowhere dark to stand: the games room is lit
      white for the whole leg, worst case 147, so light type cannot win on it.
      Rather than lay a shade over the photograph, the ink flips — dark type on a
      bright picture. Same two registers, opposite polarity. */
-  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__title { color: #14171a; }
-  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__body,
-  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__num { color: #2a3037; }
-  .sw-copylayer .sw-copy:nth-child(5) .sw-copy__eyebrow { color: #8f3d18; }
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__title { color: #14171a; }
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__body,
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__num { color: #2a3037; }
+  .sw-copylayer .sw-copy:nth-child(6) .sw-copy__eyebrow { color: #8f3d18; }
 }
 
 /* Keep the block compact so it stays inside the measured dark zone. */
@@ -213,12 +227,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
      top of this file rule both out permanently. The real fix is footage with a
      dark band in frame. Recorded, not patched. */
   .sw-copylayer .sw-copy { bottom: auto; }
-  .sw-copylayer .sw-copy:nth-child(2) { top: 52%; }   /* gate       101  4.9:1 */
-  .sw-copylayer .sw-copy:nth-child(3) { top: 48%; }   /* courtyard  130  3.3:1 */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 52%; }   /* table      132  3.2:1 */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 60%; }   /* billiards  116  4.0:1 */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 28%; }   /* room       121  3.7:1 */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* pool       106  4.6:1 */
+  .sw-copylayer .sw-copy:nth-child(3) { top: 52%; }   /* gate       101  4.9:1 */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 48%; }   /* courtyard  130  3.3:1 */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 52%; }   /* table      132  3.2:1 */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 60%; }   /* billiards  116  4.0:1 */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* room       121  3.7:1 */
+  .sw-copylayer .sw-copy:nth-child(8) { top: 28%; }   /* pool       106  4.6:1 */
 }
 
 /* Keep the block compact so it stays inside the measured dark zone. */
@@ -233,77 +247,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sw-copy__title { font-weight: 400; letter-spacing: -0.015em; }
 .sw-copy__body  { font-family: var(--s-font-micro); color: #f2f1ee; }
 .sw-copy__title { color: #fff; }
-
-/* PER-BEAT COPY PLACEMENT, PHONES.
-   Phones are served a different chain — native 9:16 legs, not a crop of the
-   landscape ones — so they need their own measurement. Same method, same
-   script, different pictures:
-
-     python3 tools/measure-copy-zones.py assets/clips/leg-0N-m.mp4 390 844 --rows 12
-
-   which runs the browser's own `object-fit: cover` maths (83% of frame width
-   visible at this size), samples t = 2.0/3.5/5.0/6.5s and prints each band as
-   `max/min` — the brightest moment and the darkest. Light type fails on the
-   brightest, dark type on the darkest, so both matter. The window below is the
-   darkest 25%-tall band in each leg; the copy block is about that tall.
-
-     beat            top    worst moment behind the copy (0-255)
-     2  gate         50%     86     white, 7.3:1
-     3  courtyard    42%     94     white, 6.6:1
-     4  table        42%    148     white, 3.0:1   <- see below
-     5  billiards    58%    103     white, 5.9:1
-     6  room         33%     99     white, 6.1:1
-     7  pool         75%    158     white, 2.8:1   <- see below
-
-   BEATS 4 AND 7 ARE THE HONEST LIMIT OF THIS APPROACH. The re-rendered pavilion
-   leg is lit tin roof and the re-rendered pool leg is mostly overcast sky, and
-   neither has anywhere dark to stand: 148 and 158 at their worst instant. The
-   ink cannot simply flip either, because both legs also pass through genuinely
-   dark moments (minima of 95 and 45) where dark type would disappear instead.
-   No single ink clears 4.5:1 at every moment on those two beats.
-
-   So the copy sits at the least-bad window and the title — the large register,
-   which needs 3:1, not 4.5:1 — holds throughout. The small body register dips
-   below AA for part of beat 4 and beat 7. That is a real shortcoming and it is
-   recorded here rather than fixed with a scrim, because a scrim over the
-   photographs is the one thing this site does not do. If it has to be solved,
-   solve it in the footage: a leg with a dark band somewhere in frame.
-
-   Beat 6 no longer needs the dark-ink flip it had against the old chain — the
-   re-rendered room leg leaves through a doorway and is 99 where it used to be
-   153. */
-@media (max-width: 860px) {
-  .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
-  .sw-copylayer::before { left: 0; }
-
-  /* Placement re-derived on the CURRENT portrait clips at 390x844, scanned in
-     4% steps against each block's REAL rendered height (28vh, except beat 5 at
-     25 and beat 7 at 21 — measured in the browser, not assumed; a 23vh guess
-     put three beats in the wrong band). Each beat keeps its brightest moment
-     anywhere under the block, which is what cream ink fails on, and the
-     contrast that moment yields against --s-ink.
-
-     Beats 2, 4 and 5 clear or nearly clear 4.5:1. Beats 3, 6 and 7 do not, and
-     dark ink was measured as the alternative for each: it is worse everywhere
-     (1.5-3.5:1), because these legs are bright at some moments and dark at
-     others, so neither ink survives the whole leg.
-
-     Beat 3 is the bad one at 2.1:1. Its leg is a white two-storey house against
-     a white monsoon sky and then a lit interior — there is no dark band in the
-     frame at any point, so no placement helps. This is recorded, not patched:
-     the kill-rules at the top of this file mean no scrim and no text-shadow,
-     ever. The real fix is in the footage, not the CSS — a leg with somewhere
-     dark to stand — and that costs a re-render of leg 03 plus everything it
-     chains into. */
-  .sw-copylayer .sw-copy { bottom: auto; }
-  .sw-copylayer .sw-copy:nth-child(2) { top: 52%; }   /* gate       101  4.9:1 */
-  .sw-copylayer .sw-copy:nth-child(3) { top: 60%; }   /* courtyard  163  2.1:1 */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 68%; }   /* table       95  5.4:1 - 70% measures 5.6 but
-                                                         overflows the fold by 17px */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 36%; }   /* billiards  114  4.1:1 */
-  .sw-copylayer .sw-copy:nth-child(6) { top:  0%; }   /* room       120  3.7:1 */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 40%; }   /* pool       114  4.1:1 */
-}
 
 /* The canvas hands over to the gallery as a dissolve, not a cut. The engine
    adds 1vh of track past the last beat so a clip can finish; with stills that
@@ -346,6 +289,11 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
   transition: max-height .34s var(--s-ease), opacity .28s var(--s-ease),
               margin var(--s-quick);
 }
+/* Over the editorial bands the rail sits on ivory, so the word has to flip to
+   dark ink. site.js publishes which ground is under it; see the note there. */
+body.on-paper .book { color: #7a3d1e; }
+body.on-paper .book:hover { color: #a8542c; }
+
 .book:hover, .book:focus-visible {
   padding-right: 17px;
   letter-spacing: 0.3em;
@@ -361,38 +309,168 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
   .book:hover .book__more, .book:focus-visible .book__more { max-height: 0; opacity: 0; margin-top: 0; }
 }
 
-/* ---------------------------------------------------------------------------
-   3. Hero — the name, once, over the first beats
-   ------------------------------------------------------------------------ */
-.hero {
-  position: fixed; inset: 0; z-index: 25;
-  /* The approach photograph has a blown-white sky exactly where the name sits,
-     so some contrast is unavoidable. This is the least that still reads: a soft
-     pool tight around the name only, gone well before the edges of the frame,
-     so the photograph is never flattened. It replaces a text-shadow rather than
-     joining one. */
-  background: radial-gradient(ellipse 64% 56% at 50% 45%,
-    color-mix(in srgb, var(--s-bg) 54%, transparent) 0%,
-    color-mix(in srgb, var(--s-bg) 28%, transparent) 58%,
-    transparent 100%);
-  display: grid; place-content: center; text-align: center;
-  padding-left: var(--s-rail); pointer-events: none;
-  transition: opacity .5s var(--s-ease);
+
+/* ===========================================================================
+   3. THE EDITORIAL BAND — the brochure the visitor reads before the camera
+   starts. Same stacking contract as .after: its own level and an opaque ground,
+   because the engine's fixed layers paint the whole document underneath it.
+   ======================================================================== */
+.before {
+  position: relative; z-index: 30;
+  /* PADDING, not margin. A margin left the rail transparent and the engine's
+     fixed .sw-stage painted a strip of the canvas down the edge of the
+     brochure. Padding keeps the book control's lane clear and the ground
+     unbroken. .after does the same, just below. */
+  padding-left: var(--s-rail);
+  background: var(--s-bg);
+  color: var(--s-ink);
 }
-.hero__eyebrow { display: block; margin-bottom: 22px; color: var(--s-ink-soft); }
-.hero__name {
-  font-family: var(--s-font-macro); font-size: var(--s-macro-lg);
-  line-height: .92; letter-spacing: -0.03em; margin: 0; color: var(--s-ink);
+
+/* --- hero: one screen, the photograph full-bleed, the name on top of it.
+   The photograph is a still in the editorial band, not Scroll World footage, so
+   the no-scrim rule for the canvas does not reach here — and the client's own
+   reference puts the name over a darkened edge of the picture. It is kept to a
+   one-sided wash that clears well before the arch and the signboard, so the
+   thing the visitor came to see is never dimmed. */
+.ed-hero {
+  position: relative;
+  min-height: min(92vh, 780px);
+  display: grid;
+  isolation: isolate;
 }
-.hero__name em { font-style: italic; color: var(--s-accent-soft); }
-.hero__sub { margin-top: 26px; color: var(--s-ink-soft); }
-.hero__scroll { margin-top: 54px; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
-.hero__scroll i {
-  width: 1px; height: 40px;
-  background: linear-gradient(var(--s-accent), transparent);
-  animation: drop 2.2s var(--s-ease) infinite;
+.ed-hero__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; object-position: 60% 55%;
+  z-index: -2;
 }
-@keyframes drop { 0%,100% { opacity:.25; transform: scaleY(.5); transform-origin: top; } 50% { opacity:1; transform: scaleY(1); } }
+.ed-hero::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg,
+    rgba(14, 20, 17, 0.72) 0%,
+    rgba(14, 20, 17, 0.46) 34%,
+    rgba(14, 20, 17, 0.06) 62%,
+    transparent 78%);
+}
+.ed-hero__copy {
+  align-self: end;
+  padding: var(--s-gut) var(--s-gut) clamp(46px, 8vh, 96px);
+  max-width: min(46ch, 100%);
+  color: #f3efe6;
+}
+.ed-hero__copy .micro { display: block; color: rgba(243, 239, 230, .72); }
+.ed-hero__name {
+  font-family: var(--s-font-macro); font-weight: 400;
+  /* Sized off the viewport so the two lines the <br> creates are the ONLY two
+     lines: at 34ch the serif re-wrapped "By The Hills" into three more. */
+  font-size: clamp(2.6rem, 6.4vw, 5.2rem); line-height: .96;
+  letter-spacing: -0.02em; margin: 20px 0 0; color: #f6f2e9;
+  text-wrap: nowrap;
+}
+@supports not (text-wrap: nowrap) { .ed-hero__name { white-space: nowrap; } }
+.ed-hero__name em { font-style: italic; color: #e9b795; }
+.ed-hero__line {
+  font-family: var(--s-font-macro); font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+  line-height: 1.35; margin: 22px 0 0; max-width: 24ch; color: #ece7dc;
+}
+.ed-hero__where { margin: 24px 0 0 !important; color: rgba(243, 239, 230, .6) !important; }
+.ed-hero__scroll {
+  position: absolute; right: var(--s-gut); bottom: clamp(24px, 5vw, 54px);
+  display: flex; align-items: center; gap: 10px; color: rgba(243, 239, 230, .66);
+}
+.ed-hero__scroll i { width: 34px; height: 1px; background: currentColor; display: block; }
+/* PHONES: the photograph stops being a background and becomes the first object
+   on the page, at its own shape, with the copy under it on paper. Cover-cropping
+   a 16:9 gate shot into a portrait viewport cut the signboard in half — the one
+   thing the hero exists to show — and the brief asks for photo, then label, then
+   headline, then a line, which is what this is. */
+@media (max-width: 700px) {
+  .ed-hero { min-height: 0; display: block; }
+  .ed-hero__img {
+    position: static; z-index: auto;
+    width: 100%; height: auto; aspect-ratio: 16 / 10;
+    object-fit: cover; object-position: 50% 52%;
+  }
+  .ed-hero::after { content: none; }
+  .ed-hero__copy {
+    max-width: none; color: var(--s-ink);
+    padding: clamp(26px, 7vw, 40px) var(--s-gut) clamp(34px, 9vw, 56px);
+  }
+  .ed-hero__copy .micro { color: var(--s-ink-faint); }
+  .ed-hero__name { color: var(--s-ink); font-size: clamp(2.5rem, 12vw, 3.6rem); }
+  .ed-hero__name em { color: var(--s-accent); }
+  .ed-hero__line { color: var(--s-ink); }
+  .ed-hero__where { color: var(--s-ink-faint) !important; }
+  .ed-hero__scroll { display: none; }
+}
+
+/* --- story: one lead photograph, two supporting, deliberately off-grid ---- */
+.ed-story {
+  display: grid; gap: clamp(28px, 5vw, 72px);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+  padding: var(--s-section) var(--s-gut);
+  border-top: 1px solid var(--s-line);
+}
+.ed-story__text .micro { display: block; margin-bottom: 20px; }
+.ed-story__text p { color: var(--s-ink-soft); max-width: 40ch; margin: 22px 0 0; }
+.ed-story__meta { color: var(--s-ink-faint); margin-top: 32px !important; }
+/* The plate is deliberately off-grid: a wide lead photograph, then two smaller
+   ones that overlap its lower edge and step down. Asymmetry is the point — a
+   tidy 2x2 reads as a template, which is the thing being designed away from. */
+.ed-story__plate {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  gap: clamp(10px, 1.4vw, 18px);
+}
+.ed-plate { margin: 0; overflow: hidden; background: var(--s-bg-raised); }
+.ed-plate img { width: 100%; height: 100%; object-fit: cover; }
+/* Both supporting frames are mostly blown white sky above the roofline, so a
+   centred crop fills a third of the plate with nothing. Bias them downward. */
+.ed-plate--tall img  { object-position: 50% 74%; }
+.ed-plate--small img { object-position: 50% 50%; }
+.ed-plate--lead  { grid-column: 1 / 11; aspect-ratio: 3 / 2; }
+.ed-plate--tall  { grid-column: 4 / 9;  aspect-ratio: 4 / 5; margin-top: clamp(-40px, -3.2vw, -14px); z-index: 1; }
+.ed-plate--small { grid-column: 9 / 13; aspect-ratio: 1 / 1; align-self: end; }
+@media (max-width: 900px) {
+  .ed-story { grid-template-columns: 1fr; }
+  .ed-plate--lead  { grid-column: 1 / 12; }
+  .ed-plate--tall  { grid-column: 2 / 9; margin-top: clamp(-40px, -6vw, -14px); }
+  .ed-plate--small { grid-column: 9 / 13; }
+}
+
+/* --- three sections ------------------------------------------------------ */
+.ed-three { padding: var(--s-section) var(--s-gut); border-top: 1px solid var(--s-line); }
+.ed-three__head { margin-bottom: clamp(30px, 5vh, 60px); max-width: 30ch; }
+.ed-three__head .micro { display: block; margin-bottom: 18px; }
+.ed-three__grid {
+  display: grid; gap: clamp(24px, 3.4vw, 52px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 860px) { .ed-three__grid { grid-template-columns: 1fr; } }
+.ed-card { display: block; text-decoration: none; color: inherit; }
+.ed-card figure { margin: 0 0 20px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--s-bg-raised); }
+.ed-card figure img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--s-ease); }
+.ed-card:hover figure img, .ed-card:focus-visible figure img { transform: scale(1.035); }
+.ed-card .micro { display: block; color: var(--s-accent); }
+.ed-card h3 {
+  font-family: var(--s-font-macro); font-weight: 400;
+  font-size: clamp(1.35rem, 2.3vw, 1.9rem); line-height: 1.1;
+  margin: 10px 0 0; letter-spacing: -0.01em;
+}
+.ed-card__line { color: var(--s-ink-soft); margin: 12px 0 0; max-width: 34ch; }
+
+/* --- the handover into the canvas ---------------------------------------- */
+.ed-enter {
+  padding: clamp(80px, 15vh, 170px) var(--s-gut);
+  display: grid; gap: 0; align-content: center;
+  min-height: 78vh;
+}
+.ed-enter .micro { display: block; color: var(--s-accent); margin-bottom: 20px; }
+.ed-enter .macro { max-width: 18ch; }
+.ed-enter__line { color: var(--s-ink-soft); max-width: 42ch; margin: 26px 0 0; }
+.ed-enter__cue { display: flex; align-items: center; gap: 12px; margin-top: clamp(40px, 7vh, 80px); color: var(--s-ink-faint); }
+.ed-enter__cue i { width: 46px; height: 1px; background: currentColor; display: block; }
 
 /* ---------------------------------------------------------------------------
    4. Page sections after the canvas
@@ -401,8 +479,13 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
    ------------------------------------------------------------------------ */
 .after {
   position: relative; z-index: 30;
-  margin-left: var(--s-rail);
+  padding-left: var(--s-rail);   /* see the note on .before */
   background: var(--s-bg);
+  /* `color` is inherited as a COMPUTED value, so redeclaring --s-ink here is not
+     enough on its own: body already computed the dark theme's cream and every
+     heading below inherited that, invisible on ivory. The band has to restate
+     the colour as well as the token. */
+  color: var(--s-ink);
 }
 .section { padding: var(--s-section) var(--s-gut); }
 .section__head { max-width: 62ch; margin-bottom: clamp(32px, 5vh, 64px); }
@@ -450,11 +533,15 @@ body.past-canvas .sw-copylayer { pointer-events: none; }
 .tile img {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform .6s var(--s-ease), opacity .6s var(--s-ease);
-  opacity: .82;
+  /* Full strength on the ivory ground. The old .82 was a dimmer for the dark
+     theme, where a bright photograph punched a hole in the page; on paper the
+     same value just reads as a faded print. */
+  opacity: 1;
 }
 /* Live tiles: a tile turning over to show another photograph from its group.
    The outgoing image fades and lifts, the incoming one settles in behind it. */
 .tile img.turning { opacity: 0; transform: scale(1.06); }
+.tile.lit img { opacity: 1; }
 .tile.lit { outline: 1px solid color-mix(in srgb, var(--s-accent) 55%, transparent); outline-offset: -1px; }
 .tile.lit img { opacity: 1; }
 .tile:hover img, .tile:focus-visible img { transform: scale(1.045); opacity: 1; }
