@@ -11,99 +11,97 @@
 
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- 1. Mount the walkthrough ---------------------------------------- */
-  // Scroll distances are in viewport-heights, so a phone's shorter viewport
-  // turns the same swipe into far more of the clip: the camera races and whole
-  // frames go past unseen. The engine also coalesces seeks on touch — it drops
-  // a queued seek while the decoder is still working — which compounds it.
-  // Giving each beat more travel on a phone is the half we control: more scroll
-  // per frame means every frame gets screen time under a slide.
+  /* ---- 1. The walkthrough — six legs, laid out zigzag ------------------
+     This used to mount scrub-engine.js and scrub one continuous camera move
+     across the whole page. It was retired on the owner's instruction: the legs
+     read better as separate pieces. world.config.js is unchanged as the source
+     of truth — same sections, same paths, same copy — it is only rendered
+     differently.
+
+     Each leg is a block: the film on one side, the words on the other, sides
+     swapping as you go down. The words sit BESIDE the picture rather than on
+     it, which is what retired the scrim, the text-shadow and three rounds of
+     luminance measurement in one go.
+
+     A clip plays only while its own block is on screen and pauses when it
+     leaves, so at most one or two ever decode at once — and none at all under
+     prefers-reduced-motion, where the poster simply stands.                 */
   const coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
   const phone = coarse || innerWidth <= 860;
-  // Was 1.9. At that pace the canvas was 16.8 of the 26.1 viewport-heights of a
-  // 390x844 page — 64% of the whole site was scrubbing, and getting to the
-  // footer took far too long. 1.4 is as low as this goes before the reason it
-  // exists comes back: a phone's short viewport turns the same swipe into more
-  // of the clip, so too small a number makes the camera race again.
-  const PHONE_PACE = 1.4;
 
-  const world = $('#world');
-  if (world && window.BENAKA_WORLD) {
+  function buildLegs() {
+    const host = $('[data-legs]');
     const cfg = window.BENAKA_WORLD;
-    if (phone) {
-      cfg.diveScroll = (cfg.diveScroll || 0.8) * PHONE_PACE;
-      cfg.sections = cfg.sections.map(sec => ({
-        ...sec,
-        scroll: (sec.scroll || 0.8) * PHONE_PACE,
-        // Linger remaps time so the camera settles mid-scene. On a phone that
-        // stall reads as the clip stopping, so ease it back rather than off.
-        linger: sec.linger ? sec.linger * 0.6 : sec.linger,
-      }));
-    }
-    // ---- The lead-in hold -------------------------------------------------
-    // scrub-engine.js lays its segments out from ZERO (`let off = 0`) and reads
-    // ABSOLUTE window.scrollY, so it assumes its track starts at the top of the
-    // document. The editorial band above it breaks that assumption: every beat
-    // would fire one band-height too early.
-    //
-    // The engine is byte-identical to the skill and cannot be patched, so the
-    // compensation goes in the config instead — one leading section holding
-    // beat 1's poster, sized to the band. It carries NO clip, so it loads no
-    // video and costs nothing; it is simply the scroll the editorial band spends.
-    //
-    // Measured rather than hard-coded because the band's height depends on the
-    // viewport and on how the copy wraps. A little extra is added so the band
-    // has always fully cleared before the first beat starts moving — the
-    // overshoot is a held still of the road, which is the handover we want.
-    const band = $('[data-before]');
-    if (band) {
-      const lead = band.getBoundingClientRect().height / innerHeight + 0.35;
-      const first = cfg.sections[0] || {};
-      cfg.sections = [{
-        id: 'lead-in',
-        still: first.still,
-        stillMobile: first.stillMobile,
-        scroll: lead,
-      }, ...cfg.sections];
-    }
+    if (!host || !cfg || !cfg.sections) return;
 
-    mountScrollWorld(world, cfg);
+    const frag = document.createDocumentFragment();
+    cfg.sections.forEach((sec, i) => {
+      // The portrait chain is a separately rendered 9:16 set, not a resize —
+      // picking the wrong one crops a 16:9 frame to a quarter of its width.
+      const clip  = (phone && sec.clipMobile)  ? sec.clipMobile  : sec.clip;
+      const still = (phone && sec.stillMobile) ? sec.stillMobile : sec.still;
+      if (!clip && !still) return;
 
-    // ---- Don't reserve the lead-in's scroll twice --------------------------
-    // The engine sizes its track as (all segments + 1vh), and that total now
-    // includes the lead-in. But the lead-in's scroll is spent on the editorial
-    // band, which sits ABOVE the track in the document — so the track was also
-    // reserving that height for itself, leaving a band-height of dead scroll
-    // after the last beat. On a phone that was 5.4 empty viewport-heights
-    // between the pool and the footer, which is what "it takes very long to
-    // reach the footer" actually was.
-    //
-    // Pulling the track up by exactly the band's height removes the double
-    // count. Nothing is hidden by the overlap: .sw-track is an invisible,
-    // pointer-events:none spacer, and the editorial band paints over it at z30.
-    const pullUp = () => {
-      const el = $('[data-before]');
-      if (el) world.style.marginTop = -Math.round(el.getBoundingClientRect().height) + 'px';
-    };
-    pullUp();
-    addEventListener('resize', pullUp);
+      const art = document.createElement('article');
+      art.className = 'leg reveal' + (i % 2 ? ' leg--flip' : '');
 
-    // ---- The veil ---------------------------------------------------------
-    // A translucent forest wash between the engine's stage (z10) and its copy
-    // layer (z20). It knocks back the rendered sheen, brings the type forward,
-    // and puts the canvas in the same palette as the rest of the page.
-    //
-    // It is a separate element rather than a change to scrub-engine.js, which
-    // stays byte-identical to the skill. It is NOT the engine's own scrim: that
-    // one is a one-sided black gradient across the copy column and is still
-    // switched off in site.css. This is even, tinted, and translucent.
-    const veil = document.createElement('div');
-    veil.className = 'sw-veil';
-    veil.setAttribute('aria-hidden', 'true');
-    (document.querySelector('.sw-root') || world).appendChild(veil);
+      const figure = document.createElement('figure');
+      figure.className = 'leg__figure';
+      if (clip) {
+        const v = document.createElement('video');
+        v.muted = true; v.loop = true; v.playsInline = true;
+        v.preload = 'none';                 // nothing fetches until it is near
+        v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+        if (still) v.poster = still;
+        v.dataset.src = clip;               // src is set on approach, not now
+        figure.appendChild(v);
+      } else {
+        const img = document.createElement('img');
+        img.src = still; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+        figure.appendChild(img);
+      }
+
+      const words = document.createElement('div');
+      words.className = 'leg__words';
+      words.innerHTML =
+        (sec.eyebrow ? `<p class="micro">${esc(sec.eyebrow)}</p>` : '') +
+        (sec.title   ? `<h2 class="leg__title">${esc(sec.title)}</h2>` : '') +
+        (sec.body    ? `<p class="leg__body">${esc(sec.body)}</p>` : '');
+
+      art.append(figure, words);
+      frag.appendChild(art);
+    });
+    host.appendChild(frag);
+    playOnView();
+  }
+
+  /* Load a leg's film as it comes near, play it while it is on screen, pause it
+     when it leaves. Two observers rather than one: the outer margin decides
+     when to spend bandwidth, the tight one decides when to spend a decoder. */
+  function playOnView() {
+    const vids = $$('.leg video');
+    if (!vids.length) return;
+
+    const near = new IntersectionObserver((es, o) => {
+      es.forEach(e => {
+        if (!e.isIntersecting) return;
+        const v = e.target;
+        if (v.dataset.src && !v.src) { v.src = v.dataset.src; v.load(); }
+        o.unobserve(v);
+      });
+    }, { rootMargin: '150% 0px' });
+
+    const onScreen = new IntersectionObserver(es => {
+      es.forEach(e => {
+        const v = e.target;
+        if (e.isIntersecting && !reduced) { v.play().catch(() => {}); }
+        else { try { v.pause(); } catch {} }
+      });
+    }, { threshold: 0.25 });
+
+    vids.forEach(v => { near.observe(v); onScreen.observe(v); });
   }
 
   /* ---- 2. Gallery, built from the manifest ------------------------------ */
@@ -385,34 +383,16 @@
     $$('.reveal:not(.in)').forEach(n => io.observe(n));
   }
 
-  /* ---- 5. Hero fade and the canvas-to-gallery handoff ------------------- */
-  // The engine sizes only its own .sw-track and never reads document height, so
-  // reading that track's height back is a safe way to know where the canvas ends.
+  /* ---- 5. The book control ----------------------------------------------
+     All that is left of what was a canvas-to-gallery handoff: with the legs
+     laid out in normal flow there is no fixed stage to dissolve, so the
+     --canvas-fade / past-canvas machinery went with it. */
   let ticking = false;
 
   function onScroll() {
-    const y     = window.scrollY;
-    const vh    = window.innerHeight;
-    const track = $('.sw-track');
-    // The track no longer starts at the top of the document — the editorial band
-    // sits above it — so the canvas ends at the track's own offset plus its
-    // height, not at its height alone. Reading the height alone faded the canvas
-    // out one band-height early.
-    const trackTop = track ? track.getBoundingClientRect().top + y : 0;
-    const canvasEnd = track ? trackTop + track.offsetHeight : vh;
-
-    // The engine appends 1vh of track past the final beat so a clip can finish.
-    // With stills that tail is empty, so it becomes the dissolve: the stage
-    // fades out across it exactly as the gallery arrives.
-    const fadeStart = canvasEnd - vh * 1.15;
-    const fade = clamp((y - fadeStart) / (vh * 0.9));
-    document.documentElement.style.setProperty('--canvas-fade', (1 - fade).toFixed(3));
-    document.body.classList.toggle('past-canvas', fade > 0.98);
-
     // The book control only appears once the hero is behind you, so the first
     // screen carries nothing but the property.
-    document.body.classList.toggle('book-on', y > vh * 0.75);
-
+    document.body.classList.toggle('book-on', window.scrollY > window.innerHeight * 0.75);
     ticking = false;
   }
 
@@ -421,6 +401,7 @@
   }, { passive: true });
   window.addEventListener('resize', onScroll);
 
+  buildLegs();
   buildGallery().then(onScroll);
   onScroll();
 })();

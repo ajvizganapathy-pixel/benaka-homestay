@@ -1,78 +1,74 @@
 #!/bin/bash
-# Guards the CSS rules that have been silently deleted by later edits to
-# site.css and had to be rediscovered from a screenshot. Both are "off"
-# switches: nothing looks broken when they vanish except the thing they
-# suppress quietly coming back.
+# Guards the rules over the photographs that have each been silently deleted by
+# later edits to site.css and had to be rediscovered from a screenshot. They
+# fail invisibly: nothing looks broken when they vanish, the suppressed thing
+# just quietly comes back.
 #
 #   bash tools/check-css-invariants.sh
 #
 # No dependencies — this is a grep, so it runs anywhere the repo does.
+#
+# WHAT CHANGED, AND WHY THESE ARE NOT THE OLD CHECKS.
+# This used to guard the scroll-world canvas: the engine's copy scrim being
+# forced off, and a bounded text-shadow on type that sat ON the footage. The
+# walkthrough is now six separate blocks with the words BESIDE the film, so
+# there is no copy layer left to scrim and no type over a photograph to shadow.
+# Those two assertions had nothing to point at and were removed rather than left
+# passing vacuously. What survives is the rule they were both serving: NOTHING
+# DIMS OR OBSCURES THE PHOTOGRAPHS.
 set -u
 CSS=web/css/site.css
 fail=0
 
-need() {   # need <description> <grep-pattern>
-  if grep -qE "$2" "$CSS"; then
-    printf '  ok    %s\n' "$1"
-  else
-    printf '  FAIL  %s\n' "$1"; fail=1
-  fi
-}
+# Every content check below runs against the stylesheet with /* comments */
+# stripped. The prose in this file explains the rules it enforces, so scanning
+# raw text made the guard fail on its own documentation.
+CODE=$(mktemp)
+perl -0pe 's{/\*.*?\*/}{}gs' "$CSS" > "$CODE"
+trap 'rm -f "$CODE"' EXIT
 
 echo "site.css invariants:"
-need "the engine's copy scrim is switched off" \
-     '\.sw-copylayer::before[[:space:]]*\{[[:space:]]*display:[[:space:]]*none[[:space:]]*!important'
-# The text-shadow rule was REVERSED on the client's instruction — see the long
-# comment beside it in site.css. It is no longer "must be absent"; it is "must
-# stay within the bound", which is the thing that actually protects the
-# photographs. A blurred, un-offset, low-alpha shadow reads as ink on the print;
-# an offset or opaque one reads as a movie poster, which is what the reversal
-# was careful not to become.
-if grep -qE 'text-shadow:[[:space:]]*0[[:space:]]+0[[:space:]]+[0-9]+px[[:space:]]+rgba\([0-9]+,[[:space:]]*[0-9]+,[[:space:]]*[0-9]+,[[:space:]]*0\.[0-4][0-9]?\)' "$CSS"; then
-  printf '  ok    canvas text-shadow is blur-only, no offset, alpha < 0.5\n'
-else
-  printf '  FAIL  canvas text-shadow is missing or outside its bound\n'; fail=1
-fi
 
-# Nothing may reintroduce a hard drop shadow or an outline as a second attempt
-# at legibility. One bounded shadow, or none.
-if grep -nE '(-webkit-text-stroke|text-shadow:[^;]*(px[[:space:]]+[0-9-]+px[[:space:]]+[0-9]+px[[:space:]]+rgba?\([^)]*(0\.[5-9]|1)\)|,))' "$CSS" | grep -v 'text-shadow:[[:space:]]*0[[:space:]]*0' >/dev/null; then
-  printf '  FAIL  a hard shadow, second shadow layer or text outline crept in\n'; fail=1
+# 1. The tint on the rendered legs stays translucent. Opaque it stops being a
+#    wash over the footage and becomes a backdrop, which is the thing every
+#    version of this check has existed to prevent.
+tint=$(awk '/^\.leg__figure::after/ { inblock = 1 } inblock { print } inblock && /^}/ { inblock = 0 }' "$CODE")
+if [ -z "$tint" ]; then
+  printf '  FAIL  the leg tint is missing\n'; fail=1
 else
-  printf '  ok    no hard shadow, stacked shadow or text outline\n'
-fi
-
-# The veil over the canvas was added on the client's instruction to disguise the
-# rendered look and bring the type forward. It is only acceptable while it stays
-# SEE-THROUGH: every colour-mix inside the .sw-veil rules must be under 70%
-# against transparent. Turned opaque it stops being a wash over the photographs
-# and becomes a backdrop, which is what the scrim kill above exists to prevent.
-#
-# Scoped to the .sw-veil blocks only — an earlier version scanned the whole file
-# and failed on the book control's hover state, which is a solid chip and is
-# supposed to be opaque.
-if grep -q '\.sw-veil' "$CSS"; then
-  veil=$(awk '/^\.sw-veil[ ,{]/ || /^  \.sw-veil[ ,{]/ { inblock = 1 }
-              inblock { print }
-              inblock && /^  *}/ { inblock = 0 }' "$CSS")
-  worst=$(printf '%s' "$veil" | grep -oE '[0-9]{1,3}%, *transparent' | tr -d '%, transparent' | sort -n | tail -1)
-  if [ -n "$worst" ] && [ "$worst" -lt 70 ]; then
-    printf '  ok    the canvas veil is translucent throughout (max %s%%)\n' "$worst"
+  worst=$(printf '%s' "$tint" | grep -oE '[0-9]{1,3}%, *transparent' | tr -cd '0-9\n' | sort -n | tail -1)
+  if [ -n "$worst" ] && [ "$worst" -lt 40 ]; then
+    printf '  ok    the leg tint is translucent (%s%%)\n' "$worst"
   else
-    printf '  FAIL  the canvas veil is not translucent (max %s%%)\n' "${worst:-none}"; fail=1
+    printf '  FAIL  the leg tint is too heavy (%s%%) — it should wash, not cover\n' "${worst:-none}"; fail=1
   fi
-else
-  printf '  FAIL  the canvas veil is missing\n'; fail=1
 fi
 
-# The engine is copied verbatim from the scroll-world skill and must stay that
-# way; local edits are lost on any re-copy.
-if [ -f web/scrub-engine.js ]; then
-  if grep -q "mountScrollWorld" web/scrub-engine.js; then
-    printf '  ok    scrub-engine.js present\n'
-  else
-    printf '  FAIL  scrub-engine.js looks wrong\n'; fail=1
-  fi
+# 2. No scrim. A dark gradient laid over a photograph to rescue type is the
+#    original sin this file keeps re-committing. There is no type over the
+#    photographs any more, so there is no excuse for one either.
+if grep -nE 'linear-gradient\([^)]*rgba?\(\s*[0-9]{1,2}\s*,\s*[0-9]{1,2}\s*,\s*[0-9]{1,2}' "$CODE" \
+   | grep -vE '\.ed-hero|--s-accent|\.tile figcaption' >/dev/null; then
+  printf '  FAIL  a dark gradient scrim crept back over a photograph\n'; fail=1
+else
+  printf '  ok    no scrim over the photographs\n'
+fi
+
+# 3. No text-shadow, glow or outline anywhere. With the words beside the picture
+#    this is once again absolute, as it was before the canvas forced a compromise.
+if grep -nE 'text-shadow|-webkit-text-stroke' "$CODE" | grep -v 'text-shadow: *none' >/dev/null; then
+  printf '  FAIL  a text-shadow or outline was reintroduced\n'; fail=1
+else
+  printf '  ok    no text-shadow, glow or outline\n'
+fi
+
+# 4. The engine is no longer mounted, but the file stays as the record of the
+#    chain and world.config.js stays the source of truth for the walkthrough.
+[ -f web/scrub-engine.js ] && printf '  ok    scrub-engine.js retained (unmounted)\n'
+if grep -qE '<script[^>]+scrub-engine\.js' web/index.html; then
+  printf '  FAIL  scrub-engine.js is being loaded again — the legs render it dead\n'; fail=1
+else
+  printf '  ok    the retired engine is not loaded\n'
 fi
 
 [ $fail -eq 0 ] && echo "all invariants hold" || echo "INVARIANT BROKEN — see above" >&2

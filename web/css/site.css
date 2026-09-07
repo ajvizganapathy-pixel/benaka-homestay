@@ -46,254 +46,86 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 :focus-visible { outline: 2px solid var(--s-accent-soft); outline-offset: 3px; }
 
 /* ---------------------------------------------------------------------------
-   1. Engine overrides
-   The engine pins its copy at left: clamp(18px,5vw,64px). With the book rail
-   gone there is nothing to clear, so this just aligns the canvas copy to the
-   same gutter the editorial bands use.
+   1. The walkthrough — six legs, zigzag
+   The page used to hand this band to scrub-engine.js, which painted a fixed
+   sky, stage and copy layer across the whole document and scrubbed one
+   continuous camera move. That was retired: the legs are separate blocks in
+   normal flow now, so every .sw-* override, the per-beat copy placement, the
+   scrim kill, the bounded text-shadow and the canvas veil went with it —
+   roughly 190 lines that no longer had an element to style.
+
+   The words sit BESIDE the film rather than on it, which is what let all of
+   that go: type on paper needs no scrim, no shadow and no luminance
+   measurement.
    ------------------------------------------------------------------------ */
-.sw-topbar, .sw-hint, .sw-route, .sw-scrollbar, .sw-particles { display: none !important; }
-.sw-copy { left: var(--s-gut) !important; }
+.legs {
+  position: relative; z-index: 30;
+  /* The forest ground, the same one the "Step inside" band uses, so the
+     walkthrough reads as one chapter between the ivory brochure above it and
+     the ivory gallery below. Without this it inherited the near-black :root
+     tokens and sat outside the theme entirely. */
+  --s-bg:          #1c2f26;
+  --s-bg-raised:   #16261e;
+  --s-line:        #33493d;
+  --s-ink:         #f1ece1;
+  --s-ink-soft:    #b3bfb5;
+  --s-ink-faint:   #8b9990;
+  --s-accent:      #dd9169;
+  background: var(--s-bg);
+  color: var(--s-ink);
+  display: grid;
+  gap: clamp(48px, 8vh, 120px);
+  padding: clamp(56px, 9vh, 130px) var(--s-gut);
+}
+.leg {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 68px);
+  align-items: center;
+}
+/* The zigzag: every other leg puts the film on the right. Ordering by column
+   rather than reordering the DOM keeps the reading order intact for a screen
+   reader and for keyboard focus. */
+.leg--flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+.leg--flip .leg__figure { order: 2; }
+.leg--flip .leg__words  { order: 1; }
 
-/* ===========================================================================
-   NO SCRIM OVER THE PHOTOGRAPHS.
-
-   The engine paints a dark left-to-right gradient behind the copy column
-   (.sw-copylayer::before, from inside @layer sw). It dimmed the left of every
-   frame for the whole scroll — the "black gradual shade" — and it is off.
-
-   This rule has now been deleted twice by later edits to this file and had to be
-   restored both times, so it lives here, first, on its own, with a test guarding
-   it (see the shade check in the QA script). Do not fold it into another block.
-   Legibility is the per-beat copy placement below, and nothing else.
-   ======================================================================== */
-.sw-copylayer::before { display: none !important; }
-
-/* TEXT SHADOW — BOUNDED, NOT BANNED. A DELIBERATE REVERSAL, READ THIS FIRST.
-
-   This rule used to be `text-shadow: none !important` and sat here as the twin
-   of the scrim kill above. It was reversed on the client's explicit written
-   instruction, for a reason the measurements support: with no shadow and no
-   scrim, four of the seven beats measured 3.2-4.0:1 against cream type on
-   phones, and no placement, ink colour or copy length reached 4.5:1 — the rooms
-   the chain now shows are bright, white-plastered interiors.
-
-   THE SCRIM KILL ABOVE STAYS. The two rules are not the same thing and the
-   brief bans the scrim as firmly as this file did: no black gradients, no
-   cinematic wash, nothing that dims the photograph as a whole. A shadow is
-   local to the glyphs and leaves the picture visible between them.
-
-   The bound is what makes it safe, and the invariant check enforces it:
-   BLUR ONLY, NO OFFSET, LOW ALPHA. No hard drop-shadow, no second layer, no
-   outline, no glow. It should read as ink printed onto the photograph, and it
-   should be invisible as an effect. If you find yourself raising the alpha to
-   rescue a beat, the beat needs different footage, not a darker halo. */
-.sw-copy__title,
-.sw-copy__body,
-.sw-copy__eyebrow,
-.sw-copy__tags li {
-  text-shadow: 0 0 18px rgba(12, 14, 16, 0.42) !important;
+.leg__figure {
+  margin: 0; position: relative; overflow: hidden;
+  background: var(--s-bg-raised);
+  aspect-ratio: 16 / 9;
+}
+.leg__figure video, .leg__figure img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+/* The tint that used to be the canvas veil. Its legibility job is gone now the
+   words are beside the picture, but its other job — taking the sheen off
+   rendered footage so it reads as part of the property rather than as a film —
+   is why it stays. Translucent, in the property's own green, never black.
+   tools/check-css-invariants.sh fails the build if it stops being see-through. */
+.leg__figure::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: color-mix(in srgb, #1c2f26 16%, transparent);
 }
 
-/* The beat counter is interface, not story, and the editorial direction has no
-   place for it. Hiding it also makes the lead-in hold section invisible: with it
-   gone nothing on screen counts the beats, so the extra section that carries the
-   editorial band's scroll never shows up as "01 / 08". */
-.sw-copy__num { display: none !important; }
-
-/* ===========================================================================
-   THE VEIL — a translucent forest wash over the canvas.
-
-   Added on the client's instruction: the rendered footage read as AI-generated
-   and the type sat on it rather than in it. This is the fix they asked for —
-   "camouflage with shades, fonts coming up front" — and it is deliberately NOT
-   the engine's scrim, which is a one-sided black gradient across the copy column
-   and is still killed above. This one is even across the frame, tinted with the
-   property's own forest green rather than black, and translucent throughout, so
-   the photograph reads through it everywhere.
-
-   Slightly stronger at the top and bottom edges than in the middle: that keeps
-   the centre of every frame — where the building usually is — the clearest part
-   of the picture, while the copy, which sits high or low, gets the most cover.
-
-   It also settles a contrast problem measured twice: beats 3-6 were 3.2-4.0:1
-   against cream type and no placement, ink or copy length could reach 4.5:1.
-   Do not raise the alpha past translucent to fix a beat; the invariant check
-   fails the build if it stops being see-through.
-   ======================================================================== */
-.sw-veil {
-  position: fixed; inset: 0; z-index: 15;   /* stage is 10, copy layer is 20 */
-  pointer-events: none;
-  opacity: var(--canvas-fade, 1);
-  background:
-    linear-gradient(to bottom,
-      color-mix(in srgb, #12211a 40%, transparent) 0%,
-      color-mix(in srgb, #12211a 18%, transparent) 28%,
-      color-mix(in srgb, #12211a 18%, transparent) 64%,
-      color-mix(in srgb, #12211a 42%, transparent) 100%),
-    color-mix(in srgb, #1c2f26 12%, transparent);
+.leg__words .micro { display: block; color: var(--s-accent); }
+.leg__title {
+  font-family: var(--s-font-macro); font-weight: 400;
+  font-size: clamp(1.6rem, 3vw, 2.7rem); line-height: 1.08;
+  letter-spacing: -0.015em; margin: 14px 0 0;
 }
+.leg__body { color: var(--s-ink-soft); margin: 18px 0 0; max-width: 36ch; }
+
 @media (max-width: 860px) {
-  /* Phones show 83% of a portrait frame and hold the copy over the middle of
-     it, so the band that needs cover is wider. */
-  .sw-veil {
-    background:
-      linear-gradient(to bottom,
-        color-mix(in srgb, #12211a 42%, transparent) 0%,
-        color-mix(in srgb, #12211a 26%, transparent) 24%,
-        color-mix(in srgb, #12211a 26%, transparent) 70%,
-        color-mix(in srgb, #12211a 46%, transparent) 100%),
-      color-mix(in srgb, #1c2f26 15%, transparent);
-  }
+  /* One column on a phone: film, then its words under it. The zigzag has
+     nothing to alternate at this width and forcing it just makes the eye
+     hunt. Portrait legs are 9:16, so the frame changes shape with them. */
+  .legs { gap: clamp(40px, 7vh, 72px); padding: clamp(40px, 7vh, 80px) var(--s-gut); }
+  .leg, .leg--flip { grid-template-columns: 1fr; gap: 20px; }
+  .leg--flip .leg__figure { order: 0; }
+  .leg--flip .leg__words  { order: 0; }
+  .leg__figure { aspect-ratio: 9 / 16; }
 }
-
-/* PER-BEAT COPY PLACEMENT.
-   With no scrim, the copy has to find its own contrast, so every beat puts it
-   where the picture behind it is darkest.
-
-   Measured against the RENDERED CLIPS, not the still canvases — the stills are
-   only posters now, and a spot that is dark on the poster can be a white wall
-   four seconds into the leg. And measured across the copy's whole visible
-   window, not one instant: each zone is scored by its WORST (brightest) moment
-   at t = 2.0, 3.5, 5.0 and 6.5s, and the zone whose worst case is darkest wins.
-   Optimising a single midpoint is what left beat 3 sitting on a white house.
-
-     beat            zone            worst-case luminance (0-255)
-     2  gate         right, lower     69
-     3  courtyard    left,  lower     64
-     4  table        left,  lower     69
-     5  billiards    right, low      147   <- see below
-     6  room         left,  middle    86
-     7  pool         left,  top       92
-
-   Re-run the measurement (script in the commit message) if a leg is re-rendered.
-   Phones keep the engine's own bottom placement, so this is desktop only. */
-@media (min-width: 861px) {
-  .sw-copylayer .sw-copy { transform: none; }
-
-  .sw-copylayer .sw-copy:nth-child(3) { left: 63% !important; }
-  .sw-copylayer .sw-copy:nth-child(6) { left: 55% !important; }
-
-  .sw-copylayer .sw-copy:nth-child(3) { top: auto; bottom: 22%; }  /* gate      */
-  .sw-copylayer .sw-copy:nth-child(4) { top: auto; bottom: 22%; }  /* courtyard */
-  /* Beat 4 rides the dark green hill across the top of the frame; the lower
-     half of that leg is pale wall and wet concrete for most of its length. */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 22%; bottom: auto; }  /* table     */
-  /* Beat 5 sits wholly on the green baize: the felt is a large, evenly lit,
-     mid-tone field, while the table body just below it is near-black. A block
-     spanning both cannot be one ink, so it is placed to clear the dark edge. */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 40%; bottom: auto; }  /* billiards */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* room       121 -> 88  6.0:1 */
-  .sw-copylayer .sw-copy:nth-child(8) { top: 8%;  }                /* pool      */
-
-  /* Beat 5 is the one frame with nowhere dark to stand: the games room is lit
-     white for the whole leg, worst case 147, so light type cannot win on it.
-     Rather than lay a shade over the photograph, the ink flips — dark type on a
-     bright picture. Same two registers, opposite polarity. */
-}
-
-/* Keep the block compact so it stays inside the measured dark zone. */
-.sw-copy__body { max-width: 26ch !important; margin-top: 14px !important; }
-.sw-copy__title { margin-top: 8px !important; }
-
-.sw-copy__num, .sw-copy__eyebrow {
-  font-family: var(--s-font-micro);
-  font-size: var(--s-micro);
-  letter-spacing: var(--s-micro-track);
-}
-.sw-copy__title { font-weight: 400; letter-spacing: -0.015em; }
-.sw-copy__body  { font-family: var(--s-font-micro); color: #f2f1ee; }
-.sw-copy__title { color: #fff; }
-
-/* PER-BEAT COPY PLACEMENT, PHONES.
-   Phones are served a different chain — native 9:16 legs, not a crop of the
-   landscape ones — so they need their own measurement. Same method, same
-   script, different pictures:
-
-     python3 tools/measure-copy-zones.py assets/clips/leg-0N-m.mp4 390 844 --rows 12
-
-   which runs the browser's own `object-fit: cover` maths (83% of frame width
-   visible at this size), samples t = 2.0/3.5/5.0/6.5s and prints each band as
-   `max/min` — the brightest moment and the darkest. Light type fails on the
-   brightest, dark type on the darkest, so both matter. The window below is the
-   darkest 25%-tall band in each leg; the copy block is about that tall.
-
-     beat            top    worst moment behind the copy (0-255)
-     2  gate         50%     86     white, 7.3:1
-     3  courtyard    42%     94     white, 6.6:1
-     4  table        42%    148     white, 3.0:1   <- see below
-     5  billiards    58%    103     white, 5.9:1
-     6  room         33%     99     white, 6.1:1
-     7  pool         75%    158     white, 2.8:1   <- see below
-
-   BEATS 4 AND 7 ARE THE HONEST LIMIT OF THIS APPROACH. The re-rendered pavilion
-   leg is lit tin roof and the re-rendered pool leg is mostly overcast sky, and
-   neither has anywhere dark to stand: 148 and 158 at their worst instant. The
-   ink cannot simply flip either, because both legs also pass through genuinely
-   dark moments (minima of 95 and 45) where dark type would disappear instead.
-   No single ink clears 4.5:1 at every moment on those two beats.
-
-   So the copy sits at the least-bad window and the title — the large register,
-   which needs 3:1, not 4.5:1 — holds throughout. The small body register dips
-   below AA for part of beat 4 and beat 7. That is a real shortcoming and it is
-   recorded here rather than fixed with a scrim, because a scrim over the
-   photographs is the one thing this site does not do. If it has to be solved,
-   solve it in the footage: a leg with a dark band somewhere in frame.
-
-   Beat 6 no longer needs the dark-ink flip it had against the old chain — the
-   re-rendered room leg leaves through a doorway and is 99 where it used to be
-   153. */
-@media (max-width: 860px) {
-  .sw-copy { left: 20px !important; right: 20px !important; }
-  .sw-copylayer::before { left: 0; }
-
-  /* Placement re-derived on the CURRENT portrait clips at 390x844, scanned in
-     4% steps against each block's REAL rendered height measured in the browser
-     (28vh; 25 for beat 5, 21 for beat 7), rejecting any band that would push the
-     block past the fold.
-
-     The first number is the brightest moment anywhere under the block across the
-     whole leg — what cream ink fails on. The second is that value after the
-     forest veil above composites over it, and the ratio is what the type
-     actually achieves on screen.
-
-     The veil is what finally settled this. Bare, four of these beats sat at
-     3.2-4.0:1 and no placement, ink colour or copy length could reach 4.5 —
-     the restaurant, the games room and the guest room are all bright,
-     white-plastered interiors. Through the veil every beat clears it with room
-     to spare. A blown-white wall still only reaches 2.5:1, so if a future leg
-     is mostly white sky the answer is still the footage, not more veil. */
-  .sw-copylayer .sw-copy { bottom: auto; }
-  .sw-copylayer .sw-copy:nth-child(3) { top: 52%; }   /* gate       101 -> 75  7.4:1 */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 48%; }   /* courtyard  130 -> 93  5.5:1 */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 52%; }   /* table      132 -> 95  5.4:1 */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 60%; }   /* billiards  116 -> 85  6.3:1 */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* room       121 -> 88  6.0:1 */
-  .sw-copylayer .sw-copy:nth-child(8) { top: 28%; }   /* pool       106 -> 78  7.0:1 */
-}
-
-/* Keep the block compact so it stays inside the measured dark zone. */
-.sw-copy__body { max-width: 26ch !important; margin-top: 14px !important; }
-.sw-copy__title { margin-top: 8px !important; }
-
-.sw-copy__num, .sw-copy__eyebrow {
-  font-family: var(--s-font-micro);
-  font-size: var(--s-micro);
-  letter-spacing: var(--s-micro-track);
-}
-.sw-copy__title { font-weight: 400; letter-spacing: -0.015em; }
-.sw-copy__body  { font-family: var(--s-font-micro); color: #f2f1ee; }
-.sw-copy__title { color: #fff; }
-
-/* The canvas hands over to the gallery as a dissolve, not a cut. The engine
-   adds 1vh of track past the last beat so a clip can finish; with stills that
-   tail is dead black, so we spend it on the crossfade instead. site.js drives
-   --canvas-fade from scroll. */
-.sw-sky, .sw-stage, .sw-copylayer { opacity: var(--canvas-fade, 1); }
-body.past-canvas .sw-sky,
-body.past-canvas .sw-stage,
-body.past-canvas .sw-copylayer { pointer-events: none; }
-
-
 
 /* ---------------------------------------------------------------------------
    2. Book — a quiet fixed link in the top right, not a rail

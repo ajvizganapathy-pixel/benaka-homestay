@@ -1,38 +1,29 @@
 /* ============================================================================
-   The walkthrough — seven beats, the road to the pool.
+   The walkthrough — six legs, the road to the pool.
    ----------------------------------------------------------------------------
-   Each section holds its rendered leg plus the still it was chained from. The
-   still stays as the poster and as the reduced-motion fallback; scrub-engine.js
-   scrubs the clip by scroll position.
+   Each section is one short film plus the still it was chained from. The still
+   is the poster; site.js lays the sections out as separate zigzag blocks and
+   plays each clip while its block is on screen.
+
+   This file used to configure scrub-engine.js, which scrubbed all seven beats as
+   ONE continuous camera move. That was retired on the owner's instruction — the
+   legs read better as separate pieces than as one unbroken take — but the file
+   stays the source of truth for the walkthrough, and tools/test.sh still walks
+   every path in it.
 
    `clipMobile` / `stillMobile` are a SECOND, NATIVE 9:16 chain, not a resize of
-   the landscape one, and the engine serves them on a coarse-pointer viewport.
-   A 16:9 clip on a 390x844 phone is cropped by `object-fit: cover` to 25.8% of
-   its width; a portrait leg shows 82%, which is roughly 2.7x the detail on the
-   glass. Both must be set together — a portrait clip under a landscape poster
-   flashes a crop of the wrong picture before the first frame paints.
+   the landscape one. A 16:9 clip on a 390x844 phone is cropped by
+   `object-fit: cover` to 25.8% of its width; a portrait leg shows 82%. Both must
+   be set together, or the poster flashes a crop of the wrong picture.
 
-   Architecture A (one continuous forward take) has no connectors; the legs are
-   the journey. Hence `connectors: []` and a short crossfade — each leg starts
-   from the previous leg's actual last frame, so the seams are frame-exact and
-   the crossfade only has to cover the small drift where a leg lands on its
-   target beat.
-
-   PACING: these scroll values are the whole answer to "it takes too much wheel".
-   Total is ~5.8 viewport-heights across seven beats, down from 11.3 across
-   eight. Everything about pace lives here, so it stays trivial to retune.
+   THE BUFFET-TO-BILLIARDS LEG IS GONE, also on instruction: the old beat 4,
+   "Down the length of the table, on to the games room". Its files are still in
+   assets/clips/ (leg-04.mp4, leg-04-m.mp4) — nothing was deleted, the page just
+   no longer shows them.
 
    COPY RULE: plain English, short, and only about things visible in the
-   photographs. No invented distances, prices or amenities. Nothing "nestled",
-   nothing "unwinds". If a sentence could describe any hotel anywhere, it is
-   wrong and gets rewritten.
-
-   And each line names the JOURNEY its leg travels, not the place it starts
-   from. Every leg runs beat N -> beat N+1: leg 02 is arch -> house, leg 05 is
-   billiards -> the rooms. Copy that named only the start left the whole story
-   reading half a beat behind the picture, which is exactly how it looked on a
-   phone. Check a rewrite against the clip at t = 2, 4 and 6s, not against the
-   still.
+   photographs. No invented distances, prices or amenities. And each line names
+   the JOURNEY its leg travels, not the place it starts from.
    ========================================================================== */
 
 window.BENAKA_WORLD = {
@@ -71,16 +62,6 @@ window.BENAKA_WORLD = {
       eyebrow: 'The house',
       title: 'Along the verandah, across to the table.',
       body: 'Two floors, a verandah the whole way along, a brick yard that stays wet.' },
-
-    { id: 'table', label: 'The table',
-      still: '../assets/scenes/04-buffet-table.jpg',
-      stillMobile: '../assets/scenes/portrait/04-dining-indoor.jpg',
-      clip: '../assets/clips/leg-04.mp4',
-      clipMobile: '../assets/clips/leg-04-m.mp4',
-      scroll: 0.7,
-      eyebrow: 'Meals',
-      title: 'Down the length of the table, on to the games room.',
-      body: 'A long table under a tin roof, the dishes kept hot, plates going past. Beyond it the floor turns to tile.' },
 
     { id: 'billiards', label: 'The playroom',
       still: '../assets/scenes/05-billiards.jpg',

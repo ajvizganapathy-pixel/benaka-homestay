@@ -4,16 +4,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka, built on the
-`scroll-world` skill. Scroll drives a **camera**, not a scrollbar. Seven beats
-run from the road outside to the pool, then dissolve into a tiled gallery of the
-property's photographs, a footer, and a booking flow.
+A site for a homestay in Coorg (Kodagu), Karnataka. It opens as a property
+brochure — real photographs, ivory ground, editorial serif — and then walks you
+through the place as **six short films, each its own block, zigzagging down the
+page**: in from the road, under the arch, along the verandah, past the billiards
+table, into a room, down to the water. Then a tiled photograph gallery, a
+footer, a booking flow and the venue.
 
-Static and framework-free — plain HTML, one vanilla-JS engine, no build step, no
-package manifest, no tests. Serve the repo root over HTTP and open `/web/`.
+Static and framework-free — plain HTML, no build step, no package manifest.
+Serve the repo root over HTTP and open `/web/`.
 
-The property is signed **Benaka By The Hills** at its gate, which is what
-the site uses. The repo is still named `benaka-homestay`.
+The property is signed **Benaka By The Hills** at its gate, which is what the
+site uses. The repo is still named `benaka-homestay`.
+
+### The scroll-world engine is retired
+
+This began as a `scroll-world` build: one continuous scroll-scrubbed camera move
+across seven beats, driven by `web/scrub-engine.js`. **That is no longer
+mounted.** The owner asked for the legs as separate pieces rather than one
+unbroken take, so `web/js/site.js` now renders them from `web/world.config.js`
+as ordinary blocks and the engine's `<script>` tag is gone from `web/index.html`.
+
+The file stays in the repo as the record of what the chain was, and
+`tools/test.sh` still syntax-checks it. `tools/check-css-invariants.sh` fails the
+build if anything loads it again — the legs render it dead, and a half-mounted
+engine painting fixed layers over a page laid out in normal flow would be a mess
+to diagnose.
+
+**A whole class of problem left with it.** In a leg block the words sit *beside*
+the film, not on it, so the contrast fight — three rounds of luminance
+measurement, the bounded text-shadow, the forest veil over the copy layer, beats
+stuck at 3.2–4.0:1 — no longer applies at all. Type on paper needs none of it.
+
+**The buffet → billiards leg was dropped** on instruction (the old beat 4, "Down
+the length of the table, on to the games room"). `leg-04.mp4` and `leg-04-m.mp4`
+are still in `assets/clips/` — nothing was deleted, the page just stops showing
+them.
 
 ## Commands
 
@@ -61,9 +87,9 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 
 ```
 index.html            root redirect stub -> web/ (see the note under Layout)
-web/index.html        page shell: editorial band, canvas mount, gallery, footer, booking
-web/world.config.js   the 7 beats, their copy, and all scroll pacing
-web/scrub-engine.js   VERBATIM from the skill — do not edit
+web/index.html        page shell: editorial band, the legs, gallery, footer, booking
+web/world.config.js   the 6 legs, their copy and their clips — still the source of truth
+web/scrub-engine.js   RETIRED, not mounted; kept as the record of the old chain
 web/css/              fonts, tokens, site chrome, booking
 web/js/               api adapter, site behaviour, booking flow
 web/fonts/            self-hosted woff2 (no CDN at runtime)
@@ -73,29 +99,9 @@ api/                  booking.php + config.example.php — inert until configure
 render/               the OpenArt render chain: model, prompts, run book, costs
 ```
 
-### Four things that will bite
+### Three things that will bite
 
-1. **`web/scrub-engine.js` must stay byte-identical to the skill's copy.** It is
-   config-driven and self-contained; local edits are lost on any re-copy. Suppress
-   or extend it from `web/css/site.css` and `web/world.config.js` instead. The
-   chrome it builds unconditionally (topbar, hint, route rail, particles) is
-   hidden in `site.css`.
-
-2. **Engine theme tokens must be set on `:root, .sw-root` — both.** The engine
-   declares its cream defaults on `.sw-root` (`scrub-engine.js:359`), which is a
-   *closer ancestor* to the canvas copy than `:root`. Custom properties inherit by
-   proximity, and `@layer` does not enter into it, so `:root` alone silently loses
-   inside the canvas and everything renders cream-on-cream. `web/css/tokens.css`
-   sets both.
-
-3. **The page after the canvas needs its own stacking level.** The engine's
-   `.sw-sky` (z0), `.sw-stage` (z10) and `.sw-copylayer` (z20) are fixed and paint
-   for the whole document. `.after` sits at z30 with an opaque ground. This is
-   safe because `layout()` sizes only its own `.sw-track` from its own segment
-   widths and never reads `document.scrollHeight`, and every fixed layer is
-   `pointer-events: none`.
-
-4. **There are TWO rendered chains, and the phone one is not a resize.** Desktop
+1. **There are TWO rendered chains, and the phone one is not a resize.** Desktop
    gets `clip` / `still` (16:9); a coarse-pointer or ≤860px viewport gets
    `clipMobile` / `stillMobile`, which are a separately rendered native 9:16
    chain. This is not an optimisation that can be undone with an encoder flag:
@@ -106,46 +112,19 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    come from `render/encode.sh`, portrait from `render/encode-mobile.sh`, which
    refuses a landscape input outright.
 
-### The editorial band, and why the walkthrough has an eighth section
+2. **A leg's clip is not fetched until you are near it, and is paused when you
+   are not.** `playOnView()` in `site.js` uses two observers on purpose: a loose
+   one at `rootMargin: 150%` decides when to spend bandwidth by setting `src`,
+   and a tight one at `threshold: 0.25` decides when to spend a decoder by
+   calling `play()`. Setting `src` up front would pull six files of 13–18MB on
+   load. `preload="none"` plus that pair is what keeps it to what you actually
+   watch.
 
-The page opens as a property brochure — real photographs, ivory ground, editorial
-serif — and only then hands over to the canvas. That order exists because the
-client read the old build as an AI cinematic rather than as a real place.
-
-**The catch is that `scrub-engine.js` lays its segments out from zero
-(`let off = 0`, :187) and reads absolute `window.scrollY` (:223), so it assumes
-its track starts at the top of the document.** Anything above `#world` shifts
-every beat's trigger point, and the engine cannot be patched.
-
-So `web/js/site.js` measures the `.before` band at mount and prepends **one
-lead-in section** to the config, carrying beat 1's poster and **no clip**. It is
-pure scroll: the band spends it, and the seven real beats then begin unspent.
-Consequences to know:
-
-- there are **8 `.sw-copy` elements, not 7**, so every `nth-child()` beat
-  selector in `site.css` is offset by one;
-- `.sw-copy__num` is hidden, which is why the renumbering never shows;
-- `.before` and `.after` use `padding-left` for the book rail, not `margin-left`
-  — a margin left the rail transparent and the engine's fixed `.sw-stage`
-  painted a strip of canvas down the edge of the brochure;
-- both bands must restate `color: var(--s-ink)` as well as the token, because
-  `color` inherits as a computed value and `body` has already resolved the dark
-  theme's cream.
-
-### Two scroll facts that are easy to undo by accident
-
-1. **The track is pulled up by the editorial band's height** (`site.js`). The
-   engine sizes its track as every segment plus 1vh, and that total includes the
-   lead-in — but the lead-in's scroll is spent on the editorial band, which sits
-   *above* the track. Without the pull-up the page reserved that height twice and
-   left a band-height of dead scroll after the last beat: 5.4 empty
-   viewport-heights between the pool and the footer on a phone. `.sw-track` is an
-   invisible pointer-events:none spacer, so the overlap costs nothing.
-
-2. **`PHONE_PACE` is 1.4, and it is a trade.** It exists because a phone's short
-   viewport turns the same swipe into more of the clip, so the camera races.
-   1.9 made the canvas 64% of the whole mobile page; 1.4 is about as low as it
-   goes before frames start going past unseen.
+3. **`.legs` redeclares the palette tokens.** It is not inside `.before` or
+   `.after`, so without that block it inherits the dark `:root` values and sits
+   outside the site's theme. It carries the forest ground deliberately, matching
+   the "Step inside" band above it, so the walkthrough reads as one chapter
+   between the ivory brochure and the ivory gallery.
 
 ### Two entry points, on purpose
 
@@ -158,57 +137,6 @@ On Hostinger the stub is never reached for `/`: `.htaccess:4` sets
 for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
 non-Apache host, opening the files directly. It uses `location.replace()` so it
 leaves no history entry; `assign()` would trap the Back button.
-
-### The veil, the shadow, and what is still banned
-
-**A translucent forest veil now sits over the canvas** (`.sw-veil`, injected by
-`site.js` between the engine's stage at z10 and its copy layer at z20). It was
-added on the client's instruction: the rendered footage read as AI-generated and
-the type sat on top of it rather than in it. It is even across the frame, tinted
-with the property's own green rather than black, and translucent throughout —
-`tools/check-css-invariants.sh` fails the build if any of its colour-mix stops
-being see-through.
-
-It also finally settled a contrast problem that had been open for three rounds:
-bare, four beats measured 3.2–4.0:1 against cream type and nothing in CSS could
-reach 4.5. Through the veil every beat is 5.4–7.4:1. A blown-white wall still
-only reaches 2.5:1, so that case remains a footage problem.
-
-**The engine's own scrim is still banned** and the kill-rule stays: it is a
-one-sided black gradient across the copy column that dimmed the left of every
-frame. The veil is not that, and the two rules coexist deliberately.
-
-### The bounded text-shadow
-
-**The scrim is still banned outright.** The engine's `.sw-copylayer::before`
-gradient is overridden off with `!important` and must stay off: it dimmed the
-left of every frame for the whole scroll. No black gradients, no cinematic wash,
-nothing that darkens the picture as a whole.
-
-**The text-shadow ban was REVERSED**, on the client's explicit written
-instruction, after measurement showed placement alone could not carry it: with
-no shadow and no scrim, four of the seven beats sat at 3.2–4.0:1 against cream
-type on phones, and no position, ink colour or copy length reached 4.5:1 — the
-rooms the chain now shows are bright, white-plastered interiors.
-
-What replaced it is a **bound, not a licence**: blur only, no offset, alpha
-below 0.5, one layer, no outline, on the canvas copy only. That reads as ink
-printed onto the photograph; an offset or opaque shadow reads as a movie poster,
-which is exactly what the reversal was careful not to become.
-`tools/check-css-invariants.sh` now asserts the bound rather than absence, so the
-guard still fails the build if someone raises the alpha to rescue a beat. If a
-beat needs more than this, it needs different footage.
-
-Legibility instead comes from per-beat copy placement: each beat puts its copy
-where the picture is darkest. Measure against the **rendered clips, not the still
-canvases** — the stills are only posters, and a spot that is dark on the poster
-can be a white wall four seconds into the leg. Measure across the copy's whole
-visible window and score each zone by its **worst** moment, not its average:
-optimising a midpoint is what left one beat sitting on a white house.
-
-Where a leg has nowhere dark at all — the lit games room, worst case 147 — the
-ink flips to dark rather than a shade going over the photograph. The positions
-and their measured values are recorded in `site.css`.
 
 ### Type
 

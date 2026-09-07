@@ -106,50 +106,23 @@
     </div>
   </section>
 
-  <!-- 3. The three sections of the property. These are the same three groups the
-       photograph wall below is built from, so the labels and the gallery never
-       drift apart — each one jumps to its group. -->
-  <section class="ed-three" aria-labelledby="three-h">
-    <header class="ed-three__head reveal">
-      <p class="micro">The property</p>
-      <h2 class="macro" id="three-h">Three parts to it.</h2>
-    </header>
-    <div class="ed-three__grid">
-      <a class="ed-card reveal" href="#gallery">
-        <figure><img src="../assets/raw/room-heritage-double-02.jpg" alt="A heritage double room with a carved headboard" loading="lazy" decoding="async"></figure>
-        <p class="micro">Inside the rooms</p>
-        <h3>Where you sleep.</h3>
-        <p class="ed-card__line">Carved headboards, tiled floors, a window on the trees, and a bathroom to each.</p>
-      </a>
-      <a class="ed-card reveal" href="#gallery">
-        <figure><img src="../assets/raw/pool-hills-04.jpg" alt="The pool with the cottage roofs and the hill behind" loading="lazy" decoding="async"></figure>
-        <p class="micro">Outside the house</p>
-        <h3>The grounds.</h3>
-        <p class="ed-card__line">A pool long enough to swim, a brick courtyard, and the plantation past the wall.</p>
-      </a>
-      <a class="ed-card reveal" href="#gallery">
-        <figure><img src="../assets/raw/games-billiards-01.jpg" alt="The billiards table in the games room under the stair" loading="lazy" decoding="async"></figure>
-        <p class="micro">Pool and playroom</p>
-        <h3>The afternoons.</h3>
-        <p class="ed-card__line">A billiards table under the stair, cane chairs, and food laid out when you want it.</p>
-      </a>
-    </div>
-  </section>
-
   <!-- 4. The handover. From here the page stops being a brochure and the camera
        takes over — so this is the last opaque thing before the canvas. -->
   <section class="ed-enter band--forest" aria-labelledby="enter-h">
     <p class="micro">Step inside</p>
     <h2 class="macro" id="enter-h">Walk through Benaka.</h2>
-    <p class="ed-enter__line">Keep scrolling and the camera goes in from the road,
-       under the arch, through the house and out to the water.</p>
+    <p class="ed-enter__line">Six short films, in the order you would walk it:
+       in from the road, under the arch, along the verandah, past the billiards
+       table, into a room and down to the water.</p>
     <span class="ed-enter__cue micro" aria-hidden="true">Keep scrolling <i></i></span>
   </section>
 
 </div>
 
-<!-- The scroll-scrubbed walkthrough. The engine owns this band. -->
-<main id="world"></main>
+<!-- The walkthrough. Six legs, each its own block, built from world.config.js
+     by site.js and laid out zigzag. Formerly one scroll-scrubbed canvas driven
+     by scrub-engine.js; see the note in CLAUDE.md for why that was retired. -->
+<main class="legs" data-legs aria-label="A walk through the property"></main>
 
 <!-- Everything past the canvas. Own stacking level, opaque ground. -->
 <div class="after">
@@ -373,7 +346,6 @@
 </div>
 
 <script defer src="world.config.js"></script>
-<script defer src="scrub-engine.js"></script>
 <script defer src="js/api.js"></script>
 <script defer src="js/site.js"></script>
 <script defer src="js/booking.js"></script>
