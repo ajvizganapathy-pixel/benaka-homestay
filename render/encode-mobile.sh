@@ -32,21 +32,53 @@ legs=("$IN_DIR"/leg-*.mp4)
 
 # The raw directory is gitignored working state and survives between chains, so
 # a leg from a PREVIOUS run sits there looking exactly like a current one. It
-# would encode cleanly and chain visibly wrong. Refuse anything older than the
-# newest leg by more than an hour rather than shipping a mixed chain.
-if [ ${#legs[@]} -gt 1 ]; then
-  newest=0
-  for f in "${legs[@]}"; do t=$(stat -c %Y "$f"); [ "$t" -gt "$newest" ] && newest=$t; done
-  for f in "${legs[@]}"; do
-    t=$(stat -c %Y "$f")
-    if [ $((newest - t)) -gt 3600 ]; then
-      echo "REFUSING: $(basename "$f") is $(( (newest - t) / 3600 ))h older than the" >&2
-      echo "newest leg in $IN_DIR — that is a leg from an earlier chain. Delete it or" >&2
-      echo "re-render it; a mixed chain has a visible seam." >&2
+# would encode cleanly and chain visibly wrong.
+#
+# This used to refuse anything more than an hour older than the newest leg. That
+# is the wrong test: it fired twice on chains that were perfectly continuous but
+# had a pause in the middle while a human answered a question, and it would not
+# have caught a stale leg re-rendered minutes ago. Wall-clock age was only ever a
+# proxy for the thing that matters.
+#
+# So check the real invariant instead. Architecture A says leg N starts from leg
+# N-1's ACTUAL last frame, and those frames are kept in assets/handoff. If leg
+# N's frame 0 matches assets/handoff/leg-(N-1)-last-p.png, the two legs are from
+# the same chain no matter when they were rendered; if it does not, they are not,
+# however fresh they look. Rendering measures this as frame-lock and it comes
+# back 33-39 dB on a good join, ~15 dB when the picture is merely similar.
+check_chain () {
+  local dir=$1 prev cur first ref db
+  for f in "$dir"/leg-*.mp4; do
+    cur=$(basename "$f" .mp4); cur=${cur#leg-}
+    prev=$(printf '%02d' $((10#$cur - 1)))
+    ref="assets/handoff/leg-$prev-last-p.png"
+    [ -f "$ref" ] || continue          # first leg of the chain, or no record
+    first=$(mktemp --suffix=.png)
+    ffmpeg -v error -y -i "$f" -frames:v 1 "$first"
+    db=$(python3 - "$first" "$ref" <<'PYEOF'
+import subprocess, sys, math
+def gray(p):
+    return subprocess.run(['ffmpeg','-v','error','-i',p,'-vf','scale=288:512',
+                           '-f','rawvideo','-pix_fmt','gray','-'],
+                          capture_output=True).stdout
+a, b = gray(sys.argv[1]), gray(sys.argv[2])
+n = min(len(a), len(b))
+mse = sum((a[i]-b[i])**2 for i in range(n))/n if n else 0
+print(f"{10*math.log10(255*255/mse) if mse else 99:.1f}")
+PYEOF
+)
+    rm -f "$first"
+    if [ "$(echo "$db < 25" | bc -l)" = 1 ]; then
+      echo "REFUSING: leg-$cur does not start where leg-$prev ended ($db dB)." >&2
+      echo "These legs are from different chains and would encode a visible seam." >&2
+      echo "Re-render leg-$cur from assets/handoff/leg-$prev-last-p.png." >&2
       exit 1
     fi
+    echo "  chain ok  leg-$prev -> leg-$cur  $db dB"
   done
-fi
+}
+[ ${#legs[@]} -gt 1 ] && check_chain "$IN_DIR"
+
 if [ ${#legs[@]} -eq 0 ]; then
   echo "no portrait legs found in $IN_DIR — nothing to encode" >&2
   exit 1

@@ -190,6 +190,93 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .sw-copylayer::before { left: 0; }
 
   /* Placement re-derived on the CURRENT portrait clips at 390x844, scanned in
+     4% steps against each block's REAL rendered height measured in the browser
+     (28vh; 25 for beat 5, 21 for beat 7), rejecting any band that would push the
+     block past the fold. Each beat keeps the BRIGHTEST moment anywhere under it
+     across the whole leg — what cream ink fails on — and the contrast that
+     moment yields against --s-ink.
+
+     Only beats 2 and 7 clear 4.5:1. Beats 3, 4, 5 and 6 sit between 3.2 and 4.0,
+     and that is the cost of the footage this chain deliberately asks for: the
+     restaurant, the games room and the guest room are all lit interiors with
+     white plaster walls, and a bright room is a bad place to stand cream type.
+     Beat 4 is the clearest trade — it measured 5.4:1 over the dim buffet hall
+     and 3.2:1 over the restaurant that replaced it.
+
+     Everything else was measured before settling for this:
+       - dark ink instead of cream: worse on every beat (1.4-3.4:1), because
+         these legs are bright at some moments and dark at others, so no single
+         ink survives a whole leg;
+       - shorter copy: beat 4 reaches only 4.1:1 even reduced to a title alone,
+         beat 3 plateaus at 3.7:1, so trimming does not buy AA either.
+     The remaining lever is a scrim or a text-shadow, and the kill-rules at the
+     top of this file rule both out permanently. The real fix is footage with a
+     dark band in frame. Recorded, not patched. */
+  .sw-copylayer .sw-copy { bottom: auto; }
+  .sw-copylayer .sw-copy:nth-child(2) { top: 52%; }   /* gate       101  4.9:1 */
+  .sw-copylayer .sw-copy:nth-child(3) { top: 48%; }   /* courtyard  130  3.3:1 */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 52%; }   /* table      132  3.2:1 */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 60%; }   /* billiards  116  4.0:1 */
+  .sw-copylayer .sw-copy:nth-child(6) { top: 28%; }   /* room       121  3.7:1 */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 28%; }   /* pool       106  4.6:1 */
+}
+
+/* Keep the block compact so it stays inside the measured dark zone. */
+.sw-copy__body { max-width: 26ch !important; margin-top: 14px !important; }
+.sw-copy__title { margin-top: 8px !important; }
+
+.sw-copy__num, .sw-copy__eyebrow {
+  font-family: var(--s-font-micro);
+  font-size: var(--s-micro);
+  letter-spacing: var(--s-micro-track);
+}
+.sw-copy__title { font-weight: 400; letter-spacing: -0.015em; }
+.sw-copy__body  { font-family: var(--s-font-micro); color: #f2f1ee; }
+.sw-copy__title { color: #fff; }
+
+/* PER-BEAT COPY PLACEMENT, PHONES.
+   Phones are served a different chain — native 9:16 legs, not a crop of the
+   landscape ones — so they need their own measurement. Same method, same
+   script, different pictures:
+
+     python3 tools/measure-copy-zones.py assets/clips/leg-0N-m.mp4 390 844 --rows 12
+
+   which runs the browser's own `object-fit: cover` maths (83% of frame width
+   visible at this size), samples t = 2.0/3.5/5.0/6.5s and prints each band as
+   `max/min` — the brightest moment and the darkest. Light type fails on the
+   brightest, dark type on the darkest, so both matter. The window below is the
+   darkest 25%-tall band in each leg; the copy block is about that tall.
+
+     beat            top    worst moment behind the copy (0-255)
+     2  gate         50%     86     white, 7.3:1
+     3  courtyard    42%     94     white, 6.6:1
+     4  table        42%    148     white, 3.0:1   <- see below
+     5  billiards    58%    103     white, 5.9:1
+     6  room         33%     99     white, 6.1:1
+     7  pool         75%    158     white, 2.8:1   <- see below
+
+   BEATS 4 AND 7 ARE THE HONEST LIMIT OF THIS APPROACH. The re-rendered pavilion
+   leg is lit tin roof and the re-rendered pool leg is mostly overcast sky, and
+   neither has anywhere dark to stand: 148 and 158 at their worst instant. The
+   ink cannot simply flip either, because both legs also pass through genuinely
+   dark moments (minima of 95 and 45) where dark type would disappear instead.
+   No single ink clears 4.5:1 at every moment on those two beats.
+
+   So the copy sits at the least-bad window and the title — the large register,
+   which needs 3:1, not 4.5:1 — holds throughout. The small body register dips
+   below AA for part of beat 4 and beat 7. That is a real shortcoming and it is
+   recorded here rather than fixed with a scrim, because a scrim over the
+   photographs is the one thing this site does not do. If it has to be solved,
+   solve it in the footage: a leg with a dark band somewhere in frame.
+
+   Beat 6 no longer needs the dark-ink flip it had against the old chain — the
+   re-rendered room leg leaves through a doorway and is 99 where it used to be
+   153. */
+@media (max-width: 860px) {
+  .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
+  .sw-copylayer::before { left: 0; }
+
+  /* Placement re-derived on the CURRENT portrait clips at 390x844, scanned in
      4% steps against each block's REAL rendered height (28vh, except beat 5 at
      25 and beat 7 at 21 — measured in the browser, not assumed; a 23vh guess
      put three beats in the wrong band). Each beat keeps its brightest moment
