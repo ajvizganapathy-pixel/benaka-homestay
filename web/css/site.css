@@ -345,7 +345,11 @@ body.book-on .book { opacity: 1; visibility: visible; }
    before the arch and the signboard, which is the thing the visitor came for. */
 .ed-hero__frame {
   position: relative;
-  min-height: min(88svh, 820px);
+  /* No pixel cap. It used to be min(88svh, 820px), which stopped the
+     photograph at 820px on any taller screen and left the mosaic sliced by the
+     fold — at 2560x1440 the hero filled only 57% of the display. A pure
+     viewport unit peeks by the same proportion at every size. */
+  min-height: 88svh;
   display: grid;
   isolation: isolate;
 }
@@ -389,24 +393,51 @@ body.book-on .book { opacity: 1; visibility: visible; }
    between them show the whole property, not a single view of a signboard. */
 .ed-strip {
   display: grid; gap: clamp(18px, 3vw, 40px);
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 2fr);
-  align-items: center;
-  padding: clamp(26px, 4.5vw, 56px) var(--s-gut);
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 2.28fr);
+  align-items: start;
+  padding: clamp(30px, 5vw, 68px) var(--s-gut);
   border-bottom: 1px solid var(--s-line);
 }
+.ed-strip__intro .micro { display: block; }
+.ed-strip__h {
+  font-family: var(--s-font-macro); font-weight: 400;
+  font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.06;
+  letter-spacing: -0.015em; margin: 16px 0 0;
+}
 .ed-strip__note {
-  margin: 0; color: var(--s-ink-soft); max-width: 34ch;
+  margin: 18px 0 0; color: var(--s-ink-soft); max-width: 32ch;
   font-size: calc(var(--s-body) * .96);
 }
-.ed-strip__set {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(8px, 1.2vw, 16px);
+.ed-strip__hint { margin: 26px 0 0; color: var(--s-ink-faint); }
+/* The mosaic reuses the gallery's .tile/.tiles rules for the cell shapes and
+   the turn-over transition, and only overrides the grid it sits on: taller
+   rows and wider columns than the contact-sheet gallery, because these are
+   hero-sized pictures rather than thumbnails. */
+.ed-mosaic.tiles {
+  /* FOUR columns, not auto-fill. Auto-fill produced eight narrow columns at
+     1920 and the wide/tall spans vanished into a filmstrip of thumbnails — the
+     asymmetry only reads when a span-2 cell is a meaningful fraction of the
+     row. Rows are sized off the viewport so the cells stay hero-sized. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: clamp(96px, 9.4vw, 178px);
+  gap: clamp(8px, .8vw, 14px);
 }
-.ed-strip__set li { margin: 0; overflow: hidden; aspect-ratio: 5 / 4; background: var(--s-bg-raised); }
-.ed-strip__set img { width: 100%; height: 100%; object-fit: cover; }
+.ed-mosaic.tiles .tile { background: var(--s-bg-raised); }
+.ed-mosaic.tiles .tile figcaption { display: none; }   /* the note carries the words */
+
 @media (max-width: 900px) {
   .ed-strip { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  /* Phones keep the calmer two-across shape that was signed off; the mosaic's
+     tall and wide cells become noise at this width. */
+  .ed-mosaic.tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 27vw;
+  }
+  .ed-mosaic.tiles .tile--b, .ed-mosaic.tiles .tile--w { grid-column: span 1; }
+  .ed-mosaic.tiles .tile--b, .ed-mosaic.tiles .tile--t { grid-row: span 1; }
+  .ed-mosaic.tiles .tile:nth-child(n+7) { display: none; }
 }
 
 /* PHONES: the gate photograph takes the whole screen with the name on it —

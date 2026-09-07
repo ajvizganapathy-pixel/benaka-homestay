@@ -146,30 +146,69 @@
          <div class="tiles"></div>`;
 
       const grid = $('.tiles', sec);
-      imgs.forEach((im, i) => {
-        const b = document.createElement('button');
-        b.className = `tile ${SHAPES[i % SHAPES.length]}`;
-        b.type = 'button';
-        b.dataset.group = g.id;
-        b.dataset.index = String(i);
-        b.setAttribute('aria-label', `Open: ${im.description}`);
-        b.innerHTML =
-          `<figure style="margin:0;height:100%">
-             <img src="../assets/raw/${encodeURIComponent(im.file)}" alt="${esc(im.description)}"
-                  loading="lazy" decoding="async" width="${im.width}" height="${im.height}">
-             <figcaption class="micro">${esc(shortLabel(im))}</figcaption>
-           </figure>`;
-        // Read the index off the element, not the closure: a live tile may have
-        // turned over since it was built, and the click must open what is on it.
-        b.addEventListener('click', () => openLightbox(g, imgs, +b.dataset.index));
-        grid.appendChild(b);
-      });
+      imgs.forEach((im, i) => grid.appendChild(makeTile(im, i, g, imgs, SHAPES[i % SHAPES.length])));
 
       block.appendChild(sec);
     });
 
+    buildHeroMosaic(data);
     observeReveals();
     startLiveTiles(data);
+  }
+
+  /* One tile, used by both the gallery and the hero mosaic, so the two cannot
+     drift: same markup, same data-group/data-index contract the live rotation
+     reads, same click into the same carousel. */
+  function makeTile(im, i, group, imgs, shape) {
+    const b = document.createElement('button');
+    b.className = `tile ${shape || ''}`.trim();
+    b.type = 'button';
+    b.dataset.group = group.id;
+    b.dataset.index = String(i);
+    b.setAttribute('aria-label', `Open: ${im.description}`);
+    b.innerHTML =
+      `<figure style="margin:0;height:100%">
+         <img src="../assets/raw/${encodeURIComponent(im.file)}" alt="${esc(im.description)}"
+              loading="lazy" decoding="async" width="${im.width}" height="${im.height}">
+         <figcaption class="micro">${esc(shortLabel(im))}</figcaption>
+       </figure>`;
+    // Read the index off the element, not the closure: a live tile may have
+    // turned over since it was built, and the click must open what is on it.
+    b.addEventListener('click', () => openLightbox(group, imgs, +b.dataset.index));
+    return b;
+  }
+
+  /* ---- 2a. The hero mosaic ----------------------------------------------
+     The strip under the hero photograph, built from the two groups the owner
+     asked for — everything outside the house, and the pool and playroom. It
+     holds ten cells but draws on all 24 photographs: the live rotation below
+     turns them over, so every one appears within about a minute. Showing all
+     24 at once would be a contact sheet, not a hero.
+
+     Shapes are weighted heavier than the gallery's cycle because there are
+     fewer cells here and the composition has to stay asymmetric at a glance. */
+  const HERO_SHAPES = ['tile--b', 'tile--w', '', 'tile--t', '', 'tile--w',
+                       'tile--t', '', 'tile--b', ''];
+
+  function buildHeroMosaic(data) {
+    const host = $('[data-hero-mosaic]');
+    if (!host) return;
+    const wanted = ['outside', 'play'];
+    const groups = (data.galleryGroups || []).filter(g => wanted.includes(g.id));
+    if (!groups.length) return;
+
+    // Interleave the two groups so the mosaic never shows a block of one place.
+    const pools = groups.map(g => ({ g, imgs: data.images.filter(i => i.galleryGroup === g.id) }));
+    const picks = [];
+    for (let i = 0; picks.length < HERO_SHAPES.length; i++) {
+      const p = pools[i % pools.length];
+      const idx = Math.floor(i / pools.length);
+      if (idx >= p.imgs.length) { if (pools.every((q, k) => Math.floor(i / pools.length) >= q.imgs.length)) break; continue; }
+      picks.push({ ...p, im: p.imgs[idx], idx });
+    }
+    host.innerHTML = '';
+    picks.forEach((pick, n) =>
+      host.appendChild(makeTile(pick.im, pick.idx, pick.g, pick.imgs, HERO_SHAPES[n % HERO_SHAPES.length])));
   }
 
   /* ---- 2b. Live tiles ---------------------------------------------------
@@ -184,16 +223,22 @@
   let liveTimer = null;
   function startLiveTiles(data) {
     if (reduced) return;
-    const gallery = $('[data-gallery]');
-    if (!gallery) return;
+    const roots = [$('[data-gallery]'), $('[data-hero-mosaic]')].filter(Boolean);
+    if (!roots.length) return;
 
     const byGroup = {};
     (data.galleryGroups || []).forEach(g => {
       byGroup[g.id] = data.images.filter(i => i.galleryGroup === g.id);
     });
 
+    const visible = new Set();
+
     const turn = () => {
-      const tiles = $$('.tile', gallery);
+      // Only turn cells in a mosaic that is actually on screen. Drawing from
+      // both roots at once spent half the turns on gallery tiles nobody was
+      // looking at, which made the hero appear to sit still.
+      const live = visible.size ? [...visible] : roots;
+      const tiles = live.flatMap(r => $$('.tile', r));
       if (!tiles.length) return;
       const tile = tiles[Math.floor(Math.random() * tiles.length)];
       const pool = byGroup[tile.dataset.group] || [];
@@ -225,12 +270,16 @@
       });
     };
 
+    // Run only while one of the two mosaics is actually on screen. With two
+    // roots the observer reports each one separately, so track which are
+    // visible rather than reading a single entry list — otherwise scrolling the
+    // hero out of view would stop the rotation while the gallery is still up.
     const io2 = new IntersectionObserver(entries => {
-      const onScreen = entries.some(e => e.isIntersecting);
+      entries.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target));
       clearInterval(liveTimer);
-      if (onScreen) liveTimer = setInterval(turn, 2200);
+      if (visible.size) liveTimer = setInterval(turn, 2200);
     }, { rootMargin: '0px 0px -10% 0px' });
-    io2.observe(gallery);
+    roots.forEach(r => io2.observe(r));
   }
 
   const shortLabel = im => im.description.split(',')[0];
