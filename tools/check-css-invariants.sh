@@ -42,6 +42,29 @@ else
   printf '  ok    no hard shadow, stacked shadow or text outline\n'
 fi
 
+# The veil over the canvas was added on the client's instruction to disguise the
+# rendered look and bring the type forward. It is only acceptable while it stays
+# SEE-THROUGH: every colour-mix inside the .sw-veil rules must be under 70%
+# against transparent. Turned opaque it stops being a wash over the photographs
+# and becomes a backdrop, which is what the scrim kill above exists to prevent.
+#
+# Scoped to the .sw-veil blocks only — an earlier version scanned the whole file
+# and failed on the book control's hover state, which is a solid chip and is
+# supposed to be opaque.
+if grep -q '\.sw-veil' "$CSS"; then
+  veil=$(awk '/^\.sw-veil[ ,{]/ || /^  \.sw-veil[ ,{]/ { inblock = 1 }
+              inblock { print }
+              inblock && /^  *}/ { inblock = 0 }' "$CSS")
+  worst=$(printf '%s' "$veil" | grep -oE '[0-9]{1,3}%, *transparent' | tr -d '%, transparent' | sort -n | tail -1)
+  if [ -n "$worst" ] && [ "$worst" -lt 70 ]; then
+    printf '  ok    the canvas veil is translucent throughout (max %s%%)\n' "$worst"
+  else
+    printf '  FAIL  the canvas veil is not translucent (max %s%%)\n' "${worst:-none}"; fail=1
+  fi
+else
+  printf '  FAIL  the canvas veil is missing\n'; fail=1
+fi
+
 # The engine is copied verbatim from the scroll-world skill and must stay that
 # way; local edits are lost on any re-copy.
 if [ -f web/scrub-engine.js ]; then

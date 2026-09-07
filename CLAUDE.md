@@ -132,6 +132,21 @@ Consequences to know:
   `color` inherits as a computed value and `body` has already resolved the dark
   theme's cream.
 
+### Two scroll facts that are easy to undo by accident
+
+1. **The track is pulled up by the editorial band's height** (`site.js`). The
+   engine sizes its track as every segment plus 1vh, and that total includes the
+   lead-in — but the lead-in's scroll is spent on the editorial band, which sits
+   *above* the track. Without the pull-up the page reserved that height twice and
+   left a band-height of dead scroll after the last beat: 5.4 empty
+   viewport-heights between the pool and the footer on a phone. `.sw-track` is an
+   invisible pointer-events:none spacer, so the overlap costs nothing.
+
+2. **`PHONE_PACE` is 1.4, and it is a trade.** It exists because a phone's short
+   viewport turns the same swipe into more of the clip, so the camera races.
+   1.9 made the canvas 64% of the whole mobile page; 1.4 is about as low as it
+   goes before frames start going past unseen.
+
 ### Two entry points, on purpose
 
 The site is `web/index.html`. The root `index.html` is a redirect stub, not a
@@ -144,7 +159,26 @@ for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
 non-Apache host, opening the files directly. It uses `location.replace()` so it
 leaves no history entry; `assign()` would trap the Back button.
 
-### Nothing DIMS the photographs — but the type may carry a bounded shadow
+### The veil, the shadow, and what is still banned
+
+**A translucent forest veil now sits over the canvas** (`.sw-veil`, injected by
+`site.js` between the engine's stage at z10 and its copy layer at z20). It was
+added on the client's instruction: the rendered footage read as AI-generated and
+the type sat on top of it rather than in it. It is even across the frame, tinted
+with the property's own green rather than black, and translucent throughout —
+`tools/check-css-invariants.sh` fails the build if any of its colour-mix stops
+being see-through.
+
+It also finally settled a contrast problem that had been open for three rounds:
+bare, four beats measured 3.2–4.0:1 against cream type and nothing in CSS could
+reach 4.5. Through the veil every beat is 5.4–7.4:1. A blown-white wall still
+only reaches 2.5:1, so that case remains a footage problem.
+
+**The engine's own scrim is still banned** and the kill-rule stays: it is a
+one-sided black gradient across the copy column that dimmed the left of every
+frame. The veil is not that, and the two rules coexist deliberately.
+
+### The bounded text-shadow
 
 **The scrim is still banned outright.** The engine's `.sw-copylayer::before`
 gradient is overridden off with `!important` and must stay off: it dimmed the

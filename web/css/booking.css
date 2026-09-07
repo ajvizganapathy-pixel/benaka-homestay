@@ -1,3 +1,20 @@
+/* The panel sits outside .before/.after, so it inherited the dark :root tokens
+   and stayed a dark drawer on an ivory page. It takes the same light palette as
+   the editorial bands — one theme across the whole site, canvas included. The
+   LIGHTBOX deliberately does not: a photograph viewer wants a dark room. */
+.bk {
+  --s-bg:          #f4f1ea;
+  --s-bg-raised:   #efe9dd;
+  --s-bg-sunk:     #2a3029;
+  --s-line:        #ddd5c5;
+  --s-ink:         #23292b;
+  --s-ink-soft:    #5d6663;
+  --s-ink-faint:   #8b918c;
+  --s-accent:      #a8542c;
+  --s-accent-soft: #8f4522;
+  color: var(--s-ink);
+}
+
 /* ============================================================================
    Booking, login and OTP. Deliberately plain: a form should look like a form.
    ========================================================================== */

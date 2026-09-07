@@ -23,7 +23,12 @@
   // per frame means every frame gets screen time under a slide.
   const coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
   const phone = coarse || innerWidth <= 860;
-  const PHONE_PACE = 1.9;
+  // Was 1.9. At that pace the canvas was 16.8 of the 26.1 viewport-heights of a
+  // 390x844 page — 64% of the whole site was scrubbing, and getting to the
+  // footer took far too long. 1.4 is as low as this goes before the reason it
+  // exists comes back: a phone's short viewport turns the same swipe into more
+  // of the clip, so too small a number makes the camera race again.
+  const PHONE_PACE = 1.4;
 
   const world = $('#world');
   if (world && window.BENAKA_WORLD) {
@@ -66,6 +71,39 @@
     }
 
     mountScrollWorld(world, cfg);
+
+    // ---- Don't reserve the lead-in's scroll twice --------------------------
+    // The engine sizes its track as (all segments + 1vh), and that total now
+    // includes the lead-in. But the lead-in's scroll is spent on the editorial
+    // band, which sits ABOVE the track in the document — so the track was also
+    // reserving that height for itself, leaving a band-height of dead scroll
+    // after the last beat. On a phone that was 5.4 empty viewport-heights
+    // between the pool and the footer, which is what "it takes very long to
+    // reach the footer" actually was.
+    //
+    // Pulling the track up by exactly the band's height removes the double
+    // count. Nothing is hidden by the overlap: .sw-track is an invisible,
+    // pointer-events:none spacer, and the editorial band paints over it at z30.
+    const pullUp = () => {
+      const el = $('[data-before]');
+      if (el) world.style.marginTop = -Math.round(el.getBoundingClientRect().height) + 'px';
+    };
+    pullUp();
+    addEventListener('resize', pullUp);
+
+    // ---- The veil ---------------------------------------------------------
+    // A translucent forest wash between the engine's stage (z10) and its copy
+    // layer (z20). It knocks back the rendered sheen, brings the type forward,
+    // and puts the canvas in the same palette as the rest of the page.
+    //
+    // It is a separate element rather than a change to scrub-engine.js, which
+    // stays byte-identical to the skill. It is NOT the engine's own scrim: that
+    // one is a one-sided black gradient across the copy column and is still
+    // switched off in site.css. This is even, tinted, and translucent.
+    const veil = document.createElement('div');
+    veil.className = 'sw-veil';
+    veil.setAttribute('aria-hidden', 'true');
+    (document.querySelector('.sw-root') || world).appendChild(veil);
   }
 
   /* ---- 2. Gallery, built from the manifest ------------------------------ */
@@ -322,13 +360,9 @@
     document.documentElement.style.setProperty('--canvas-fade', (1 - fade).toFixed(3));
     document.body.classList.toggle('past-canvas', fade > 0.98);
 
-    // The book control is fixed in the rail and crosses two very different
-    // grounds: ivory paper above and below the canvas, dark footage between.
-    // One colour cannot serve both, so the ground it is currently over is
-    // published as a class and the CSS picks the ink.
-    const band = $('[data-before]');
-    const bandEnd = band ? band.getBoundingClientRect().bottom + y : 0;
-    document.body.classList.toggle('on-paper', y + vh * 0.5 < bandEnd || fade > 0.5);
+    // The book control only appears once the hero is behind you, so the first
+    // screen carries nothing but the property.
+    document.body.classList.toggle('book-on', y > vh * 0.75);
 
     ticking = false;
   }
