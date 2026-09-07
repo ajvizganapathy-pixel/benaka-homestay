@@ -70,7 +70,7 @@ window.BENAKA_WORLD = {
       scroll: 0.8, linger: 0.25,
       eyebrow: 'The house',
       title: 'Along the verandah, across to the table.',
-      body: 'Two floors, a verandah the whole way along, and a brick yard that stays wet all monsoon.' },
+      body: 'Two floors, a verandah the whole way along, a brick yard that stays wet.' },
 
     { id: 'table', label: 'The table',
       still: '../assets/scenes/04-buffet-table.jpg',
@@ -90,7 +90,7 @@ window.BENAKA_WORLD = {
       scroll: 0.7,
       eyebrow: 'The playroom',
       title: 'Past the billiards table, through to the rooms.',
-      body: 'Cane chairs, a patterned tile floor, an afternoon going nowhere. The rooms are along the verandah outside.' },
+      body: 'Cane chairs, a tiled floor, and the verandah out to the rooms.' },
 
     { id: 'room', label: 'The rooms',
       still: '../assets/scenes/06-room.jpg',

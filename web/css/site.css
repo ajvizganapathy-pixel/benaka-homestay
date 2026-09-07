@@ -189,28 +189,33 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .sw-copy { left: calc(var(--s-rail) + 16px) !important; right: 16px !important; }
   .sw-copylayer::before { left: 0; }
 
-  /* Placement re-derived on the CURRENT portrait clips with
-     tools/measure-copy-zones.py at 390x844. The number after each beat is the
-     BRIGHTEST moment anywhere under the block over the whole leg, which is what
-     cream type fails on — not the average, and not the still.
+  /* Placement re-derived on the CURRENT portrait clips at 390x844, scanned in
+     4% steps against each block's REAL rendered height (28vh, except beat 5 at
+     25 and beat 7 at 21 — measured in the browser, not assumed; a 23vh guess
+     put three beats in the wrong band). Each beat keeps its brightest moment
+     anywhere under the block, which is what cream ink fails on, and the
+     contrast that moment yields against --s-ink.
 
-     Beats 3, 4 and 7 moved because the footage under them changed: leg 03 now
-     ends inside the dining hall, leg 04 never leaves it, and the finale has a
-     swimmer and open water where it used to have sky. Beat 7 is the big one —
-     it was sitting at 72% on 168, and 42% puts it on 105.
+     Beats 2, 4 and 5 clear or nearly clear 4.5:1. Beats 3, 6 and 7 do not, and
+     dark ink was measured as the alternative for each: it is worse everywhere
+     (1.5-3.5:1), because these legs are bright at some moments and dark at
+     others, so neither ink survives the whole leg.
 
-     Beat 6 stays where it is. Its darkest band is the very top (113), too high
-     to hold a title and a paragraph without clipping; everywhere a block
-     actually fits is 161-162. So it does not clear 4.5:1 against the small body
-     register at its worst moment, and that is recorded rather than fixed — the
-     kill-rules at the top of this file mean no scrim and no text-shadow, ever. */
+     Beat 3 is the bad one at 2.1:1. Its leg is a white two-storey house against
+     a white monsoon sky and then a lit interior — there is no dark band in the
+     frame at any point, so no placement helps. This is recorded, not patched:
+     the kill-rules at the top of this file mean no scrim and no text-shadow,
+     ever. The real fix is in the footage, not the CSS — a leg with somewhere
+     dark to stand — and that costs a re-render of leg 03 plus everything it
+     chains into. */
   .sw-copylayer .sw-copy { bottom: auto; }
-  .sw-copylayer .sw-copy:nth-child(2) { top: 50%; }   /* gate       */
-  .sw-copylayer .sw-copy:nth-child(3) { top: 50%; }   /* courtyard  116 */
-  .sw-copylayer .sw-copy:nth-child(4) { top: 72%; }   /* table      118 */
-  .sw-copylayer .sw-copy:nth-child(5) { top: 58%; }   /* billiards  126 */
-  .sw-copylayer .sw-copy:nth-child(6) { top: 33%; }   /* room       162 - see above */
-  .sw-copylayer .sw-copy:nth-child(7) { top: 42%; }   /* pool       105 */
+  .sw-copylayer .sw-copy:nth-child(2) { top: 52%; }   /* gate       101  4.9:1 */
+  .sw-copylayer .sw-copy:nth-child(3) { top: 60%; }   /* courtyard  163  2.1:1 */
+  .sw-copylayer .sw-copy:nth-child(4) { top: 68%; }   /* table       95  5.4:1 - 70% measures 5.6 but
+                                                         overflows the fold by 17px */
+  .sw-copylayer .sw-copy:nth-child(5) { top: 36%; }   /* billiards  114  4.1:1 */
+  .sw-copylayer .sw-copy:nth-child(6) { top:  0%; }   /* room       120  3.7:1 */
+  .sw-copylayer .sw-copy:nth-child(7) { top: 40%; }   /* pool       114  4.1:1 */
 }
 
 /* The canvas hands over to the gallery as a dissolve, not a cut. The engine
