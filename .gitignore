@@ -5,10 +5,11 @@ render/frames/
 render/jobs/
 *.mp4
 
-# ...except the finished, encoded legs. They cost real credits to produce and
-# would otherwise be lost with this container.
-!assets/clips/
-!assets/clips/*.mp4
+# ...except the one real video this site carries: the walk around the property,
+# filmed on site. The AI walkthrough clips that used to be excepted here left
+# with the scroll world. They are still on disk and still in history at 76bab70
+# — `git show 76bab70:assets/clips/leg-01.mp4 > leg-01.mp4` brings one back.
+!assets/video/*.mp4
 
 node_modules/
 __pycache__/

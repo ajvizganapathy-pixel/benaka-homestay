@@ -2,7 +2,7 @@
 # Upload alongside the site in public_html.
 #
 # Two things this file must never break: PHP execution under /api/, and the
-# fonts, stylesheets, clips and photographs the page needs. Every deny rule
+# fonts, stylesheets, the film and photographs the page needs. Every deny rule
 # below names a specific path or extension for exactly that reason.
 
 DirectoryIndex web/index.html index.html
@@ -43,14 +43,19 @@ Options -Indexes
 
   # Content Security Policy. Every value here is load-bearing:
   #   script-src 'self'        no inline scripts anywhere in this site
-  #   style-src  'unsafe-inline'  scrub-engine.js injects its own <style> block,
-  #                            and the booking summary uses style attributes
-  #   media-src  blob:         the walkthrough clips are fetched and played as blobs
-  #   img-src    data: blob:   the favicon is inline SVG; decoded images use blobs
+  #   style-src  'unsafe-inline'  the booking summary and a few layout blocks
+  #                            set style attributes; there are no inline <style>
+  #                            elements, and no stylesheet is loaded off-origin
+  #   media-src  'self'        the property film is a plain src on <video>.
+  #                            blob: used to be here for the scroll-world clips
+  #                            and came out with them — nothing creates a blob
+  #                            URL for media any more
+  #   img-src    data: blob:   the favicon is inline SVG; the live tiles decode
+  #                            an Image() before swapping it in
   #   connect-src 'self'       the booking endpoint, and nothing else
   # There are no third-party origins in this site at all, which is why every
   # directive can be this tight.
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 
   <FilesMatch "\.woff2$">
     Header set Access-Control-Allow-Origin "*"
@@ -115,7 +120,7 @@ AddDefaultCharset UTF-8
 
 <IfModule mod_expires.c>
   ExpiresActive On
-  # Photographs, clips and fonts are content-addressed by name and never change
+  # Photographs, the film and fonts are content-addressed by name and never change
   # in place.
   ExpiresByType image/jpeg              "access plus 1 year"
   ExpiresByType image/webp              "access plus 1 year"

@@ -106,25 +106,34 @@
     </div>
   </section>
 
-  <!-- 4. The handover. From here the page stops being a brochure and the camera
-       takes over — so this is the last opaque thing before the canvas. -->
-  <section class="ed-enter band--forest" aria-labelledby="enter-h">
-    <p class="micro">Step inside</p>
-    <h2 class="macro" id="enter-h">Walk through Benaka.</h2>
-    <p class="ed-enter__line">Six short films, in the order you would walk it:
-       in from the road, under the arch, along the verandah, past the billiards
-       table, into a room and down to the water.</p>
-    <span class="ed-enter__cue micro" aria-hidden="true">Keep scrolling <i></i></span>
-  </section>
-
 </div>
 
-<!-- The walkthrough. Six legs, each its own block, built from world.config.js
-     by site.js and laid out zigzag. Formerly one scroll-scrubbed canvas driven
-     by scrub-engine.js; see the note in CLAUDE.md for why that was retired. -->
-<main class="legs" data-legs aria-label="A walk through the property"></main>
+<!-- The walkthrough. One film of the real property, shot on site, in place of
+     the six rendered legs and the scroll-scrubbed canvas before them — both
+     rejected. It keeps band--forest so the page still reads ivory, forest,
+     ivory, and this stays the one dark chapter in the middle.
 
-<!-- Everything past the canvas. Own stacking level, opaque ground. -->
+     preload="none" and no src attribute are deliberate: site.js sets the source
+     only when the section comes near, so a visitor who never scrolls this far
+     never fetches 8.8MB. -->
+<main class="explore band--forest" id="explore" aria-labelledby="explore-h">
+  <div class="explore__intro">
+    <p class="micro">Step inside</p>
+    <h2 class="macro" id="explore-h">Explore Benaka.</h2>
+    <p class="explore__line">A walk around the property &mdash; the pool and the
+       garden, the rooms, and the house at the end of it.</p>
+  </div>
+
+  <figure class="explore__film">
+    <video data-tour poster="../assets/video/benaka-tour-poster.jpg"
+           muted loop playsinline preload="none"
+           aria-label="A walk around Benaka By The Hills"></video>
+    <button class="explore__sound micro" type="button"
+            data-tour-sound aria-pressed="false">Sound on</button>
+  </figure>
+</main>
+
+<!-- Everything past the film. Own stacking level, opaque ground. -->
 <div class="after">
 
   <section class="section" id="gallery" aria-labelledby="gallery-h">
@@ -345,7 +354,6 @@
   </div>
 </div>
 
-<script defer src="world.config.js"></script>
 <script defer src="js/api.js"></script>
 <script defer src="js/site.js"></script>
 <script defer src="js/booking.js"></script>

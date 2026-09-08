@@ -1,6 +1,6 @@
 /* ============================================================================
-   Site chrome — everything the scrub engine does not provide.
-   The engine stays byte-identical to the skill; this file sits around it.
+   Every rule the site needs. There is no engine and no canvas any more —
+   the page is ordinary flow from the hero to the venue block.
    ========================================================================== */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -46,24 +46,24 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 :focus-visible { outline: 2px solid var(--s-accent-soft); outline-offset: 3px; }
 
 /* ---------------------------------------------------------------------------
-   1. The walkthrough — six legs, zigzag
-   The page used to hand this band to scrub-engine.js, which painted a fixed
-   sky, stage and copy layer across the whole document and scrubbed one
-   continuous camera move. That was retired: the legs are separate blocks in
-   normal flow now, so every .sw-* override, the per-beat copy placement, the
-   scrim kill, the bounded text-shadow and the canvas veil went with it —
-   roughly 190 lines that no longer had an element to style.
+   1. Explore Benaka — one film of the real property
+   Two things stood here before and both were rejected: a scroll-scrubbed
+   canvas driven by scrub-engine.js, then six rendered legs laid out zigzag.
+   With them went every .sw-* override, the per-beat copy placement, the scrim
+   kill, the bounded text-shadow, the canvas veil and the .leg grid — around
+   300 lines that no longer had an element to style.
 
-   The words sit BESIDE the film rather than on it, which is what let all of
-   that go: type on paper needs no scrim, no shadow and no luminance
-   measurement.
+   What replaces them is footage shot on the property. Note what it does NOT
+   carry: no tint, no scrim, nothing over the picture at all. The wash on the
+   rendered legs existed to take the sheen off generated footage. This is the
+   place itself and gets no help.
    ------------------------------------------------------------------------ */
-.legs {
+.explore {
   position: relative; z-index: 30;
-  /* The forest ground, the same one the "Step inside" band uses, so the
-     walkthrough reads as one chapter between the ivory brochure above it and
-     the ivory gallery below. Without this it inherited the near-black :root
-     tokens and sat outside the theme entirely. */
+  /* The forest ground, the same one the brochure's closing band used, so this
+     stays the one dark chapter between the ivory hero above and the ivory
+     gallery below. Without this it inherits the near-black :root tokens and
+     sits outside the theme entirely. */
   --s-bg:          #1c2f26;
   --s-bg-raised:   #16261e;
   --s-line:        #33493d;
@@ -73,65 +73,49 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   --s-accent:      #dd9169;
   background: var(--s-bg);
   color: var(--s-ink);
-  display: grid;
-  gap: clamp(48px, 8vh, 120px);
   padding: clamp(56px, 9vh, 130px) var(--s-gut);
 }
-.leg {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: clamp(24px, 4vw, 68px);
-  align-items: center;
-}
-/* The zigzag: every other leg puts the film on the right. Ordering by column
-   rather than reordering the DOM keeps the reading order intact for a screen
-   reader and for keyboard focus. */
-.leg--flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
-.leg--flip .leg__figure { order: 2; }
-.leg--flip .leg__words  { order: 1; }
+.explore__intro { max-width: 62ch; margin: 0 auto clamp(30px, 4vh, 54px); text-align: center; }
+.explore__intro .micro { display: block; color: var(--s-accent); }
+.explore__intro .macro { margin: 14px 0 0; }
+.explore__line { color: var(--s-ink-soft); margin: 18px auto 0; max-width: 46ch; }
 
-.leg__figure {
-  margin: 0; position: relative; overflow: hidden;
+/* 53:30 is the file's exact display aspect (848x480), so the frame is the
+   picture and there is no letterbox to hide. The width cap is not taste: the
+   source is 848px wide, and past about 1000 the softening starts to show. */
+.explore__film {
+  margin: 0 auto; position: relative; overflow: hidden;
+  max-width: 1000px; aspect-ratio: 53 / 30;
   background: var(--s-bg-raised);
-  aspect-ratio: 16 / 9;
+  border: 1px solid var(--s-line);
 }
-.leg__figure video, .leg__figure img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-}
-/* The tint that used to be the canvas veil. Its legibility job is gone now the
-   words are beside the picture, but its other job — taking the sheen off
-   rendered footage so it reads as part of the property rather than as a film —
-   is why it stays. Translucent, in the property's own green, never black.
-   tools/check-css-invariants.sh fails the build if it stops being see-through. */
-.leg__figure::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: color-mix(in srgb, #1c2f26 16%, transparent);
-}
+.explore__film video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.leg__words .micro { display: block; color: var(--s-accent); }
-.leg__title {
-  font-family: var(--s-font-macro); font-weight: 400;
-  font-size: clamp(1.6rem, 3vw, 2.7rem); line-height: 1.08;
-  letter-spacing: -0.015em; margin: 14px 0 0;
+.explore__sound {
+  position: absolute; right: 12px; bottom: 12px;
+  min-height: 44px; padding: 0 18px;          /* 44 so a thumb can land on it */
+  border: 1px solid color-mix(in srgb, var(--s-accent) 50%, transparent);
+  border-radius: 999px; cursor: pointer;
+  background: color-mix(in srgb, #0e1411 62%, transparent);
+  color: var(--s-ink);
+  backdrop-filter: blur(6px);
+  transition: background .2s ease, border-color .2s ease;
 }
-.leg__body { color: var(--s-ink-soft); margin: 18px 0 0; max-width: 36ch; }
+.explore__sound:hover, .explore__sound:focus-visible {
+  background: color-mix(in srgb, #0e1411 82%, transparent);
+  border-color: var(--s-accent);
+}
 
 @media (max-width: 860px) {
-  /* One column on a phone: film, then its words under it. The zigzag has
-     nothing to alternate at this width and forcing it just makes the eye
-     hunt. Portrait legs are 9:16, so the frame changes shape with them. */
-  .legs { gap: clamp(40px, 7vh, 72px); padding: clamp(40px, 7vh, 80px) var(--s-gut); }
-  .leg, .leg--flip { grid-template-columns: 1fr; gap: 20px; }
-  .leg--flip .leg__figure { order: 0; }
-  .leg--flip .leg__words  { order: 0; }
-  .leg__figure { aspect-ratio: 9 / 16; }
+  .explore { padding: clamp(40px, 7vh, 80px) var(--s-gut); }
+  .explore__film { max-width: none; }
 }
 
 /* ---------------------------------------------------------------------------
    2. Book — a quiet fixed link in the top right, not a rail
    The vertical BOOK rail down the left edge is gone. It reserved 64px of every
    band's width for one word, it had to change ink between the ivory and the
-   canvas, and on a phone it stood between the thumb and the photographs. This
+   page, and on a phone it stood between the thumb and the photographs. This
    replaces it: micro register, no box, and absent until the hero has passed so
    the first screen is only the property.
    ------------------------------------------------------------------------ */
@@ -161,7 +145,7 @@ body.book-on .book { opacity: 1; visibility: visible; }
 @media (max-width: 700px) { .book { padding: 9px 14px; } }
 
 /* ===========================================================================
-   3. THE EDITORIAL BAND — the brochure the visitor reads before the camera
+   3. THE EDITORIAL BAND — the brochure the visitor reads before the film
    starts. Same stacking contract as .after: its own level and an opaque ground,
    because the engine's fixed layers paint the whole document underneath it.
    ======================================================================== */
@@ -172,9 +156,8 @@ body.book-on .book { opacity: 1; visibility: visible; }
 }
 
 /* --- hero: the gate at full height, then a strip of the grounds -------------
-   The photograph is a still in the editorial band, not Scroll World footage, so
-   the canvas rules do not reach here. The wash is one-sided and clears well
-   before the arch and the signboard, which is the thing the visitor came for. */
+   The wash over this photograph is one-sided and clears well before the arch
+   and the signboard, which is the thing the visitor came for. */
 .ed-hero__frame {
   position: relative;
   /* No pixel cap. It used to be min(88svh, 820px), which stopped the
@@ -261,15 +244,41 @@ body.book-on .book { opacity: 1; visibility: visible; }
   .ed-strip { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
-  /* Phones keep the calmer two-across shape that was signed off; the mosaic's
-     tall and wide cells become noise at this width. */
+  /* Phones used to flatten this into a uniform two-across grid with four of the
+     ten cells hidden. That was calm and it was also dead: the live rotation
+     spent turns on tiles nobody could see. All ten show now, and they keep the
+     wide/tall/big shapes — at two columns a wide cell is the full width, a tall
+     one is half the width and twice the height, and the big one is both.
+
+     The shapes are RE-CUT here rather than inherited. HERO_SHAPES was solved
+     against FOUR columns; replayed at two it leaves a hole in the right-hand
+     column near the bottom, and grid-auto-flow: dense cannot close it because
+     the only cells left to backfill with are full-width. So the order below is
+     solved for two columns instead: 4+1+2+1+2+2+1+1+2+4 = 20 cells of area in
+     exactly ten rows of two, which tiles flush with no hole and no ragged last
+     row. Change one shape here and you have to re-solve the sum.
+
+         row 1-2  [ ---- big ---- ]
+         row 3      [ a ][ tall ]
+         row 4      [ a ][      ]
+         row 5    [ --- wide --- ]
+         row 6      [ tall ][ a ]
+         row 7      [      ][ a ]
+         row 8    [ --- wide --- ]
+         row 9-10 [ ---- big ---- ]                                          */
   .ed-mosaic.tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 27vw;
+    grid-auto-rows: 26vw;
   }
-  .ed-mosaic.tiles .tile--b, .ed-mosaic.tiles .tile--w { grid-column: span 1; }
-  .ed-mosaic.tiles .tile--b, .ed-mosaic.tiles .tile--t { grid-row: span 1; }
-  .ed-mosaic.tiles .tile:nth-child(n+7) { display: none; }
+  /* Beat the .tile--b/w/t spans, which are cut for the four-column desktop
+     grid. Three classes to their one, so this wins without !important. */
+  .ed-mosaic.tiles .tile { grid-column: span 1; grid-row: span 1; }
+  .ed-mosaic.tiles .tile:nth-child(1),
+  .ed-mosaic.tiles .tile:nth-child(10) { grid-column: span 2; grid-row: span 2; }
+  .ed-mosaic.tiles .tile:nth-child(5),
+  .ed-mosaic.tiles .tile:nth-child(9)  { grid-column: span 2; }
+  .ed-mosaic.tiles .tile:nth-child(3),
+  .ed-mosaic.tiles .tile:nth-child(6)  { grid-row: span 2; }
 }
 
 /* PHONES: the gate photograph takes the whole screen with the name on it —
@@ -290,7 +299,6 @@ body.book-on .book { opacity: 1; visibility: visible; }
   }
   .ed-hero__copy { padding-bottom: clamp(54px, 12vh, 110px); }
   .ed-hero__name { font-size: clamp(2.7rem, 13vw, 4rem); }
-  .ed-strip__set { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* --- story: one lead photograph, two supporting, deliberately off-grid ---- */
@@ -329,43 +337,10 @@ body.book-on .book { opacity: 1; visibility: visible; }
   .ed-plate--small { grid-column: 9 / 13; }
 }
 
-/* --- three sections ------------------------------------------------------ */
-.ed-three { padding: var(--s-section) var(--s-gut); border-top: 1px solid var(--s-line); }
-.ed-three__head { margin-bottom: clamp(30px, 5vh, 60px); max-width: 30ch; }
-.ed-three__head .micro { display: block; margin-bottom: 18px; }
-.ed-three__grid {
-  display: grid; gap: clamp(24px, 3.4vw, 52px);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-@media (max-width: 860px) { .ed-three__grid { grid-template-columns: 1fr; } }
-.ed-card { display: block; text-decoration: none; color: inherit; }
-.ed-card figure { margin: 0 0 20px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--s-bg-raised); }
-.ed-card figure img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--s-ease); }
-.ed-card:hover figure img, .ed-card:focus-visible figure img { transform: scale(1.035); }
-.ed-card .micro { display: block; color: var(--s-accent); }
-.ed-card h3 {
-  font-family: var(--s-font-macro); font-weight: 400;
-  font-size: clamp(1.35rem, 2.3vw, 1.9rem); line-height: 1.1;
-  margin: 10px 0 0; letter-spacing: -0.01em;
-}
-.ed-card__line { color: var(--s-ink-soft); margin: 12px 0 0; max-width: 34ch; }
-
-/* --- the handover into the canvas ---------------------------------------- */
-.ed-enter {
-  padding: clamp(80px, 15vh, 170px) var(--s-gut);
-  display: grid; gap: 0; align-content: center;
-  min-height: 78vh;
-}
-.ed-enter .micro { display: block; color: var(--s-accent); margin-bottom: 20px; }
-.ed-enter .macro { max-width: 18ch; }
-.ed-enter__line { color: var(--s-ink-soft); max-width: 42ch; margin: 26px 0 0; }
-.ed-enter__cue { display: flex; align-items: center; gap: 12px; margin-top: clamp(40px, 7vh, 80px); color: var(--s-ink-faint); }
-.ed-enter__cue i { width: 46px; height: 1px; background: currentColor; display: block; }
-
 /* ---------------------------------------------------------------------------
-   4. Page sections after the canvas
-   The engine's fixed layers paint the whole document, so anything below the
-   canvas needs its own stacking level and an opaque ground.
+   4. Page sections after the film
+   .before and .after each carry the light palette and their own stacking
+   level, with the forest .explore band between them.
    ------------------------------------------------------------------------ */
 .after {
   position: relative; z-index: 30;
@@ -500,7 +475,7 @@ body.lb-open { overflow: hidden; }
 .btn--ghost:hover { background: none; border-color: var(--s-accent); color: var(--s-accent-soft); }
 
 /* ---------------------------------------------------------------------------
-   6. The venue — last block on the page, after the footer.
+   8. The venue — last block on the page, after the footer.
    The name at the size it deserves, the address, both numbers, and one button
    out to Google Maps. No embedded map: an iframe would need google.com in the
    CSP and would put third-party cookies on a site that has none, and on a phone

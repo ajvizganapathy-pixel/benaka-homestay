@@ -80,8 +80,9 @@ else
   ok "no trace of the old property name"
 fi
 
-for f in index.html web/index.html web/scrub-engine.js web/world.config.js \
-         api/booking.php api/config.example.php .htaccess assets/manifest.json; do
+for f in index.html web/index.html api/booking.php api/config.example.php \
+         .htaccess assets/manifest.json \
+         assets/video/benaka-tour.mp4 assets/video/benaka-tour-poster.jpg; do
   [ -f "$f" ] && ok "present: $f" || bad "missing: $f"
 done
 
@@ -92,22 +93,20 @@ bash tools/check-css-invariants.sh >/dev/null 2>&1 \
   && ok "site.css invariants hold" \
   || bad "site.css invariants" "$(bash tools/check-css-invariants.sh 2>&1 | tail -4)"
 
-# Every path world.config.js names must exist, or a beat silently loses its clip.
-missing=$(node -e '
-  global.window = {};
-  require("./web/world.config.js");
-  const fs = require("fs"), path = require("path");
-  const bad = [];
-  for (const s of window.BENAKA_WORLD.sections)
-    for (const k of ["still","stillMobile","clip","clipMobile"])
-      if (s[k]) {
-        const p = path.join("web", s[k]);
-        if (!fs.existsSync(p)) bad.push(s.id + "." + k + " -> " + p);
-      }
-  console.log(bad.join("\n"));
-')
-n=$(node -e 'global.window={};require("./web/world.config.js");console.log(window.BENAKA_WORLD.sections.reduce((a,s)=>a+["still","stillMobile","clip","clipMobile"].filter(k=>s[k]).length,0))')
-[ -z "$missing" ] && ok "all $n world.config.js asset paths resolve" || bad "missing world assets" "$missing"
+# The property film must stream progressively. ffmpeg writes the moov index
+# AFTER the media data unless -movflags +faststart is given, and a browser
+# cannot paint a single frame until it has that index — so without this the
+# whole 8.8MB downloads before anything appears. It fails silently: the video
+# still works, it just takes forever to start, which is easy to blame on the
+# network rather than on the encode.
+atoms=$(python3 tools/atom-order.py assets/video/benaka-tour.mp4)
+mo=$(printf '%s\n' $atoms | grep -n '^moov$' | cut -d: -f1)
+md=$(printf '%s\n' $atoms | grep -n '^mdat$' | cut -d: -f1)
+if [ -n "$mo" ] && [ -n "$md" ] && [ "$mo" -lt "$md" ]; then
+  ok "the property film is faststart (moov before mdat)"
+else
+  bad "the property film is not faststart" "atom order: $atoms"
+fi
 
 missing=$(python3 - <<'PY'
 import json, os

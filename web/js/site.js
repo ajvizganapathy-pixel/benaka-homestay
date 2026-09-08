@@ -1,9 +1,7 @@
 /* ============================================================================
-   Site behaviour: mount the canvas, build the gallery, run the lightbox, drive
-   the book control, and hand off from canvas to page.
-
-   scrub-engine.js is untouched. Everything here sits around it and reads its
-   geometry from the DOM it built.
+   Site behaviour: play the property film, build the gallery and the hero
+   mosaic, turn the live tiles over, run the lightbox and drive the book
+   control.
    ========================================================================== */
 
 (function () {
@@ -13,95 +11,50 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- 1. The walkthrough — six legs, laid out zigzag ------------------
-     This used to mount scrub-engine.js and scrub one continuous camera move
-     across the whole page. It was retired on the owner's instruction: the legs
-     read better as separate pieces. world.config.js is unchanged as the source
-     of truth — same sections, same paths, same copy — it is only rendered
-     differently.
+  /* ---- 1. The walkthrough — one film of the real property ---------------
+     What used to be here was the scroll world: first a scroll-scrubbed camera
+     driven by scrub-engine.js, then six rendered legs laid out zigzag. Both
+     were rejected — the client read the rendered footage as an AI film rather
+     than a place. It is replaced by video shot on the property, so both the
+     engine and world.config.js are gone from the repo (history keeps them).
 
-     Each leg is a block: the film on one side, the words on the other, sides
-     swapping as you go down. The words sit BESIDE the picture rather than on
-     it, which is what retired the scrim, the text-shadow and three rounds of
-     luminance measurement in one go.
+     Two observers, the same split the live tiles use below: the loose one
+     decides when to spend 8.8MB of bandwidth by setting src, the tight one
+     decides when to spend a decoder. Nothing is fetched on load, and a visitor
+     who never reaches this section never pays for it.
 
-     A clip plays only while its own block is on screen and pauses when it
-     leaves, so at most one or two ever decode at once — and none at all under
-     prefers-reduced-motion, where the poster simply stands.                 */
-  const coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
-  const phone = coarse || innerWidth <= 860;
+     The film has a real soundtrack, so it starts muted — the only way a browser
+     will autoplay it — with a button to turn the sound on. Unmuting inside a
+     click is a user gesture, which is what makes it allowed.                */
+  function mountTour() {
+    const v = $('[data-tour]');
+    if (!v) return;
+    const SRC = '../assets/video/benaka-tour.mp4';
 
-  function buildLegs() {
-    const host = $('[data-legs]');
-    const cfg = window.BENAKA_WORLD;
-    if (!host || !cfg || !cfg.sections) return;
-
-    const frag = document.createDocumentFragment();
-    cfg.sections.forEach((sec, i) => {
-      // The portrait chain is a separately rendered 9:16 set, not a resize —
-      // picking the wrong one crops a 16:9 frame to a quarter of its width.
-      const clip  = (phone && sec.clipMobile)  ? sec.clipMobile  : sec.clip;
-      const still = (phone && sec.stillMobile) ? sec.stillMobile : sec.still;
-      if (!clip && !still) return;
-
-      const art = document.createElement('article');
-      art.className = 'leg reveal' + (i % 2 ? ' leg--flip' : '');
-
-      const figure = document.createElement('figure');
-      figure.className = 'leg__figure';
-      if (clip) {
-        const v = document.createElement('video');
-        v.muted = true; v.loop = true; v.playsInline = true;
-        v.preload = 'none';                 // nothing fetches until it is near
-        v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-        if (still) v.poster = still;
-        v.dataset.src = clip;               // src is set on approach, not now
-        figure.appendChild(v);
-      } else {
-        const img = document.createElement('img');
-        img.src = still; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-        figure.appendChild(img);
-      }
-
-      const words = document.createElement('div');
-      words.className = 'leg__words';
-      words.innerHTML =
-        (sec.eyebrow ? `<p class="micro">${esc(sec.eyebrow)}</p>` : '') +
-        (sec.title   ? `<h2 class="leg__title">${esc(sec.title)}</h2>` : '') +
-        (sec.body    ? `<p class="leg__body">${esc(sec.body)}</p>` : '');
-
-      art.append(figure, words);
-      frag.appendChild(art);
-    });
-    host.appendChild(frag);
-    playOnView();
-  }
-
-  /* Load a leg's film as it comes near, play it while it is on screen, pause it
-     when it leaves. Two observers rather than one: the outer margin decides
-     when to spend bandwidth, the tight one decides when to spend a decoder. */
-  function playOnView() {
-    const vids = $$('.leg video');
-    if (!vids.length) return;
-
-    const near = new IntersectionObserver((es, o) => {
+    new IntersectionObserver((es, o) => {
       es.forEach(e => {
         if (!e.isIntersecting) return;
-        const v = e.target;
-        if (v.dataset.src && !v.src) { v.src = v.dataset.src; v.load(); }
-        o.unobserve(v);
+        if (!v.src) { v.src = SRC; v.load(); }
+        o.disconnect();
       });
-    }, { rootMargin: '150% 0px' });
+    }, { rootMargin: '150% 0px' }).observe(v);
 
-    const onScreen = new IntersectionObserver(es => {
+    new IntersectionObserver(es => {
       es.forEach(e => {
-        const v = e.target;
-        if (e.isIntersecting && !reduced) { v.play().catch(() => {}); }
+        if (e.isIntersecting && !reduced) v.play().catch(() => {});
         else { try { v.pause(); } catch {} }
       });
-    }, { threshold: 0.25 });
+    }, { threshold: 0.25 }).observe(v);
 
-    vids.forEach(v => { near.observe(v); onScreen.observe(v); });
+    const btn = $('[data-tour-sound]');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      v.muted = !v.muted;
+      btn.setAttribute('aria-pressed', String(!v.muted));
+      btn.textContent = v.muted ? 'Sound on' : 'Sound off';
+      // Turning the sound on is also an intent to watch it.
+      if (!v.muted) v.play().catch(() => {});
+    });
   }
 
   /* ---- 2. Gallery, built from the manifest ------------------------------ */
@@ -384,9 +337,8 @@
   }
 
   /* ---- 5. The book control ----------------------------------------------
-     All that is left of what was a canvas-to-gallery handoff: with the legs
-     laid out in normal flow there is no fixed stage to dissolve, so the
-     --canvas-fade / past-canvas machinery went with it. */
+     All that is left of what was a canvas-to-gallery handoff: the page is
+     ordinary flow now, so there is no fixed stage to dissolve. */
   let ticking = false;
 
   function onScroll() {
@@ -401,7 +353,7 @@
   }, { passive: true });
   window.addEventListener('resize', onScroll);
 
-  buildLegs();
+  mountTour();
   buildGallery().then(onScroll);
   onScroll();
 })();

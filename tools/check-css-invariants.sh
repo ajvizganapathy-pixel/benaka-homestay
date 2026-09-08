@@ -9,13 +9,13 @@
 # No dependencies — this is a grep, so it runs anywhere the repo does.
 #
 # WHAT CHANGED, AND WHY THESE ARE NOT THE OLD CHECKS.
-# This used to guard the scroll-world canvas: the engine's copy scrim being
-# forced off, and a bounded text-shadow on type that sat ON the footage. The
-# walkthrough is now six separate blocks with the words BESIDE the film, so
-# there is no copy layer left to scrim and no type over a photograph to shadow.
-# Those two assertions had nothing to point at and were removed rather than left
-# passing vacuously. What survives is the rule they were both serving: NOTHING
-# DIMS OR OBSCURES THE PHOTOGRAPHS.
+# This began life guarding the scroll-world canvas: the engine's copy scrim
+# forced off, and a bounded text-shadow on type that sat ON the footage. Then it
+# guarded the tint over the six rendered legs. The scroll world is now rejected
+# outright and replaced by one film of the real property, so none of those three
+# have an element to point at; they were removed rather than left passing
+# vacuously. What survives is the rule all of them served — NOTHING DIMS OR
+# OBSCURES THE PHOTOGRAPHS — plus a new check that the scroll world stays gone.
 set -u
 CSS=web/css/site.css
 fail=0
@@ -29,22 +29,7 @@ trap 'rm -f "$CODE"' EXIT
 
 echo "site.css invariants:"
 
-# 1. The tint on the rendered legs stays translucent. Opaque it stops being a
-#    wash over the footage and becomes a backdrop, which is the thing every
-#    version of this check has existed to prevent.
-tint=$(awk '/^\.leg__figure::after/ { inblock = 1 } inblock { print } inblock && /^}/ { inblock = 0 }' "$CODE")
-if [ -z "$tint" ]; then
-  printf '  FAIL  the leg tint is missing\n'; fail=1
-else
-  worst=$(printf '%s' "$tint" | grep -oE '[0-9]{1,3}%, *transparent' | tr -cd '0-9\n' | sort -n | tail -1)
-  if [ -n "$worst" ] && [ "$worst" -lt 40 ]; then
-    printf '  ok    the leg tint is translucent (%s%%)\n' "$worst"
-  else
-    printf '  FAIL  the leg tint is too heavy (%s%%) — it should wash, not cover\n' "${worst:-none}"; fail=1
-  fi
-fi
-
-# 2. No scrim. A dark gradient laid over a photograph to rescue type is the
+# 1. No scrim. A dark gradient laid over a photograph to rescue type is the
 #    original sin this file keeps re-committing. There is no type over the
 #    photographs any more, so there is no excuse for one either.
 if grep -nE 'linear-gradient\([^)]*rgba?\(\s*[0-9]{1,2}\s*,\s*[0-9]{1,2}\s*,\s*[0-9]{1,2}' "$CODE" \
@@ -54,7 +39,7 @@ else
   printf '  ok    no scrim over the photographs\n'
 fi
 
-# 3. No text-shadow, glow or outline anywhere. With the words beside the picture
+# 2. No text-shadow, glow or outline anywhere. With the words beside the picture
 #    this is once again absolute, as it was before the canvas forced a compromise.
 if grep -nE 'text-shadow|-webkit-text-stroke' "$CODE" | grep -v 'text-shadow: *none' >/dev/null; then
   printf '  FAIL  a text-shadow or outline was reintroduced\n'; fail=1
@@ -62,13 +47,35 @@ else
   printf '  ok    no text-shadow, glow or outline\n'
 fi
 
-# 4. The engine is no longer mounted, but the file stays as the record of the
-#    chain and world.config.js stays the source of truth for the walkthrough.
-[ -f web/scrub-engine.js ] && printf '  ok    scrub-engine.js retained (unmounted)\n'
-if grep -qE '<script[^>]+scrub-engine\.js' web/index.html; then
-  printf '  FAIL  scrub-engine.js is being loaded again — the legs render it dead\n'; fail=1
+# 3. The scroll world stays gone. Every piece of it has been reintroduced by a
+#    later edit at least once in this repo's history, and a half-restored engine
+#    painting fixed layers over a page laid out in normal flow is miserable to
+#    diagnose from a screenshot. So this asserts the absence, not the presence.
+ghosts=0
+for f in web/scrub-engine.js web/world.config.js; do
+  [ -e "$f" ] && { printf '  FAIL  %s is back — the scroll world was rejected\n' "$f"; ghosts=1; }
+done
+grep -qE '(scrub-engine|world\.config)\.js' web/index.html \
+  && { printf '  FAIL  web/index.html loads a retired scroll-world script\n'; ghosts=1; }
+grep -qE '^\s*\.leg' "$CODE" \
+  && { printf '  FAIL  the .leg zigzag rules are back in site.css\n'; ghosts=1; }
+grep -rq 'assets/clips' web/ \
+  && { printf '  FAIL  web/ still points at assets/clips — those files are untracked\n'; ghosts=1; }
+if [ $ghosts -eq 0 ]; then
+  printf '  ok    no scroll-world engine, config, styles or clip references\n'
 else
-  printf '  ok    the retired engine is not loaded\n'
+  fail=1
+fi
+
+# 4. The one video the repo carries is tracked, and the AI clips are not. The
+#    negation that used to except assets/clips has to stay gone or 193MB walks
+#    back into the tree on the next `git add -A`.
+if grep -qE '^\s*!assets/clips' .gitignore; then
+  printf '  FAIL  .gitignore excepts assets/clips again\n'; fail=1
+elif ! grep -qE '^\s*!assets/video/\*\.mp4' .gitignore; then
+  printf '  FAIL  .gitignore no longer excepts the property film\n'; fail=1
+else
+  printf '  ok    the property film is tracked, the AI clips are not\n'
 fi
 
 [ $fail -eq 0 ] && echo "all invariants hold" || echo "INVARIANT BROKEN — see above" >&2

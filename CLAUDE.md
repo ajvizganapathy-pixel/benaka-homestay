@@ -5,10 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A site for a homestay in Coorg (Kodagu), Karnataka. It opens as a property
-brochure — real photographs, ivory ground, editorial serif — and then walks you
-through the place as **six short films, each its own block, zigzagging down the
-page**: in from the road, under the arch, along the verandah, past the billiards
-table, into a room, down to the water. Then a tiled photograph gallery, a
+brochure — real photographs, ivory ground, editorial serif — carries one film
+of the place in the middle, and closes with a tiled photograph gallery, a
 footer, a booking flow and the venue.
 
 Static and framework-free — plain HTML, no build step, no package manifest.
@@ -17,29 +15,42 @@ Serve the repo root over HTTP and open `/web/`.
 The property is signed **Benaka By The Hills** at its gate, which is what the
 site uses. The repo is still named `benaka-homestay`.
 
-### The scroll-world engine is retired
+### The scroll world was rejected. Do not rebuild it.
 
 This began as a `scroll-world` build: one continuous scroll-scrubbed camera move
-across seven beats, driven by `web/scrub-engine.js`. **That is no longer
-mounted.** The owner asked for the legs as separate pieces rather than one
-unbroken take, so `web/js/site.js` now renders them from `web/world.config.js`
-as ordinary blocks and the engine's `<script>` tag is gone from `web/index.html`.
+across seven beats, driven by `web/scrub-engine.js`, rendered leg by leg on
+OpenArt. It went through three shapes — scrubbed canvas, then six separate legs
+zigzagging down the page — and the client read every one of them the same way:
+as an AI film rather than as a place. **The owner rejected the concept.**
 
-The file stays in the repo as the record of what the chain was, and
-`tools/test.sh` still syntax-checks it. `tools/check-css-invariants.sh` fails the
-build if anything loads it again — the legs render it dead, and a half-mounted
-engine painting fixed layers over a page laid out in normal flow would be a mess
-to diagnose.
+What stands in its place is `assets/video/benaka-tour.mp4` — 848×480, 31s,
+H.264 + AAC — footage shot on the property: the mosaic mural, the pool with the
+house behind it, a bedroom, the garden swings, the front elevation. It is the
+whole of the "Explore Benaka" section, and it is the only video the site plays.
 
-**A whole class of problem left with it.** In a leg block the words sit *beside*
-the film, not on it, so the contrast fight — three rounds of luminance
-measurement, the bounded text-shadow, the forest veil over the copy layer, beats
-stuck at 3.2–4.0:1 — no longer applies at all. Type on paper needs none of it.
+**What is gone, and where to find it if it is ever wanted again:**
 
-**The buffet → billiards leg was dropped** on instruction (the old beat 4, "Down
-the length of the table, on to the games room"). `leg-04.mp4` and `leg-04-m.mp4`
-are still in `assets/clips/` — nothing was deleted, the page just stops showing
-them.
+| Gone | Recover with |
+|---|---|
+| `web/scrub-engine.js`, `web/world.config.js` | `git show 76bab70:web/scrub-engine.js` |
+| The `.leg` zigzag CSS and `buildLegs`/`playOnView` | `git show 76bab70:web/css/site.css` |
+| 14 rendered clips, 193MB | still on disk in `assets/clips/`, untracked; also `git show 76bab70:assets/clips/leg-01.mp4 > leg-01.mp4` |
+
+`assets/clips/*.mp4` is **untracked on purpose**. `.gitignore` ignores `*.mp4`
+and excepts only `assets/video/*.mp4`. Do not restore a `!assets/clips`
+negation — `tools/check-css-invariants.sh` fails the build if you do, because a
+single `git add -A` would otherwise walk 193MB of rejected footage back into the
+tree.
+
+`assets/scenes/`, `assets/handoff/` and `render/` are untouched. They are stills
+and run books, not video, and they are the record of what the chain cost.
+
+**A whole class of problem left with the concept.** There is no type over
+footage anywhere on the page now, so the contrast fight — three rounds of
+luminance measurement, the bounded text-shadow, the forest veil over the copy
+layer, beats stuck at 3.2–4.0:1 — no longer applies at all. And the film gets
+**no tint**: the wash over the rendered legs existed to knock the sheen off
+generated footage. This is the place itself.
 
 ## Commands
 
@@ -48,7 +59,15 @@ php -S localhost:8765 -t .      # then http://localhost:8765/ (root index.html r
                                 # NOT python3 -m http.server: it cannot run api/booking.php,
                                 # so the booking form silently stays in preview.
 bash tools/test.sh              # syntax, secrets, assets, and the live booking API
+bash tools/check-css-invariants.sh   # run after ANY edit to web/css/site.css
 
+# re-cut the property film if it is ever replaced. +faststart is NOT optional:
+# without it the browser downloads all 8.8MB before painting a frame.
+ffmpeg -i <new>.mp4 -c copy -movflags +faststart assets/video/benaka-tour.mp4
+ffmpeg -ss 30 -i assets/video/benaka-tour.mp4 -frames:v 1 -q:v 2 \
+  assets/video/benaka-tour-poster.jpg
+
+# --- everything below belongs to the REJECTED render chain (see HISTORICAL) ---
 # re-cut a 16:9 scene canvas from a photograph
 ffmpeg -y -i assets/raw/<file>.jpg \
   -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1" \
@@ -87,44 +106,42 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 
 ```
 index.html            root redirect stub -> web/ (see the note under Layout)
-web/index.html        page shell: editorial band, the legs, gallery, footer, booking
-web/world.config.js   the 6 legs, their copy and their clips — still the source of truth
-web/scrub-engine.js   RETIRED, not mounted; kept as the record of the old chain
+web/index.html        page shell: editorial band, the film, gallery, footer, booking
 web/css/              fonts, tokens, site chrome, booking
 web/js/               api adapter, site behaviour, booking flow
 web/fonts/            self-hosted woff2 (no CDN at runtime)
-assets/               raw/ photographs, scenes/ canvases (+ scenes/portrait/),
-                      clips/ 14 legs, manifest.json
+assets/raw/           the property photographs — everything the page shows
+assets/video/         benaka-tour.mp4 and its poster. The ONLY tracked video.
+assets/scenes/        canvases from the rejected render chain (+ portrait/)
+assets/handoff/       leg handoff frames from the same chain
+assets/clips/         14 rendered legs, UNTRACKED, kept on disk only
 api/                  booking.php + config.example.php — inert until configured
 render/               the OpenArt render chain: model, prompts, run book, costs
 ```
 
 ### Three things that will bite
 
-1. **There are TWO rendered chains, and the phone one is not a resize.** Desktop
-   gets `clip` / `still` (16:9); a coarse-pointer or ≤860px viewport gets
-   `clipMobile` / `stillMobile`, which are a separately rendered native 9:16
-   chain. This is not an optimisation that can be undone with an encoder flag:
-   `object-fit: cover` shows only 25.8% of a 16:9 frame's width on a 390×844
-   phone, and a resize of that master to 1280 wide is an *upscale* — the fault
-   that made the phone build look dull. Set `clipMobile` and `stillMobile`
-   together, or the poster flashes a crop of the wrong picture. Landscape encodes
-   come from `render/encode.sh`, portrait from `render/encode-mobile.sh`, which
-   refuses a landscape input outright.
+1. **The film is not fetched until you are near it, and is paused when you are
+   not.** `mountTour()` in `site.js` uses two observers on purpose: a loose one
+   at `rootMargin: 150%` decides when to spend bandwidth by setting `src`, and a
+   tight one at `threshold: 0.25` decides when to spend a decoder by calling
+   `play()`. The `<video>` ships with **no `src` attribute at all** and
+   `preload="none"`; that pair is what keeps a visitor who never scrolls that far
+   from paying 8.8MB for it.
 
-2. **A leg's clip is not fetched until you are near it, and is paused when you
-   are not.** `playOnView()` in `site.js` uses two observers on purpose: a loose
-   one at `rootMargin: 150%` decides when to spend bandwidth by setting `src`,
-   and a tight one at `threshold: 0.25` decides when to spend a decoder by
-   calling `play()`. Setting `src` up front would pull six files of 13–18MB on
-   load. `preload="none"` plus that pair is what keeps it to what you actually
-   watch.
+2. **The film must stay faststart.** `ffmpeg` writes the `moov` index *after*
+   the media data unless `-movflags +faststart` is given, and a browser cannot
+   paint a frame until it has read `moov` — so without the flag the whole file
+   downloads before anything appears. It fails silently: the video still plays,
+   it just takes forever to start, which reads as a slow network rather than a
+   bad encode. `tools/test.sh` scans the atom order (`tools/atom-order.py`) and
+   fails the build. If you ever re-encode this file, pass the flag.
 
-3. **`.legs` redeclares the palette tokens.** It is not inside `.before` or
+3. **`.explore` redeclares the palette tokens.** It is not inside `.before` or
    `.after`, so without that block it inherits the dark `:root` values and sits
-   outside the site's theme. It carries the forest ground deliberately, matching
-   the "Step inside" band above it, so the walkthrough reads as one chapter
-   between the ivory brochure and the ivory gallery.
+   outside the site's theme. It carries the forest ground deliberately, so the
+   page reads ivory, forest, ivory and the film is the one dark chapter in the
+   middle.
 
 ### Two entry points, on purpose
 
@@ -178,6 +195,17 @@ required, was sent to the server, and was used by nothing — do not bring it ba
 
 `DATA_DIR` must resolve **outside** the document root; `booking.php` refuses to
 start otherwise.
+
+## HISTORICAL — the rejected render chain
+
+Everything from here down describes the scroll world, which the owner rejected.
+None of it is live on the page. It is kept because it is expensive knowledge —
+what the chain cost, which model holds a signboard, why the phone chain could
+not be a resize — and because `render/` and `assets/scenes/` are still on disk.
+
+**Do not act on any of it to rebuild the walkthrough.** Read it only if someone
+asks for new rendered footage from scratch, and read the rejection at the top of
+this file first.
 
 ### The arch, and the one thing that breaks it
 
