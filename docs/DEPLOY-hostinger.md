@@ -85,48 +85,48 @@ This is the long pole. Do it first.
    *recipient*, and needs nothing done to it.
 4. **Phone Number ID.** API Setup page. It is a long numeric id, not the phone
    number. → `WA_PHONE_ID`
-5. **Create the two templates** (Meta Business Suite → WhatsApp Manager →
-   Message templates). Both must be **APPROVED** before booking works.
+5. **Create the template** (Meta Business Suite → WhatsApp Manager →
+   Message templates). It must be **APPROVED** before booking works.
 
-   **a. The owner's notification.** Category **UTILITY**, language **English**,
-   name `benaka_booking_request`. Body, verbatim:
+   There is only one. The site used to send a second, authentication template
+   carrying a verification code to the guest; the booking form no longer has a
+   verification step, so that template is not needed and is not used. If you
+   already have `benaka_otp` approved, leave it — nothing sends it.
+
+   **The owner's notification.** Category **UTILITY**, language **English**,
+   name `benaka_booking_request`. Body, verbatim — **five** variables:
 
    ```
    New booking request from the Benaka By The Hills website.
 
    Guest: {{1}}
    Coming from: {{2}}
-   Phone: {{3}}
-   WhatsApp: {{4}}
-   Email: {{5}}
-   Dates: {{6}}
-   Received: {{7}}
+   WhatsApp: {{3}}
+   Dates: {{4}}
+   Received: {{5}}
 
    Reply to this guest on WhatsApp to confirm the stay.
    ```
 
    Sample values when Meta asks: `Anjan Ganapathy`, `Bengaluru`,
-   `+919876543210`, `+919876543210`, `anjan@example.com`,
-   `12 Oct 2026 to 15 Oct 2026 (3 nights)`, `6 Sep 2026, 14:20`.
+   `+919876543210`, `12 Oct 2026 to 15 Oct 2026 (3 nights)`, `6 Sep 2026, 14:20`.
+
+   > **If you already had the seven-variable version approved, it no longer
+   > matches.** The separate `Phone:` and `Email:` lines went when the form
+   > stopped asking for them, and Meta rejects a send whose parameter count
+   > differs from the approved body. Edit the template to the five-variable body
+   > above and wait for re-approval, or create a new one under a different name
+   > and point `WA_BOOKING_TEMPLATE` at it.
 
    Two rules Meta enforces and this body respects: a template may not begin or
    end with a variable, and two variables may not be adjacent. Values may not
    contain line breaks — which is why the layout lives in the approved body and
    not in the data.
 
-   **b. The guest's code.** Category **AUTHENTICATION**, language **English**,
-   name `benaka_otp`. You do not write this body; Meta supplies fixed preset
-   text and you pick the options:
-   - Code delivery: **Copy code**. Not one-tap autofill — that needs an Android
-     app signing hash, which a website does not have.
-   - Tick **Add security recommendation**.
-   - Tick **Add expiry time for the code**, set **10 minutes** (match
-     `OTP_TTL_SECONDS`).
+   > The message is business-initiated, so it must stay a template. Meta rejects
+   > free-form text outside the 24-hour customer-service window, and the endpoint
+   > only ever sends templates — there is no setting that makes it do otherwise.
 
-   > Sending a verification code as ordinary text instead of an authentication
-   > template is grounds for Meta suspending the WhatsApp account. The endpoint
-   > only ever sends templates, and there is no setting that makes it do
-   > otherwise.
 
 6. **Permanent access token.** Business Settings → Users → System Users → add a
    system user with the **whatsapp_business_messaging** and
@@ -188,26 +188,32 @@ sent anywhere.
    no build step runs. The page asks the endpoint what mode it is in, so the
    "not taking live bookings" notice disappears by itself.
 
-**If the authentication template is not approved yet** and you want to launch
-anyway, set `'OTP_CHANNEL' => 'email'` and an `OTP_EMAIL_FROM` address. The code
-goes to the guest by email, the owner's WhatsApp notification still works (that
-is the utility template, which approves faster), and you switch back to
-`'whatsapp'` the day the other one clears.
+**If the template is not approved yet** and you want the site up anyway, leave
+`'CONFIGURED' => false`. The form still works end to end, the panel says plainly
+that nothing is being delivered, and no request is lost — switch it on the day
+the template clears. Setting `'WA_TRANSPORT' => 'off'` is the other option: the
+booking is stored and the guest is told honestly that it was not sent.
 
 ### Verify it end to end, with a real booking
 
-1. Open the site and send yourself a request through the form, using a phone
-   number you can read WhatsApp on.
-2. The code should arrive from the business number, in an authentication
-   message with a **Copy code** button.
-3. Enter it. The panel should say *"Sent to the owner on WhatsApp. Confirmation
-   will reach you shortly."* and show a reference beginning `bk_`.
-4. **Both** owner phones should have the booking, laid out as the template
+1. Open the site, fill the form in and press **Send**. There is no code to
+   enter — one post is the whole flow.
+2. The panel should say *"Your request is on its way."* over *"The owner will
+   get in touch on WhatsApp to confirm your dates."*, and show a reference
+   beginning `bk_`.
+3. **Both** owner phones should have the booking, laid out as the template
    above, with the requested dates on the `Dates:` line.
-5. `benaka-data/bookings/bk_….json` should exist, with
-   `"delivery_status": "sent"`.
+4. `benaka-data/bookings/bk_….json` should exist, with
+   `"delivery_status": "sent"` and `"verified": false` — there is no
+   verification step, and the record says so rather than implying one.
 
-If step 4 fails but the panel says *"Saved. WhatsApp delivery did not go through
+Take a minute over the form rather than pasting values in and pressing Send
+immediately: a submission made in under three seconds is treated as scripted,
+and — by design — is answered as though it succeeded while nothing is stored or
+sent. If a test request never arrives and no file appears, that is the likely
+reason.
+
+If step 3 fails but the panel says *"Saved. WhatsApp delivery did not go through
 just now"* — that is the system working as designed. The request is not lost.
 Read `benaka-data/error.log` and the record's `delivery_error` field; the
 usual causes are an unapproved template, a wrong template name, an expired

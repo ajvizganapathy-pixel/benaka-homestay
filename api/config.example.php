@@ -62,25 +62,29 @@ return [
     // Bump it when the end date gets close; nothing else needs to change.
     'WA_API_VERSION' => 'v25.0',
 
-    // -- Template 1: the owner's booking notification -----------------------
-    // Category: UTILITY.  Language: English (en).
-    // Submit this body EXACTLY, with seven variables:
+    // -- The owner's booking notification -----------------------------------
+    // This is the ONLY template the site sends. Category: UTILITY.
+    // Language: English (en). Submit this body EXACTLY, with five variables:
     //
     //   New booking request from the Benaka By The Hills website.
     //
     //   Guest: {{1}}
     //   Coming from: {{2}}
-    //   Phone: {{3}}
-    //   WhatsApp: {{4}}
-    //   Email: {{5}}
-    //   Dates: {{6}}
-    //   Received: {{7}}
+    //   WhatsApp: {{3}}
+    //   Dates: {{4}}
+    //   Received: {{5}}
     //
     //   Reply to this guest on WhatsApp to confirm the stay.
     //
     // Sample values Meta will ask for: Anjan Ganapathy / Bengaluru /
-    // +919876543210 / +919876543210 / anjan@example.com /
-    // 12 Oct 2026 to 15 Oct 2026 (3 nights) / 6 Sep 2026, 14:20
+    // +919876543210 / 12 Oct 2026 to 15 Oct 2026 (3 nights) / 6 Sep 2026, 14:20
+    //
+    // IF YOU ALREADY HAD THE SEVEN-VARIABLE VERSION APPROVED, it no longer
+    // matches. The separate Phone and Email variables went when the form
+    // stopped asking for them, so a send against the old template fails with
+    // a parameter-count error from Meta. Edit the template in WhatsApp Manager
+    // to the five-variable body above and wait for re-approval, or create a new
+    // one under a new name and point WA_BOOKING_TEMPLATE at it.
     //
     // Rules that make Meta reject a template: it must not begin or end with a
     // variable, and two variables must not sit next to each other. The body
@@ -89,18 +93,10 @@ return [
     'WA_BOOKING_TEMPLATE'      => 'benaka_booking_request',
     'WA_BOOKING_TEMPLATE_LANG' => 'en',
 
-    // -- Template 2: the guest's verification code --------------------------
-    // Category: AUTHENTICATION.  Language: English (en).
-    // You do not write this body — Meta supplies fixed preset text and you
-    // choose the options. Create it with:
-    //   * Code delivery: "Copy code"  (NOT one-tap autofill: that needs an
-    //     Android app signing hash, which a website does not have)
-    //   * Tick "Add security recommendation"
-    //   * Tick "Add expiry time for the code" -> 10 minutes
-    // Leave this blank and set OTP_CHANNEL to 'email' to launch before it is
-    // approved. Approval usually takes minutes to a day.
-    'WA_OTP_TEMPLATE'      => 'benaka_otp',
-    'WA_OTP_TEMPLATE_LANG' => 'en',
+    // There is no second template. The AUTHENTICATION template that carried the
+    // guest's verification code went with the OTP step — the form now posts once
+    // and the owner replies on WhatsApp. WA_OTP_TEMPLATE, OTP_CHANNEL and the
+    // other OTP_* keys are ignored if an older config file still sets them.
 
     // How a send actually happens:
     //   'cloud'  the real Graph API                     <- production
@@ -111,23 +107,16 @@ return [
     'WA_TIMEOUT'   => 15,
 
     // -----------------------------------------------------------------------
-    // How the guest's number is verified
-    //   'whatsapp'  authentication template  (needs WA_OTP_TEMPLATE approved)
-    //   'email'     a code by email          (no Meta approval, works day one)
-    //   'off'       no verification step
-    // -----------------------------------------------------------------------
-    'OTP_CHANNEL'    => 'whatsapp',
-    'OTP_EMAIL_FROM' => '',            // e.g. 'bookings@yourdomain.com' — only for 'email'
-
-    'OTP_TTL_SECONDS'  => 600,         // ten minutes; match the template's expiry
-    'OTP_MAX_ATTEMPTS' => 5,
-    'OTP_RESEND_WAIT'  => 30,          // seconds between codes to one number
-
-    // -----------------------------------------------------------------------
     // Rate limits
+    //
+    // These matter more than they used to. With the verification step gone,
+    // nothing proves a visitor owns the number they typed, so these limits and
+    // the honeypot in the form are the whole of what stands between a script
+    // and the owner's phone. Lower them if junk starts arriving; do not raise
+    // them without a reason.
     // -----------------------------------------------------------------------
-    'RATE_PER_IP_HOUR'     => 20,
-    'OTP_PER_NUMBER_HOUR'  => 5,
+    'RATE_PER_IP_HOUR'        => 20,   // any request, per IP address
+    'BOOKINGS_PER_NUMBER_DAY' => 4,    // completed bookings, per WhatsApp number
 
     // -----------------------------------------------------------------------
     // Storage — JSON files, and they MUST live outside public_html.

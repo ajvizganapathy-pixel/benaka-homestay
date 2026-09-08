@@ -229,7 +229,9 @@
   </div>
 </div>
 
-<!-- Booking, login and OTP. -->
+<!-- Booking. One step: who is coming and when, then Send. There is no code to
+     enter, no email and no password — the request goes straight to the owner's
+     WhatsApp and the owner replies there. -->
 <div class="bk" data-booking role="dialog" aria-modal="true" aria-labelledby="bk-h" hidden>
   <div class="bk__scrim" data-bk-close></div>
   <div class="bk__panel">
@@ -250,10 +252,8 @@
       connected. Nothing you enter here is sent anywhere.
     </p>
 
-    <div class="bk__steps" aria-hidden="true"><i class="done"></i><i></i><i></i></div>
-
     <form data-bk-form novalidate>
-      <!-- Step 1 — who -->
+      <!-- Step 1 — who, and when -->
       <section class="step active" data-step="1">
         <div class="field">
           <label class="micro" for="bk-name">Your name</label>
@@ -265,27 +265,16 @@
           <input id="bk-from" aria-describedby="err-from" name="from" type="text" placeholder="e.g. Bengaluru" autocomplete="address-level2" required>
           <span class="err" id="err-from" data-err="from" role="alert" aria-live="polite"></span>
         </div>
+        <!-- One number, and it is the WhatsApp number: that is where the reply
+             comes from, so asking for a second one was a field with no job. -->
         <div class="field">
-          <label class="micro" for="bk-phone">Phone</label>
+          <label class="micro" for="bk-phone">WhatsApp number</label>
           <div class="row">
             <input id="bk-cc" name="cc" type="text" placeholder="+91" value="+91" aria-label="Country code">
-            <input id="bk-phone" aria-describedby="err-phone" name="phone" type="tel" placeholder="98765 43210" autocomplete="tel" required>
+            <input id="bk-phone" aria-describedby="err-phone hint-phone" name="phone" type="tel" placeholder="98765 43210" autocomplete="tel" required>
           </div>
+          <span class="hint" id="hint-phone">This is where the owner will reply.</span>
           <span class="err" id="err-phone" data-err="phone" role="alert" aria-live="polite"></span>
-        </div>
-        <label class="check">
-          <input type="checkbox" name="waSame" checked data-wa-same>
-          <span>WhatsApp is the same number</span>
-        </label>
-        <div class="field" data-wa-field hidden>
-          <label class="micro" for="bk-wa">WhatsApp number</label>
-          <input id="bk-wa" aria-describedby="err-whatsapp" name="whatsapp" type="tel" placeholder="98765 43210">
-          <span class="err" id="err-whatsapp" data-err="whatsapp" role="alert" aria-live="polite"></span>
-        </div>
-        <div class="field">
-          <label class="micro" for="bk-email">Email</label>
-          <input id="bk-email" aria-describedby="err-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-          <span class="err" id="err-email" data-err="email" role="alert" aria-live="polite"></span>
         </div>
         <!-- The dates the owner needs to answer at all. `min` is set to today
              by booking.js, and the server checks both again. -->
@@ -305,10 +294,19 @@
           <span class="err" id="err-departure" data-err="departure" role="alert" aria-live="polite"></span>
           <span class="hint" data-bk-nights></span>
         </div>
-        <button class="btn" type="button" data-bk-next="1">Send me a code</button>
+
+        <!-- Honeypot. There is no verification step any more, so this and the
+             timing check in booking.js are what stand between a scripted post
+             and the owner's phone. Hidden from sight AND from screen readers,
+             and never autofilled; a human cannot fill it in. -->
+        <div class="bk__trap" aria-hidden="true">
+          <label for="bk-website">Website</label>
+          <input id="bk-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
+        <button class="btn" type="button" data-bk-send>Send</button>
         <p class="bk__alt">We only use these to reply about your stay.</p>
 
-        <!-- Some people would simply rather call. -->
         <div class="bk__call">
           <span class="micro">Or call us</span>
           <a href="tel:+919448647831">+91 94486 47831</a>
@@ -316,37 +314,14 @@
         </div>
       </section>
 
-      <!-- Step 2 — OTP -->
+      <!-- Step 2 — sent -->
       <section class="step" data-step="2">
-        <p style="color:var(--s-ink-soft);margin-top:0">
-          We sent a six digit code to <strong data-bk-dest>your phone</strong>.
-        </p>
-        <div class="field">
-          <label class="micro" for="otp-0">Enter the code</label>
-          <div class="otp" data-otp aria-describedby="err-otp">
-            <input id="otp-0" inputmode="numeric" maxlength="1" aria-label="Digit 1">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 3">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 4">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 5">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 6">
-          </div>
-          <span class="err" id="err-otp" data-err="otp" role="alert" aria-live="polite"></span>
-        </div>
-        <div class="resend">
-          <span class="micro" data-otp-timer></span>
-          <button type="button" class="micro" data-otp-resend disabled>Resend code</button>
-        </div>
-        <button class="btn" type="button" data-bk-next="2">Confirm</button>
-        <p class="bk__alt"><button type="button" data-bk-back="1">Change my details</button></p>
-      </section>
-
-      <!-- Step 3 — done -->
-      <section class="step" data-step="3">
         <div class="done-mark" aria-hidden="true">&check;</div>
-        <h3 class="macro" tabindex="-1" style="font-size:clamp(1.5rem,3vw,2rem)">That is all we need.</h3>
-        <!-- Replaced by booking.js with what actually happened to the request. -->
-        <p style="color:var(--s-ink-soft)">Your request has been saved.</p>
+        <!-- Both lines are rewritten by booking.js from the delivery status the
+             server reported. They must never disagree with each other: the
+             default pair below is the one that is true when a send succeeded. -->
+        <h3 class="macro" tabindex="-1" style="font-size:clamp(1.5rem,3vw,2rem)" data-bk-done-h>Your request is on its way.</h3>
+        <p data-bk-done-p>The owner will get in touch on WhatsApp to confirm your dates.</p>
         <div data-bk-summary style="margin:24px 0"></div>
         <button class="btn btn--ghost" type="button" data-bk-close>Close</button>
       </section>

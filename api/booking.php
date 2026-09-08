@@ -2,16 +2,29 @@
 /**
  * Booking endpoint — Benaka By The Hills.
  *
- * Actions: status | requestOtp | verifyOtp | submitBooking
+ * Actions: status | submitBooking
  * Shapes match web/js/api.js exactly.
  *
- * Two rules this file exists to keep:
+ * NO VERIFICATION STEP. The owner asked for the shortest path from a visitor
+ * deciding to come to a message on their phone, so there is no OTP, no email
+ * and no password: the form posts once and the request goes to WhatsApp. That
+ * is a deliberate trade and it costs something — nothing here proves the
+ * visitor owns the number they typed. What stands in its place is not an
+ * identity check and does not pretend to be one:
+ *
+ *   - a per-IP rate limit, as before;
+ *   - a per-number rate limit, so one number cannot be used to flood;
+ *   - a honeypot field and a minimum fill time, which stop scripted posts.
+ *
+ * Three rules this file exists to keep:
  *
  *   1. A guest is never told a booking was delivered that was not. The record is
  *      stored first and the WhatsApp result is reported honestly afterwards.
  *   2. Nothing but JSON ever leaves here. Warnings, notices, fatals and
  *      uncaught exceptions are all funnelled into one JSON 500 with an opaque
  *      incident id; the detail goes to a log file outside the web root.
+ *   3. A rejection never explains itself to a bot. The honeypot and timing
+ *      checks answer exactly as a successful post does.
  *
  * REFUSES to accept bookings until api/config.php exists with CONFIGURED => true.
  * `status` still answers, so the site can ask the server what mode it is in
@@ -160,11 +173,7 @@ $action = (string)($in['action'] ?? '');
 //    This is what lets the front end learn its mode instead of hardcoding it.
 // ---------------------------------------------------------------------------
 if ($action === 'status') {
-    reply([
-        'ok'         => true,
-        'live'       => $CONFIGURED,
-        'otpChannel' => $CONFIGURED ? (string)cfg('OTP_CHANNEL', 'whatsapp') : 'none',
-    ]);
+    reply(['ok' => true, 'live' => $CONFIGURED]);
 }
 
 if (!$CONFIGURED) {
@@ -221,7 +230,6 @@ function guard_dir(string $d): void {
 ensure_dir($dataDir);
 guard_dir($dataDir);
 ensure_dir($dataDir . '/bookings');
-ensure_dir($dataDir . '/otp');
 ensure_dir($dataDir . '/rl');
 
 // Refuse to run with the records inside the document root. Better a loud 500
@@ -287,11 +295,11 @@ function rate_ok(string $dir, string $bucket, int $limit, int $window): bool {
     return $ok;
 }
 
-/** Sweep spent rate-limit and OTP files occasionally; nothing else prunes them. */
+/** Sweep spent rate-limit files occasionally; nothing else prunes them. */
 function sweep(string $dir): void {
     if (random_int(1, 50) !== 1) return;
     $cut = time() - 86400;
-    foreach (['rl', 'otp'] as $bucket) {
+    foreach (['rl'] as $bucket) {
         foreach (glob($dir . '/' . $bucket . '/*.json') ?: [] as $f) {
             if (@filemtime($f) < $cut) @unlink($f);
         }
@@ -328,9 +336,10 @@ function stay_date(string $s): ?string {
 function clean_details(array $in): array {
     $name  = trim((string)($in['name'] ?? ''));
     $from  = trim((string)($in['from'] ?? ''));
+    // One number, and it is the WhatsApp number. The form used to ask for a
+    // second one and it was almost always the same; the reply comes back on
+    // WhatsApp, so this is the number that matters.
     $phone = msisdn((string)($in['phone'] ?? ''));
-    $wa    = msisdn((string)($in['whatsapp'] ?? '')) ?: $phone;
-    $email = trim((string)($in['email'] ?? ''));
     $from_d = stay_date(trim((string)($in['arrival'] ?? '')));
     $to_d   = stay_date(trim((string)($in['departure'] ?? '')));
 
@@ -340,10 +349,7 @@ function clean_details(array $in): array {
 
     if (mb_strlen($name) < 2 || mb_strlen($name) > 80)  $bad('name',  'Please give your name.');
     if (mb_strlen($from) < 2 || mb_strlen($from) > 80)  $bad('from',  'Where are you travelling from?');
-    if (strlen($phone) < 8 || strlen($phone) > 15)      $bad('phone', 'That phone number does not look right.');
-    if (strlen($wa) < 8 || strlen($wa) > 15)            $bad('whatsapp', 'That WhatsApp number does not look right.');
-    if (mb_strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL))
-                                                        $bad('email', 'That email does not look right.');
+    if (strlen($phone) < 8 || strlen($phone) > 15)      $bad('phone', 'That WhatsApp number does not look right.');
 
     // Dates are checked again here and not only in the browser: the endpoint is
     // reachable without one, and a booking with no dates is no use to the owner.
@@ -357,7 +363,7 @@ function clean_details(array $in): array {
 
     $nights = (int)round((strtotime($to_d) - strtotime($from_d)) / 86400);
 
-    return compact('name', 'from', 'phone', 'wa', 'email') + [
+    return compact('name', 'from', 'phone') + [
         'arrival'   => $from_d,
         'departure' => $to_d,
         'nights'    => $nights,
@@ -370,21 +376,40 @@ function clean_details(array $in): array {
     ];
 }
 
+/**
+ * Is this post a script? Neither check is an identity check — they are what is
+ * left after the OTP was removed, and they only have to be cheap and quiet.
+ *
+ *   website  a honeypot input, hidden from sight and from screen readers and
+ *            never autofilled. A human cannot fill it in; form-filling bots do.
+ *   elapsed  seconds between the panel opening and Send. Nobody reads five
+ *            fields and picks two dates in under three seconds.
+ *
+ * A caller that trips either is answered EXACTLY as a success is — same shape,
+ * same fields, a plausible reference — because an error tells a bot what to fix.
+ * Nothing is stored and nothing is sent.
+ */
+function looks_scripted(array $in): bool {
+    if (trim((string)($in['website'] ?? '')) !== '') return true;
+    $elapsed = $in['elapsed'] ?? null;
+    // Absent or non-numeric is NOT suspicious on its own: a caller with
+    // JavaScript disabled or an older cached page will not send it.
+    return is_numeric($elapsed) && (int)$elapsed < 3;
+}
+
 // ---------------------------------------------------------------------------
 // 6. WhatsApp Cloud API — templates only
 //
-// Both messages here are business-initiated. Outside the 24-hour customer
-// service window Meta rejects free-form text, and sending a verification code
-// as free text is grounds for suspending the WhatsApp account. So every send is
-// an approved template:
+// The owner notification is business-initiated. Outside the 24-hour customer
+// service window Meta rejects free-form text, so it has to be an approved
+// template: UTILITY category, FIVE positional body parameters — name, coming
+// from, WhatsApp number, the stay as one line, and when the request came in.
+// Template parameters may not contain newlines, so the layout lives in the
+// approved body text and never in the values.
 //
-//   OTP    AUTHENTICATION category. The body is Meta's fixed preset text; the
-//          code is a body parameter, repeated as the COPY_CODE button's value.
-//          (The one-tap button needs an Android app signing hash, which a
-//          website does not have, so copy-code is the correct button here.)
-//   Owner  UTILITY category, six positional body parameters. Template
-//          parameters may not contain newlines, so the layout lives in the
-//          approved body text, not in the values.
+// This is now the ONLY template the site sends. The AUTHENTICATION template
+// that carried the verification code went with the OTP step; if WA_OTP_TEMPLATE
+// is still in a config file it is simply ignored.
 //
 // WA_TRANSPORT decides where a send actually goes:
 //   cloud  the real Graph API
@@ -473,132 +498,31 @@ function owner_numbers(): array {
     return $out;
 }
 
-function otp_via_email(string $to, string $code, int $minutes): array {
-    $from = (string)cfg('OTP_EMAIL_FROM', '');
-    if ($from === '') return ['status' => 'failed', 'error' => 'OTP_EMAIL_FROM is not set'];
-    $subject = 'Your code for Benaka\'s Jungle Retreat';
-    $body = "Your verification code is $code.\n\n"
-          . "It expires in $minutes minutes. If you did not ask for this, ignore this email.\n";
-    $headers = "From: $from\r\nReply-To: $from\r\n"
-             . "Content-Type: text/plain; charset=utf-8\r\nX-Mailer: benaka-booking\r\n";
-    $ok = @mail($to, $subject, $body, $headers);
-    return $ok ? ['status' => 'sent', 'message_id' => 'mail']
-               : ['status' => 'failed', 'error' => 'mail() refused the message'];
-}
-
 // ---------------------------------------------------------------------------
 // 7. Actions
 // ---------------------------------------------------------------------------
 $ctx = ['dataDir' => $dataDir];
-$otpChannel = (string)cfg('OTP_CHANNEL', 'whatsapp');
-$ttl        = (int)cfg('OTP_TTL_SECONDS', 600);
 
 switch ($action) {
 
-case 'requestOtp': {
-    $d = clean_details($in);
-
-    if ($otpChannel === 'off') {
-        reply(['ok' => true, 'sent' => false, 'skipped' => true, 'channel' => 'off']);
-    }
-    if (!rate_ok($dataDir, 'otp:' . $d['wa'], (int)cfg('OTP_PER_NUMBER_HOUR', 5), 3600)) {
-        reply(['ok' => false, 'error' => 'Too many codes requested. Try again later.',
-               'reason' => 'rate_limited'], 429);
-    }
-    $existing = store_get($dataDir, 'otp', 'otp:' . $d['wa']);
-    $wait = (int)cfg('OTP_RESEND_WAIT', 30);
-    if ($existing && time() - (int)($existing['sent'] ?? 0) < $wait) {
-        reply(['ok' => false, 'error' => 'Please wait a moment before asking for another code.',
-               'reason' => 'resend_cooldown',
-               'retryAfter' => $wait - (time() - (int)$existing['sent'])], 429);
-    }
-
-    // Cryptographically secure, six digits, stored only as a hash. The code
-    // exists in this variable and in the message; nowhere else, ever.
-    $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-    if ($otpChannel === 'email') {
-        $send = otp_via_email($d['email'], $code, (int)ceil($ttl / 60));
-        $dest = $d['email'];
-    } else {
-        $send = wa_send_template($ctx, $d['wa'],
-            (string)cfg('WA_OTP_TEMPLATE', ''),
-            (string)cfg('WA_OTP_TEMPLATE_LANG', 'en'),
-            [
-                ['type' => 'body', 'parameters' => [['type' => 'text', 'text' => $code]]],
-                ['type' => 'button', 'sub_type' => 'COPY_CODE', 'index' => '0',
-                 'parameters' => [['type' => 'coupon_code', 'coupon_code' => $code]]],
-            ]);
-        $dest = '+' . $d['wa'];
-    }
-
-    if ($send['status'] !== 'sent') {
-        log_line('OTP send failed: ' . ($send['error'] ?? 'unknown'));
-        reply(['ok' => false, 'error' => 'Could not send the code just now. Please try again shortly.',
-               'reason' => 'otp_send_failed'], 502);
-    }
-
-    store_put($dataDir, 'otp', 'otp:' . $d['wa'], [
-        'hash'     => password_hash($code, PASSWORD_DEFAULT),
-        'sent'     => time(),
-        'expires'  => time() + $ttl,
-        'attempts' => 0,
-        'channel'  => $otpChannel,
-    ]);
-
-    reply(['ok' => true, 'sent' => true, 'channel' => $otpChannel, 'dest' => $dest]);
-}
-
-case 'verifyOtp': {
-    $d = clean_details($in);
-
-    if ($otpChannel === 'off') {
-        store_put($dataDir, 'otp', 'otp:' . $d['wa'],
-            ['verified' => true, 'expires' => time() + $ttl, 'channel' => 'off', 'attempts' => 0]);
-        reply(['ok' => true, 'verified' => true, 'channel' => 'off']);
-    }
-
-    $rec = store_get($dataDir, 'otp', 'otp:' . $d['wa']);
-    if (!$rec)                            reply(['ok'=>false,'error'=>'Ask for a code first.','reason'=>'no_code'], 400);
-    if (time() > (int)($rec['expires'] ?? 0)) {
-        store_del($dataDir, 'otp', 'otp:' . $d['wa']);
-        reply(['ok'=>false,'error'=>'That code has expired. Ask for a new one.','reason'=>'expired'], 400);
-    }
-    $max = (int)cfg('OTP_MAX_ATTEMPTS', 5);
-    if ((int)($rec['attempts'] ?? 0) >= $max) {
-        reply(['ok'=>false,'error'=>'Too many attempts. Ask for a new code.','reason'=>'too_many_attempts'], 429);
-    }
-
-    // Count the attempt before checking it, so a crash mid-check cannot be used
-    // to get a free guess.
-    $rec['attempts'] = (int)($rec['attempts'] ?? 0) + 1;
-    store_put($dataDir, 'otp', 'otp:' . $d['wa'], $rec);
-
-    $given = (string)($in['code'] ?? '');
-    if (strlen($given) > 12 || !password_verify($given, (string)($rec['hash'] ?? ''))) {
-        reply(['ok' => false, 'error' => 'That code is not right.', 'reason' => 'bad_code',
-               'attemptsLeft' => max(0, $max - $rec['attempts'])], 401);
-    }
-
-    $rec['verified']    = true;
-    $rec['verified_at'] = time();
-    unset($rec['hash']);              // spent: it can never be verified again
-    store_put($dataDir, 'otp', 'otp:' . $d['wa'], $rec);
-
-    reply(['ok' => true, 'verified' => true, 'channel' => $rec['channel'] ?? $otpChannel]);
-}
-
 case 'submitBooking': {
-    $d   = clean_details($in);
-    $rec = store_get($dataDir, 'otp', 'otp:' . $d['wa']);
+    $d = clean_details($in);
 
-    if (!$rec || empty($rec['verified'])) {
-        reply(['ok' => false, 'error' => 'Confirm your number first.', 'reason' => 'unverified'], 403);
+    // Answered before anything is stored or sent, and answered as a success:
+    // an error here would tell a script exactly which check to defeat.
+    if (looks_scripted($in)) {
+        log_line('discarded a scripted-looking submission');
+        reply(['ok' => true, 'requestId' => 'bk_' . bin2hex(random_bytes(8)),
+               'received' => true, 'deliveryStatus' => 'sent', 'notified' => 1]);
     }
-    if (time() > (int)($rec['expires'] ?? 0)) {
-        store_del($dataDir, 'otp', 'otp:' . $d['wa']);
-        reply(['ok' => false, 'error' => 'That confirmation has expired. Please start again.',
-               'reason' => 'expired'], 403);
+
+    // A second limit, on the number rather than the address. The per-IP limit
+    // above does not stop a phone rotating through mobile networks, and with no
+    // verification step the owner's WhatsApp is the thing being protected.
+    if (!rate_ok($dataDir, 'num:' . $d['phone'], (int)cfg('BOOKINGS_PER_NUMBER_DAY', 4), 86400)) {
+        reply(['ok' => false,
+               'error'  => 'We already have a request from this number. Please call us instead.',
+               'reason' => 'rate_limited'], 429);
     }
 
     $id  = 'bk_' . bin2hex(random_bytes(8));
@@ -608,35 +532,29 @@ case 'submitBooking': {
     // being reachable; losing a guest's request because an API was down is the
     // one failure this endpoint exists to prevent.
     $record = [
-        'id'               => $id,
-        'name'             => $d['name'],
-        'origin'           => $d['from'],
-        'phone'            => '+' . $d['phone'],
-        'whatsapp'         => '+' . $d['wa'],
-        'email'            => $d['email'],
-        'verified'         => true,
-        'verified_channel' => (string)($rec['channel'] ?? $otpChannel),
-        'verified_at'      => date('c', (int)($rec['verified_at'] ?? time())),
-        'arrival'          => $d['arrival'],
-        'departure'        => $d['departure'],
-        'nights'           => $d['nights'],
-        'delivery_status'  => 'pending',
-        'deliveries'       => [],
-        'created_at'       => $now,
-        'updated_at'       => $now,
+        'id'              => $id,
+        'name'            => $d['name'],
+        'origin'          => $d['from'],
+        'whatsapp'        => '+' . $d['phone'],
+        // Recorded so nobody later reads an old booking as a verified one.
+        // There is no verification step; saying so is cheaper than an argument.
+        'verified'        => false,
+        'arrival'         => $d['arrival'],
+        'departure'       => $d['departure'],
+        'nights'          => $d['nights'],
+        'delivery_status' => 'pending',
+        'deliveries'      => [],
+        'created_at'      => $now,
+        'updated_at'      => $now,
     ];
     atomic_write($dataDir . '/bookings/' . $id . '.json', $record);
 
-    // The OTP is spent the moment it produces a booking — one code, one request.
-    store_del($dataDir, 'otp', 'otp:' . $d['wa']);
-
-    // Seven single-line parameters. No password (there is none), no OTP, nothing
-    // sensitive — just what the owner needs to call the guest back and know
-    // which nights they are asking for.
+    // Five single-line parameters. No password (there is none), no code (there
+    // is none), no email — just what the owner needs to reply to the guest and
+    // know which nights they are asking for.
     $components = [['type' => 'body', 'parameters' => array_map(
         fn($t) => ['type' => 'text', 'text' => $t],
-        [$d['name'], $d['from'], '+' . $d['phone'], '+' . $d['wa'], $d['email'],
-         $d['stay'], date('j M Y, H:i')]
+        [$d['name'], $d['from'], '+' . $d['phone'], $d['stay'], date('j M Y, H:i')]
     )]];
 
     // The homestay is run by more than one person, so the request goes to every

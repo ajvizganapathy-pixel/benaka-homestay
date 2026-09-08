@@ -1,13 +1,12 @@
 # Benaka By The Hills
 
-A scroll-driven site for a homestay in Coorg (Kodagu), Karnataka. Scroll drives a
-camera, not a scrollbar: it comes up the road, passes under the arch, runs the
-length of the verandah, crosses to the pavilion where meals are served, goes on
-through the billiards game, into a room, and out at the pool.
+A site for a homestay in Coorg (Kodagu), Karnataka. It opens as a property
+brochure in real photographs, carries one film of the place in the middle, and
+closes with a tiled gallery, a footer, a booking flow and the venue.
 
 ![The name over the road in](docs/screenshots/01-hero.jpg)
 
-Static and framework-free — plain HTML, one vanilla-JS engine, no build step, no
+Static and framework-free — plain HTML, vanilla JS, no build step, no
 dependencies. Serve the repo over HTTP and open `/web/`.
 
 ```bash
@@ -28,45 +27,34 @@ that opening the repository root gives the homestay rather than a directory
 listing. On Hostinger it is never reached: `.htaccess` maps `/` to
 `web/index.html` internally, so visitors get a clean `/` with no hop.
 
-## The walkthrough
+## Explore Benaka
 
-Seven beats, chained as one continuous forward journey: the road, the arch, the
-house, the table, the playroom, a room, the pool.
+One film, 31 seconds, shot on the property: the mosaic mural, the pool with the
+house behind it, a bedroom, the garden swings, the front elevation. It sits on
+the forest ground between the ivory brochure above and the ivory gallery below,
+so the page reads ivory, forest, ivory and the film is the one dark chapter.
 
-| | |
-|---|---|
-| ![Through the arch](docs/screenshots/02-gate.jpg) | ![Meals at the pavilion](docs/screenshots/04-table.jpg) |
-| **The gate.** In under the arch, up to the house. | **The pavilion.** Served here, then in through the doors. |
-| ![The billiards table](docs/screenshots/05-billiards.jpg) | ![A room](docs/screenshots/06-room.jpg) |
-| **The playroom.** Past the table, through to the rooms. | **The rooms.** Out of the room and down to the water. |
+It autoplays muted when you scroll to it, pauses when you leave, and carries a
+button to turn the sound on. Nothing is fetched until you approach it: the
+`<video>` ships with no `src` and `preload="none"`, and `site.js` sets the source
+from an `IntersectionObserver` at `rootMargin: 150%`. A visitor who never scrolls
+that far never pays 8.8MB for it.
 
-Each line names the journey its leg travels, not the place it starts from —
-every leg runs beat N to beat N+1, and copy that named only the start left the
-whole story reading half a beat behind the picture.
+The file is remuxed with `-movflags +faststart` so the `moov` index sits before
+the media data. Without that a browser must download the whole file before it can
+paint a frame — and it fails silently, looking like a slow network rather than a
+bad encode. `tools/test.sh` scans the atom order and fails the build.
 
-![The pool](docs/screenshots/07-pool.jpg)
-
-The story is told in two type registers and nothing between them: a large
-editorial serif for anything that carries meaning, a small tracked sans for
-anything that labels. That gap is the whole system — a third size in the middle is
-what makes a page read as generated, so there isn't one.
-
-**Nothing is laid over the photographs** — no shadow, no glow, no scrim, no
-gradient. Instead each beat places its copy where the picture is already dark,
-measured rather than guessed, by `tools/measure-copy-zones.py`: the browser's own
-`object-fit: cover` crop, four moments sampled across the leg, and every zone
-scored by its **worst** one. Measured against the moving clips, not the stills —
-a spot that is dark on the poster can be a white wall four seconds in.
-
-Each chain has one beat with nowhere dark at all. On the landscape chain it is
-the lit games room; on the portrait chain it is the white bedding and pale lime
-wall of the room. Both flip the ink to dark rather than put a shade over the
-photograph.
+> **The scroll world was rejected.** This began as a scroll-scrubbed camera move
+> across seven AI-rendered beats, and went through three shapes before the owner
+> rejected the concept: it read as an AI film rather than as a place. The engine
+> and its config are deleted, the fourteen rendered clips are untracked, and the
+> record of what that chain cost is kept at the end of this file. Do not rebuild
+> it.
 
 ## The photographs
 
-Past the last beat the camera dissolves into a tiled gallery of all 47
-photographs. The three groups — outside the house, inside the rooms, pool and
+Below the film, a tiled gallery of all 47 photographs. The three groups — outside the house, inside the rooms, pool and
 playroom — sit side by side as a single block rather than stacked, so the whole
 library reads at a glance.
 
@@ -79,14 +67,26 @@ arrow keys, swipe, `Esc` to close.
 
 ## Booking
 
-A compact BOOK button stays fixed to the left edge for the entire scroll, from
-the first frame to the footer — a small persistent control, not a sidebar. It
-expands to BOOK YOUR STAY on hover and opens a three-step request: who is
-coming, a code to their phone, and confirmation.
+A quiet **Book** link appears in the top right once the hero is behind you. It
+opens one step: name, where you are travelling from, a WhatsApp number, arriving
+and leaving — then **Send**.
 
 | | |
 |---|---|
 | ![The footer](docs/screenshots/10-footer.jpg) | ![The booking panel](docs/screenshots/11-booking.jpg) |
+
+**There is no verification step, no email and no password.** The owner asked for
+the shortest path between a visitor deciding to come and a message on their
+phone, so the form posts once and the owner replies on WhatsApp. The OTP round
+trip, the six code boxes and the resend timer are gone.
+
+**What stands in place of it.** Nothing now proves a visitor owns the number they
+typed, so four guards protect the owners' phones — none of them an identity
+check: a honeypot field, a minimum fill time, a per-IP rate limit and a
+per-number rate limit. A post that trips the honeypot or the timer is answered
+*exactly as a success is*, and nothing is stored or sent; an error message would
+only tell a script which check to defeat. The suite proves they fire by asserting
+that no booking file and no outbox line were written.
 
 **The server decides whether booking is live, not the JavaScript.** On load the
 page asks `api/booking.php` for its status. With no `api/config.php` it answers
@@ -94,12 +94,11 @@ page asks `api/booking.php` for its status. With no `api/config.php` it answers
 nothing is being delivered. Put a filled config on the server and the same page
 goes live — no source edit, no build step, no flag anyone can forget to flip.
 
-**Every WhatsApp message is an approved template.** Both messages the site sends
-are business-initiated, and Meta rejects free-form text outside the 24-hour
-window — worse, sending a verification code as free text is grounds for
-suspending the account. The guest's code goes out as an **authentication**
-template with a copy-code button; the owner's notification as a **utility**
-template with six fields. Setting up both is
+**The owner's message is an approved template.** It is business-initiated, and
+Meta rejects free-form text outside the 24-hour window, so the notification goes
+out as a **utility** template with five fields: name, coming from, WhatsApp
+number, the stay as one line, and when it came in. Values may not contain
+newlines, which is why the layout lives in the approved body. Setting it up is
 [docs/DEPLOY-hostinger.md](docs/DEPLOY-hostinger.md) §3.
 
 **The request carries dates, and reaches both owners.** Arrival and departure
@@ -115,8 +114,8 @@ delivery is switched off, or the system is unreachable. Nothing claims a booking
 was delivered that was not.
 
 **No accounts, no passwords.** The form asks for a name, where you are coming
-from, a phone number, a WhatsApp number and an email. There is nothing else to
-store and nothing to leak.
+from, a WhatsApp number and two dates. There is nothing else to store and
+nothing to leak.
 
 ## Where it is
 
@@ -132,29 +131,34 @@ plain link opens the visitor's own map app anyway.
 
 ![On a phone](docs/screenshots/12-mobile.jpg)
 
-Phones get the portrait chain, their own measured copy placement, and a longer
-scroll per beat so no frame is skipped. The button stays on the left, the copy
-clears it, and the type scales down with the viewport. No horizontal overflow at
-360px through 2560px.
+The hero photograph takes the whole screen with the name on it, and the mosaic
+under it keeps its wide and tall cells rather than flattening to a uniform grid —
+solved for two columns so it tiles flush, ten cells, turning over as you watch.
+The film goes full width. Type scales with the viewport. No horizontal overflow
+from 360px through 2560px.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `web/` | the page, its config, the CSS, the JS, self-hosted fonts |
-| `web/scrub-engine.js` | the scroll-scrub engine, byte-identical to the `scroll-world` skill |
+| `web/` | the page, the CSS, the JS, self-hosted fonts |
 | `assets/raw/` | 47 property photographs, named for what they show |
-| `assets/scenes/` | the 7 walkthrough canvases, exactly 1920×1080 |
-| `render/prompts/canvas/` | how the two BENAKA arch canvases were made, and the trap in remaking them |
-| `assets/scenes/portrait/` | the same 7 beats at 1080×1920, anchoring the phone chain |
-| `assets/clips/` | 14 rendered legs — `leg-0N.mp4` landscape, `leg-0N-m.mp4` portrait |
+| `assets/video/` | the property film and its poster — the only tracked video |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
+| `assets/scenes/`, `assets/handoff/` | stills from the rejected render chain |
+| `assets/clips/` | 14 rendered legs, **untracked**; on disk, and in history at `76bab70` |
 | `api/` | the booking endpoint for Hostinger, inert until configured |
 | `tools/test.sh` | the production suite — php, node, curl, jq; no framework |
 | `render/` | the OpenArt render chain: prompts, run book, costs, encoders |
 | `docs/` | deployment guide and these screenshots |
 
-## The walkthrough is rendered
+## HISTORICAL — the rejected render chain
+
+Nothing below is live on the page. It is kept because it is expensive knowledge:
+what the chain cost, which model can hold a signboard for eight seconds, and why
+the phone chain could not be a resize. Read the rejection above first.
+
+### The walkthrough was rendered
 
 ![Frames from the seven rendered legs](docs/screenshots/13-walkthrough.jpg)
 
@@ -174,7 +178,7 @@ mechanism before committing — **1,602 of a 12,000 balance**. `render/COSTS.md`
 records the per-leg maths and why Seedance 2.0 was ruled out at eight times the
 price.
 
-## Phones get their own chain
+### Phones got their own chain
 
 A 16:9 clip on a 390×844 phone is cropped by `object-fit: cover` to **25.8% of
 its width**, and the mobile encode used to resize the master to 1280 wide on top

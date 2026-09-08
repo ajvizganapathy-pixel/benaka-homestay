@@ -1,7 +1,24 @@
 /* ============================================================================
-   Booking: who → code → done. Three steps, plain validation, no cleverness.
-   Every call goes through BenakaAPI so the mock and the live endpoint are
-   interchangeable.
+   Booking: fill it in, press Send, done. One step and a confirmation.
+
+   There is no verification code, no email and no password. The owner asked for
+   the shortest path between a visitor deciding to come and a message landing on
+   their phone, so the request goes straight to WhatsApp and the owner replies
+   there. What that removes, and what has to stand in its place:
+
+     GONE   the OTP round trip (request → six boxes → resend timer → confirm).
+            Nothing now proves the visitor owns the number they typed.
+     GONE   the email field, and with it the email OTP channel.
+     GONE   the separate "WhatsApp is a different number" field. The one number
+            asked for IS the WhatsApp number, because that is where the reply
+            comes from.
+     STANDS IN  a honeypot input and a minimum fill time below, plus per-IP and
+            per-number rate limits in booking.php. They are not identity checks
+            and are not pretending to be; they are what keeps a script from
+            using the owner's phone as a mailbox.
+
+   Every call still goes through BenakaAPI, so the preview and the live endpoint
+   stay interchangeable.
    ========================================================================== */
 
 (function () {
@@ -10,14 +27,11 @@
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const panel   = $('[data-booking]');
+  const panel = $('[data-booking]');
   if (!panel) return;
-  const form    = $('[data-bk-form]', panel);
-  const steps   = $$('.step', panel);
-  const pips    = $$('.bk__steps i', panel);
-  const otpBoxes = $$('[data-otp] input', panel);
+  const steps = $$('.step', panel);
 
-  let step = 1, details = null, opener = null, timer = null;
+  let details = null, opener = null, openedAt = 0;
 
   /* The panel's "not taking live bookings" notice is shown only while the
      server itself reports it is not configured. It is never a hardcoded state
@@ -32,6 +46,7 @@
 
   function open() {
     opener = document.activeElement;
+    openedAt = Date.now();
     panel.hidden = false;
     outside().forEach(n => n.inert = true);
     requestAnimationFrame(() => {
@@ -44,7 +59,6 @@
     panel.classList.remove('open');
     document.body.style.overflow = '';
     outside().forEach(n => n.inert = false);
-    clearInterval(timer);
     setTimeout(() => { panel.hidden = true; }, 400);
     if (opener) opener.focus();
   }
@@ -59,7 +73,11 @@
   // Keep focus inside the panel while it is open.
   panel.addEventListener('keydown', e => {
     if (e.key !== 'Tab' || panel.hidden) return;
-    const f = $$('button,input,select,a[href]', panel).filter(n => n.offsetParent !== null && !n.disabled);
+    // tabindex="-1" excluded on purpose: the honeypot is a rendered 1px input,
+    // so offsetParent alone would let it become the first or last stop and put
+    // a Shift+Tab into a field no human is supposed to reach.
+    const f = $$('button,input,select,a[href]', panel)
+      .filter(n => n.offsetParent !== null && !n.disabled && n.tabIndex >= 0);
     if (!f.length) return;
     const first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -67,11 +85,9 @@
   });
 
   function show(n) {
-    step = n;
     steps.forEach(s => s.classList.toggle('active', +s.dataset.step === n));
-    pips.forEach((p, i) => p.classList.toggle('done', i < n));
     const t = $('[data-bk-title]');
-    t.textContent = n === 1 ? 'Who is coming?' : n === 2 ? 'Check your phone' : 'Thank you';
+    if (t) t.textContent = n === 1 ? 'Who is coming?' : 'Thank you';
   }
 
   /* ---- dates -------------------------------------------------------------
@@ -104,10 +120,6 @@
   });
   leave.addEventListener('change', countNights);
 
-  /* ---- WhatsApp-same-as-phone toggle ------------------------------------ */
-  const waSame = $('[data-wa-same]'), waField = $('[data-wa-field]');
-  waSame.addEventListener('change', () => { waField.hidden = waSame.checked; });
-
   /* ---- validation -------------------------------------------------------- */
   const setErr = (name, msg) => {
     const slot = $(`[data-err="${name}"]`, panel);
@@ -116,27 +128,25 @@
     if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false');
   };
 
-  function readStep1() {
+  function read() {
     const v = n => (($(`[name="${n}"]`, panel) || {}).value || '').trim();
     const d = {
       name: v('name'), from: v('from'),
       cc: v('cc') || '+91', phone: v('phone'),
-      whatsapp: waSame.checked ? v('phone') : v('whatsapp'),
-      email: v('email'),
       arrival: v('arrival'), departure: v('departure'),
+      // Sent along so the server can make the same two judgements the browser
+      // does. Both are advisory here and authoritative there.
+      website: v('website'),
+      elapsed: Math.round((Date.now() - openedAt) / 1000),
     };
     let ok = true;
     const fail = (f, m) => { setErr(f, m); ok = false; };
 
-    ['name', 'from', 'phone', 'email', 'arrival', 'departure'].forEach(f => setErr(f, ''));
-    setErr('whatsapp', '');
+    ['name', 'from', 'phone', 'arrival', 'departure'].forEach(f => setErr(f, ''));
 
-    if (d.name.length < 2)                      fail('name', 'Please tell us your name.');
-    if (d.from.length < 2)                      fail('from', 'Which town or city?');
-    if (!/^\d[\d\s-]{6,15}$/.test(d.phone))     fail('phone', 'A phone number we can reach you on.');
-    if (!waSame.checked && !/^\d[\d\s-]{6,15}$/.test(d.whatsapp))
-                                                fail('whatsapp', 'Or untick the box above.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) fail('email', 'That email does not look right.');
+    if (d.name.length < 2)                  fail('name', 'Please tell us your name.');
+    if (d.from.length < 2)                  fail('from', 'Which town or city?');
+    if (!/^\d[\d\s-]{6,15}$/.test(d.phone)) fail('phone', 'A WhatsApp number we can reply on.');
     const today = iso(new Date());
     if (!d.arrival)                  fail('arrival', 'Which day would you like to arrive?');
     else if (d.arrival < today)      fail('arrival', 'That date has already passed.');
@@ -145,105 +155,36 @@
                                      fail('departure', 'Leaving day has to be after arriving day.');
 
     d.phone = d.cc + ' ' + d.phone;
-    d.whatsapp = waSame.checked ? d.phone : d.cc + ' ' + d.whatsapp;
     return ok ? d : null;
   }
 
-  /* ---- step 1 → send code ----------------------------------------------- */
-  $('[data-bk-next="1"]').addEventListener('click', async e => {
+  /* ---- Send -------------------------------------------------------------- */
+  $('[data-bk-send]').addEventListener('click', async e => {
     const btn = e.currentTarget;
-    const d = readStep1();
+    const d = read();
     if (!d) { $('[aria-invalid="true"]', panel)?.focus(); return; }
     details = d;
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const r = await BenakaAPI.requestOtp(d);
-      $('[data-bk-dest]').textContent = r.dest || d.phone;
-      show(2); startResend(); otpBoxes[0].focus();
+      const r = await BenakaAPI.submitBooking(d);
+      renderSummary(r);
+      show(2);
+      $('[data-bk-done-h]', panel)?.focus();
     } catch (err) {
+      // Put the message where it belongs when the server named a field, and on
+      // the phone field otherwise — it is the one most likely to be at fault.
       const field = err.field && $(`[data-err="${err.field}"]`, panel) ? err.field : 'phone';
       setErr(field, err.message);
       $(`[name="${field}"]`, panel)?.focus();
     } finally {
-      btn.disabled = false; btn.textContent = 'Send me a code';
+      btn.disabled = false; btn.textContent = 'Send';
     }
   });
 
-  /* ---- OTP boxes: type, paste, backspace -------------------------------- */
-  otpBoxes.forEach((box, i) => {
-    box.addEventListener('input', () => {
-      box.value = box.value.replace(/\D/g, '').slice(0, 1);
-      if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
-    });
-    box.addEventListener('keydown', e => {
-      if (e.key === 'Backspace' && !box.value && i > 0) otpBoxes[i - 1].focus();
-      if (e.key === 'ArrowLeft'  && i > 0) otpBoxes[i - 1].focus();
-      if (e.key === 'ArrowRight' && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
-    });
-    box.addEventListener('paste', e => {
-      e.preventDefault();
-      const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
-      digits.forEach((ch, k) => { if (otpBoxes[k]) otpBoxes[k].value = ch; });
-      otpBoxes[Math.min(digits.length, 5)].focus();
-    });
-  });
-
-  function startResend() {
-    let left = 30;
-    const label = $('[data-otp-timer]'), btn = $('[data-otp-resend]');
-    btn.disabled = true;
-    clearInterval(timer);
-    const tick = () => {
-      label.textContent = left > 0 ? `Resend in ${left}s` : 'Did not get it?';
-      if (left <= 0) { btn.disabled = false; clearInterval(timer); }
-      left--;
-    };
-    tick(); timer = setInterval(tick, 1000);
-  }
-  $('[data-otp-resend]').addEventListener('click', async e => {
-    if (!details) return;
-    const btn = e.currentTarget;
-    btn.disabled = true;
-    setErr('otp', '');
-    try {
-      await BenakaAPI.requestOtp(details);
-      otpBoxes.forEach(b => (b.value = ''));
-      otpBoxes[0].focus();
-      startResend();
-    } catch (err) {
-      setErr('otp', err.message);
-      btn.disabled = false;
-    }
-  });
-
-  /* ---- step 2 → confirm -------------------------------------------------- */
-  $('[data-bk-next="2"]').addEventListener('click', async e => {
-    const btn = e.currentTarget;
-    const code = otpBoxes.map(b => b.value).join('');
-    setErr('otp', '');
-    if (code.length !== 6) { setErr('otp', 'All six digits, please.'); return; }
-    btn.disabled = true; btn.textContent = 'Checking…';
-    try {
-      await BenakaAPI.verifyOtp({ ...details, code });
-      const r = await BenakaAPI.submitBooking(details);
-      renderSummary(r);
-      show(3);
-      clearInterval(timer);
-      $('[data-step="3"] h3', panel)?.focus();
-    } catch (err) {
-      setErr('otp', err.message);
-      otpBoxes[0].focus();
-    } finally {
-      btn.disabled = false; btn.textContent = 'Confirm';
-    }
-  });
-
-  $('[data-bk-back="1"]').addEventListener('click', () => show(1));
-
-  /* Four states, told apart and told truthfully. The request is kept in every
+  /* Three states, told apart and told truthfully. The request is kept in every
      one of them, and none of them claims a delivery that did not happen. */
   const DELIVERY = {
-    sent:    'Sent to the owner on WhatsApp. Confirmation will reach you shortly.',
+    sent:    'Sent to the owner on WhatsApp. They will get in touch to confirm your dates.',
     failed:  'Saved. WhatsApp delivery did not go through just now, so the owner ' +
              'will pick this up from the booking list instead — your request is not lost.',
     skipped: 'Saved, but not delivered: live booking is not switched on for this ' +
@@ -254,8 +195,7 @@
     const rows = [
       ['Name', details.name], ['From', details.from],
       ['Dates', stayLine()],
-      ['Phone', details.phone], ['WhatsApp', details.whatsapp],
-      ['Email', details.email],
+      ['WhatsApp', details.phone],
     ];
     const status = (r && r.deliveryStatus) || 'skipped';
     const note = DELIVERY[status] || DELIVERY.skipped;
@@ -269,11 +209,18 @@
          <dd style="margin:0 0 14px">${escape_(v)}</dd>`).join('')}</dl>` +
       `<p class="micro" style="color:var(--s-ink-soft)">${escape_(note)}</p>` + ref;
 
-    const head = $('[data-step="3"] p', panel);
-    if (head) head.textContent = status === 'sent'
-      ? 'Your request is with the owner. Confirmation will reach you shortly.'
+    // The heading and the line under it are set together, because a heading
+    // saying "on its way" over a line saying "saved" is the page contradicting
+    // itself in exactly the case where honesty matters most.
+    const h = $('[data-bk-done-h]', panel), sub = $('[data-bk-done-p]', panel);
+    if (h)   h.textContent = status === 'sent'
+      ? 'Your request is on its way.'
       : 'Your request has been saved.';
+    if (sub) sub.textContent = status === 'sent'
+      ? 'The owner will get in touch on WhatsApp to confirm your dates.'
+      : 'We have kept your details.';
   }
+
   /* The same one-line shape the owner's WhatsApp message carries, so the guest
      is looking at exactly what was sent. */
   function stayLine() {

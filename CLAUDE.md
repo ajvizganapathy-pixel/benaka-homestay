@@ -167,28 +167,59 @@ describe any hotel anywhere, rewrite it.
 
 ### Booking
 
-Every network call goes through `web/js/api.js`, and **the server decides the
-mode**: on load the page POSTs `{action:'status'}` and switches to live only if
-the endpoint says so. There is no `LIVE` constant to flip. Going live is one
-thing: `api/config.php` on the server with `CONFIGURED => true`.
+One step. Name, where they are travelling from, a WhatsApp number, arriving and
+leaving — then **Send**. The request goes to the owners' WhatsApp and the owner
+replies there. That is the whole flow.
 
-**Every WhatsApp send is an approved template, and this is not negotiable.**
-Both messages are business-initiated, so Meta rejects free-form text outside the
-24-hour window, and sending an OTP as free text is grounds for suspending the
-WhatsApp account. The guest's code is an AUTHENTICATION template with a
-**COPY_CODE** button (one-tap needs an Android signing hash a website cannot
-have); the owner's notification is a UTILITY template with six single-line
-parameters — template values may not contain newlines, which is why the layout
-lives in the approved body.
+**There is no verification, and that was asked for.** The OTP round trip is gone
+along with the email field, the separate "WhatsApp is a different number" field
+and the AUTHENTICATION template. Do not reintroduce any of them without being
+asked: the owner wanted the shortest path between a visitor deciding to come and
+a message on their phone.
+
+**Know what that costs.** Nothing now proves a visitor owns the number they
+typed, so the endpoint can be used to put text on the owners' phones. Four
+things stand in place of the OTP, and none of them is an identity check:
+
+| Guard | Where |
+|---|---|
+| Honeypot field (`website`) | `.bk__trap` in the markup, `looks_scripted()` in PHP |
+| Minimum fill time (3s from opening the panel) | `elapsed`, same function |
+| Per-IP limit, `RATE_PER_IP_HOUR` | `rate_ok()` |
+| Per-number limit, `BOOKINGS_PER_NUMBER_DAY` | `rate_ok()` on the phone number |
+
+A post that trips the honeypot or the timer is **answered exactly as a success
+is** — same shape, same fields, a plausible reference — and nothing is stored or
+sent. An error would tell a script which check to defeat. `tools/test.sh` proves
+these fire by asserting that no booking file and no outbox line were written,
+because the reply alone cannot tell you.
+
+A missing `elapsed` is deliberately *not* suspicious: a cached older page or a
+client with JavaScript off will not send one.
+
+**The WhatsApp template has FIVE parameters now, not seven.** Name, coming from,
+WhatsApp number, the stay as one line, and when it came in. If a seven-variable
+template is still approved in WhatsApp Manager, every send fails on parameter
+count — edit it to the body in `api/config.example.php` and wait for
+re-approval. Template values may not contain newlines, which is why the layout
+lives in the approved body. It is business-initiated, so it must stay a
+template; free-form text is rejected outside the 24-hour window.
 
 `WA_TRANSPORT` picks where a send goes: `cloud` (Meta), `log` (write the payload
 to the data dir — this is how `tools/test.sh` drives the whole journey with no
 credentials), or `off`.
 
+Every network call goes through `web/js/api.js`, and **the server decides the
+mode**: on load the page POSTs `{action:'status'}` and switches to live only if
+the endpoint says so. There is no `LIVE` constant to flip. Going live is one
+thing: `api/config.php` on the server with `CONFIGURED => true`.
+
 **The booking record is written before the send is attempted.** Losing a guest's
 request because an API was down is the one failure this endpoint exists to
 prevent. Never make the form claim a booking was received or delivered when it
-was not.
+was not — and the record carries `verified: false`, because there is no
+verification step and nothing should later read an old booking as though there
+had been.
 
 There are no accounts and no passwords. A password field existed once, was
 required, was sent to the server, and was used by nothing — do not bring it back.

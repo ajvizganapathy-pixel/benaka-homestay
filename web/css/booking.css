@@ -50,9 +50,6 @@
 }
 .bk__notice strong { color: var(--s-ink); font-weight: 600; }
 
-.bk__steps { display: flex; gap: 8px; margin-bottom: 26px; }
-.bk__steps i { flex: 1; height: 2px; background: var(--s-line); }
-.bk__steps i.done { background: var(--s-accent); }
 
 .step { display: none; }
 .step.active { display: block; animation: stepin .4s var(--s-ease); }
@@ -74,20 +71,20 @@
 .field .hint { display: block; margin-top: 7px; color: var(--s-ink-faint); font-size: .82rem; }
 
 .row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
-.check { display: flex; align-items: center; gap: 10px; margin: -6px 0 20px; color: var(--s-ink-soft); font-size: .9rem; }
-.check input { width: 16px; height: 16px; accent-color: var(--s-accent); }
 
-/* OTP: six boxes, paste-to-fill */
-.otp { display: flex; gap: 8px; margin-bottom: 8px; }
-.otp input {
-  flex: 1; min-width: 0; aspect-ratio: 1; text-align: center;
-  font-size: 1.3rem; font-family: var(--s-font-macro);
-  padding: 0; background: var(--s-bg);
-  border: 1px solid var(--s-line); border-radius: var(--s-radius); color: var(--s-ink);
+/* The honeypot. It has to be genuinely unreachable, not merely out of sight:
+   display:none alone is what most form-filling bots already skip, so this is
+   also taken out of the tab order and hidden from assistive technology in the
+   markup. No visitor can fill it in, which is the whole point — a value in it
+   means the post was scripted.
+
+   Never give this a name a password manager would recognise, and never style it
+   to look interactive. */
+.bk__trap {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
-.otp input:focus { outline: none; border-color: var(--s-accent); }
-.resend { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 22px; }
-.resend button:disabled { color: var(--s-ink-faint); cursor: default; }
 
 .bk .btn { width: 100%; justify-content: center; }
 .bk__alt { margin-top: 16px; text-align: center; color: var(--s-ink-soft); font-size: .9rem; }

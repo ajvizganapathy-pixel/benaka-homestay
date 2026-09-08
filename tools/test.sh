@@ -10,7 +10,7 @@
 # It boots a real PHP server against fixture configs and drives the booking
 # endpoint over HTTP, so what is being tested is the endpoint as deployed, not
 # a mock of it. WhatsApp sends go to WA_TRANSPORT=log, which writes the exact
-# payload it would have posted to Meta — that is how the OTP is read back and
+# payload it would have posted to Meta — that is how the owner's message is read
 # how the owner's message is inspected without any credentials existing.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -63,7 +63,7 @@ fi
 # Every credential slot in the example file must be empty.
 if php -r '
   $c = require "api/config.example.php";
-  foreach (["OWNER_WHATSAPP","WA_PHONE_ID","WA_TOKEN","OTP_EMAIL_FROM"] as $k) {
+  foreach (["OWNER_WHATSAPP","WA_PHONE_ID","WA_TOKEN"] as $k) {
       if (($c[$k] ?? "") !== "") { fwrite(STDERR, "$k is not empty\n"); exit(1); }
   }
   if (!empty($c["CONFIGURED"])) { fwrite(STDERR, "CONFIGURED is true\n"); exit(1); }
@@ -151,14 +151,9 @@ mkcfg() {  # mkcfg <name> <php-array-overrides>
   'WA_TOKEN' => 'test-token',
   'WA_API_VERSION' => 'v25.0',
   'WA_BOOKING_TEMPLATE' => 'benaka_booking_request',
-  'WA_OTP_TEMPLATE' => 'benaka_otp',
   'WA_TRANSPORT' => 'log',
-  'OTP_CHANNEL' => 'whatsapp',
-  'OTP_TTL_SECONDS' => 600,
-  'OTP_MAX_ATTEMPTS' => 5,
-  'OTP_RESEND_WAIT' => 30,
   'RATE_PER_IP_HOUR' => 200,
-  'OTP_PER_NUMBER_HOUR' => 50,
+  'BOOKINGS_PER_NUMBER_DAY' => 50,
   'DATA_DIR' => '$TMP/data-$name',
   'ALLOWED_ORIGINS' => ['$ORIGIN'],
 ], $*);
@@ -224,7 +219,7 @@ CODE=${out##*$'\n'}; BODY=${out%$'\n'*}
 expect "status answers regardless of origin"         200 .ok true
 
 out=$(curl -s -w '\n%{http_code}' -X POST "$ORIGIN/api/booking.php" \
-      -H 'Content-Type: application/json' --data '{"action":"requestOtp"}')
+      -H 'Content-Type: application/json' --data '{"action":"submitBooking"}')
 CODE=${out##*$'\n'}; BODY=${out%$'\n'*}
 expect "no Origin and no Referer is rejected"        403 .reason origin
 
@@ -232,7 +227,7 @@ expect "no Origin and no Referer is rejected"        403 .reason origin
 # refuse loudly rather than accept from anywhere.
 mkcfg noorigins "['ALLOWED_ORIGINS' => []]"
 serve noorigins
-call '{"action":"requestOtp"}';                      expect "empty allow-list refuses" 500 .reason no_allowed_origins
+call '{"action":"submitBooking"}';                   expect "empty allow-list refuses" 500 .reason no_allowed_origins
 serve live
 
 call 'not json at all';                              expect "malformed JSON"                 400 .reason malformed
@@ -240,62 +235,44 @@ call "{\"action\":\"status\",\"pad\":\"$(head -c 9000 /dev/zero | tr '\0' 'x')\"
                                                      expect "oversized body"                 413 .reason too_large
 call '{"action":"nope"}';                            expect "unknown action"                 400 .reason unknown_action
 
+# The OTP actions are gone, not merely unused. A stale front end or a bookmarked
+# script must be told so plainly rather than quietly appearing to work.
+call '{"action":"requestOtp"}';                      expect "requestOtp no longer exists" 400 .reason unknown_action
+call '{"action":"verifyOtp"}';                       expect "verifyOtp no longer exists"  400 .reason unknown_action
+
 # --- validation ------------------------------------------------------------
 ARR=$(date -u -d '+14 days' +%F); DEP=$(date -u -d '+17 days' +%F)
-G="\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"whatsapp\":\"+91 98765 43210\",\"email\":\"guest@example.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
-call "{\"action\":\"requestOtp\",\"name\":\"A\",$G}";        expect "name too short"   422 .field name
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"B\",\"phone\":\"+91 98765 43210\",\"email\":\"g@e.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
+G="\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
+call "{\"action\":\"submitBooking\",\"name\":\"A\",$G}";     expect "name too short"   422 .field name
+call "{\"action\":\"submitBooking\",\"name\":\"Anjan G\",\"from\":\"B\",\"phone\":\"+91 98765 43210\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
                                                              expect "origin too short" 422 .field from
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"12\",\"email\":\"g@e.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
+call "{\"action\":\"submitBooking\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"12\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
                                                              expect "phone too short"  422 .field phone
-call "{\"action\":\"requestOtp\",\"name\":\"Anjan G\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"email\":\"nope\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
-                                                             expect "bad email"        422 .field email
+
+# An email is no longer asked for, and one sent anyway must not be able to fail
+# a booking or find its way into the record.
+call "{\"action\":\"submitBooking\",\"name\":\"Anjan G\",$G,\"email\":\"nope\"}"
+                                                             expect "a stray email is ignored, not rejected" 200 .received true
 
 # --- dates -----------------------------------------------------------------
-NOW="\"name\":\"Anjan Ganapathy\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\",\"whatsapp\":\"+91 98765 43210\",\"email\":\"guest@example.com\""
-call "{\"action\":\"requestOtp\",$NOW,\"departure\":\"$DEP\"}"
+NOW="\"name\":\"Anjan Ganapathy\",\"from\":\"Bengaluru\",\"phone\":\"+91 98765 43210\""
+call "{\"action\":\"submitBooking\",$NOW,\"departure\":\"$DEP\"}"
                                                              expect "missing arrival"   422 .field arrival
-call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$ARR\"}"
+call "{\"action\":\"submitBooking\",$NOW,\"arrival\":\"$ARR\"}"
                                                              expect "missing departure" 422 .field departure
-call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"2020-01-01\",\"departure\":\"$DEP\"}"
+call "{\"action\":\"submitBooking\",$NOW,\"arrival\":\"2020-01-01\",\"departure\":\"$DEP\"}"
                                                              expect "arrival in the past" 422 .field arrival
-call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$DEP\",\"departure\":\"$ARR\"}"
+call "{\"action\":\"submitBooking\",$NOW,\"arrival\":\"$DEP\",\"departure\":\"$ARR\"}"
                                                              expect "departure before arrival" 422 .field departure
-call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"$ARR\",\"departure\":\"$ARR\"}"
+call "{\"action\":\"submitBooking\",$NOW,\"arrival\":\"$ARR\",\"departure\":\"$ARR\"}"
                                                              expect "zero-night stay"   422 .field departure
-call "{\"action\":\"requestOtp\",$NOW,\"arrival\":\"2026-02-31\",\"departure\":\"$DEP\"}"
+call "{\"action\":\"submitBooking\",$NOW,\"arrival\":\"2026-02-31\",\"departure\":\"$DEP\"}"
                                                              expect "a date that does not exist" 422 .field arrival
 
-# --- the happy path --------------------------------------------------------
+# --- the happy path: one post, no verification -----------------------------
 GUEST="{\"name\":\"Anjan Ganapathy\",$G}"
-call "{\"action\":\"requestOtp\",${GUEST#\{}";               expect "code requested"   200 .sent true
-call "{\"action\":\"requestOtp\",${GUEST#\{}";               expect "resend is throttled" 429 .reason resend_cooldown
-
-if [ -f "$OUT" ]; then
-  P=$(tail -1 "$OUT")
-  OTP=$(printf '%s' "$P" | jq -r '.payload.template.components[0].parameters[0].text')
-  [ "$(printf '%s' "$P" | jq -r '.payload.type')" = template ] \
-    && ok "OTP was sent as a template, not free text" || bad "OTP send is not a template"
-  [ "$(printf '%s' "$P" | jq -r '.payload.template.components[1].sub_type')" = COPY_CODE ] \
-    && ok "OTP carries the COPY_CODE button" || bad "OTP has no COPY_CODE button"
-  [ "$(printf '%s' "$P" | jq -r '.payload.template.components[1].parameters[0].coupon_code')" = "$OTP" ] \
-    && ok "button code matches the body code" || bad "button/body code mismatch"
-  printf '%s' "$OTP" | grep -qE '^[0-9]{6}$' \
-    && ok "code is six digits" || bad "code shape" "$OTP"
-  [ "$OTP" != 123456 ] && ok "code is not the preview constant" || bad "code is 123456 in live mode"
-else
-  bad "no WhatsApp outbox was written"; OTP=000000
-fi
-
-call "{\"action\":\"verifyOtp\",\"code\":\"000000\",${GUEST#\{}"
-                                                             expect "wrong code"       401 .reason bad_code
-call "{\"action\":\"verifyOtp\",\"code\":\"$OTP\",${GUEST#\{}"
-                                                             expect "right code"       200 .verified true
-call "{\"action\":\"verifyOtp\",\"code\":\"$OTP\",${GUEST#\{}"
-                                                             expect "code cannot be replayed" 401 .reason bad_code
-
 call "{\"action\":\"submitBooking\",${GUEST#\{}"
-expect "booking accepted"                                    200 .received true
+expect "booking accepted with no verification step"          200 .received true
 printf '%s' "$BODY" | jq -e '.deliveryStatus == "sent"' >/dev/null \
   && ok "delivery reported as sent" || bad "deliveryStatus" "$BODY"
 REQ=$(printf '%s' "$BODY" | jq -r .requestId)
@@ -303,13 +280,17 @@ REQ=$(printf '%s' "$BODY" | jq -r .requestId)
 REC="$TMP/data-live/bookings/$REQ.json"
 if [ -f "$REC" ]; then
   ok "booking persisted as $REQ.json"
-  for k in id name origin phone whatsapp email verified verified_channel \
-           arrival departure nights delivery_status deliveries created_at updated_at; do
+  for k in id name origin whatsapp verified arrival departure nights \
+           delivery_status deliveries created_at updated_at; do
     jq -e "has(\"$k\")" "$REC" >/dev/null && ok "record has $k" || bad "record missing $k"
   done
   jq -e 'has("password") or has("pass")' "$REC" >/dev/null \
     && bad "record stores a password" || ok "record stores no password"
-  grep -q "$OTP" "$REC" && bad "record contains the OTP" || ok "record does not contain the OTP"
+  jq -e 'has("email")' "$REC" >/dev/null \
+    && bad "record stores an email that is no longer collected" || ok "record stores no email"
+  # There is no verification step, so nothing may claim there was one.
+  jq -e '.verified == false' "$REC" >/dev/null \
+    && ok "record does not claim the number was verified" || bad "record claims verification"
 else
   bad "booking was not persisted"
 fi
@@ -317,51 +298,71 @@ fi
 # Two owner numbers: BOTH must have been written, each as its own send.
 OWNER=$(tail -1 "$OUT")
 TO_ALL=$(tail -2 "$OUT" | jq -r '.to' | sort | tr '\n' ' ')
+[ "$(printf '%s' "$OWNER" | jq -r '.payload.type')" = template ] \
+  && ok "the owner was sent a template, not free text" || bad "owner send is not a template"
 [ "$(printf '%s' "$OWNER" | jq -r '.payload.template.name')" = benaka_booking_request ] \
   && ok "owner notified with the booking template" || bad "owner template name"
 [ "$TO_ALL" = "918861000002 919448600001 " ] \
   && ok "both owner numbers were notified" || bad "owner recipients" "$TO_ALL"
-[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters | length')" = 7 ] \
-  && ok "owner message carries seven fields" || bad "owner field count"
-printf '%s' "$OWNER" | grep -q "$OTP" \
-  && bad "the OTP leaked into the owner's message" || ok "owner message contains no OTP"
+# FIVE, not seven. The template in WhatsApp Manager has to match this exactly or
+# Meta rejects the send on parameter count.
+[ "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters | length')" = 5 ] \
+  && ok "owner message carries five fields" || bad "owner field count"
 printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[].text' \
   | grep -qP '[\n\t]' && bad "a template parameter contains a newline" \
   || ok "no template parameter contains a newline"
-printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[5].text' \
+printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[3].text' \
   | grep -qE 'to .* \([0-9]+ nights?\)$' \
   && ok "the stay dates reached the owner" \
-  || bad "stay parameter" "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[5].text')"
+  || bad "stay parameter" "$(printf '%s' "$OWNER" | jq -r '.payload.template.components[0].parameters[3].text')"
 jq -e '.deliveries | length == 2' "$REC" >/dev/null \
   && ok "the record keeps a result per number" || bad "deliveries array"
 jq -e '.arrival and .departure and .nights' "$REC" >/dev/null \
   && ok "the record keeps the dates" || bad "record dates"
 
-call "{\"action\":\"submitBooking\",${GUEST#\{}"
-                                                             expect "code is spent after booking" 403 .reason unverified
+# --- the spam guards that replaced the OTP ---------------------------------
+# Both answer exactly as a success does, so a script learns nothing. What proves
+# they fired is that NOTHING WAS WRITTEN: no new booking file, no outbox line.
+BEFORE_B=$(find "$TMP/data-live/bookings" -name '*.json' | wc -l)
+BEFORE_O=$(wc -l < "$OUT")
 
-# --- attempt cap -----------------------------------------------------------
-G2="\"from\":\"Mysuru\",\"phone\":\"+91 90000 00002\",\"whatsapp\":\"+91 90000 00002\",\"email\":\"two@example.com\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
-GUEST2="{\"name\":\"Second Guest\",$G2}"
-call "{\"action\":\"requestOtp\",${GUEST2#\{}" >/dev/null
-for _ in 1 2 3 4 5; do call "{\"action\":\"verifyOtp\",\"code\":\"111111\",${GUEST2#\{}"; done
-call "{\"action\":\"verifyOtp\",\"code\":\"111111\",${GUEST2#\{}"
-                                                             expect "attempts are capped" 429 .reason too_many_attempts
+call "{\"action\":\"submitBooking\",\"website\":\"http://spam.example\",${GUEST#\{}"
+expect "a honeypot post is answered as a success"            200 .received true
+[ "$(find "$TMP/data-live/bookings" -name '*.json' | wc -l)" = "$BEFORE_B" ] \
+  && ok "the honeypot post was not stored" || bad "a honeypot post reached the booking store"
+[ "$(wc -l < "$OUT")" = "$BEFORE_O" ] \
+  && ok "the honeypot post was not sent to the owner" || bad "a honeypot post reached WhatsApp"
 
-# --- expiry ----------------------------------------------------------------
-mkcfg quick "['OTP_TTL_SECONDS' => 1, 'OTP_RESEND_WAIT' => 0]"
-serve quick
-call "{\"action\":\"requestOtp\",${GUEST#\{}" >/dev/null
-# time() is whole seconds, so a 1s TTL needs more than 1s of waiting to be
-# certain the clock has ticked past it twice.
-php -r 'usleep(2600000);'
-call "{\"action\":\"verifyOtp\",\"code\":\"123456\",${GUEST#\{}"
-                                                             expect "expired code"     400 .reason expired
+call "{\"action\":\"submitBooking\",\"elapsed\":1,${GUEST#\{}"
+expect "a form filled in one second is answered as a success" 200 .received true
+[ "$(wc -l < "$OUT")" = "$BEFORE_O" ] \
+  && ok "the too-fast post was not sent to the owner" || bad "a too-fast post reached WhatsApp"
+
+# A missing `elapsed` must NOT be treated as suspicious: a cached older page or
+# a client with JavaScript disabled will not send one.
+call "{\"action\":\"submitBooking\",\"name\":\"No Timer\",\"from\":\"Madikeri\",\"phone\":\"+91 90000 00009\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
+expect "a post with no timing at all still goes through"     200 .received true
+[ "$(wc -l < "$OUT")" -gt "$BEFORE_O" ] \
+  && ok "the untimed post did reach the owner" || bad "an untimed post was silently dropped"
+
+# --- per-number rate limit -------------------------------------------------
+# The per-IP limit does not stop a phone moving between mobile networks, and
+# with no verification step this is what protects the owner's WhatsApp.
+mkcfg pernum "['BOOKINGS_PER_NUMBER_DAY' => 2]"
+serve pernum
+G3="\"from\":\"Kochi\",\"phone\":\"+91 90000 00003\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\""
+GUEST3="{\"name\":\"Third Guest\",$G3}"
+for _ in 1 2; do call "{\"action\":\"submitBooking\",${GUEST3#\{}" >/dev/null; done
+call "{\"action\":\"submitBooking\",${GUEST3#\{}"
+                                                             expect "one number cannot flood" 429 .reason rate_limited
+# ...and a different number is unaffected by that.
+call "{\"action\":\"submitBooking\",\"name\":\"Fourth Guest\",\"from\":\"Kochi\",\"phone\":\"+91 90000 00004\",\"arrival\":\"$ARR\",\"departure\":\"$DEP\"}"
+                                                             expect "another number still gets through" 200 .received true
+serve live
 
 # --- delivery failure keeps the booking ------------------------------------
-mkcfg nodeliver "['WA_TRANSPORT' => 'off', 'OTP_CHANNEL' => 'off']"
+mkcfg nodeliver "['WA_TRANSPORT' => 'off']"
 serve nodeliver
-call "{\"action\":\"verifyOtp\",${GUEST#\{}";                expect "verification skipped when off" 200 .verified true
 call "{\"action\":\"submitBooking\",${GUEST#\{}"
 expect "booking still accepted with no transport"            200 .received true
 printf '%s' "$BODY" | jq -e '.deliveryStatus == "skipped"' >/dev/null \

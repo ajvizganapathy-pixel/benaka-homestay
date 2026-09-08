@@ -11,8 +11,7 @@
    no flag anyone can forget to flip back.
 
    Nothing secret ever reaches this file. The status reply carries only whether
-   the endpoint is live and which channel sends the code — no tokens, no phone
-   ids, no credentials of any kind.
+   the endpoint is live — no tokens, no phone ids, no credentials of any kind.
    ========================================================================== */
 
 window.BenakaAPI = (function () {
@@ -33,7 +32,6 @@ window.BenakaAPI = (function () {
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
   let mode = 'unknown';          // unknown | live | preview
-  let channel = 'none';
 
   /* One probe, at startup. Anything other than a clear "live" is a preview. */
   const ready = (async function probe() {
@@ -44,12 +42,7 @@ window.BenakaAPI = (function () {
         body: JSON.stringify({ action: 'status' }),
       });
       const data = await res.json();
-      if (data && data.ok && data.live) {
-        mode = 'live';
-        channel = data.otpChannel || 'whatsapp';
-      } else {
-        mode = 'preview';
-      }
+      mode = (data && data.ok && data.live) ? 'live' : 'preview';
     } catch (_) {
       mode = 'preview';          // no PHP, no network, no endpoint — all preview
     }
@@ -97,21 +90,11 @@ window.BenakaAPI = (function () {
   /* The preview keeps the shapes identical to the PHP endpoint's replies, so
      nothing downstream can tell them apart except by what it is told. It never
      claims a delivery: submitBooking always reports deliveryStatus 'skipped'. */
-  async function mock(action, payload) {
+  async function mock(action) {
     await wait(420);                            // a real network has weight
     switch (action) {
       case 'status':
-        return { ok: true, live: false, otpChannel: 'none' };
-      case 'requestOtp':
-        sessionStorage.setItem('bk_otp', '123456');
-        return { ok: true, sent: true, channel: 'preview',
-                 dest: payload.whatsapp || payload.phone };
-      case 'verifyOtp':
-        if (payload.code !== sessionStorage.getItem('bk_otp')) {
-          throw fault('That code is not right. In this preview the code is 123456.', 'bad_code');
-        }
-        sessionStorage.removeItem('bk_otp');
-        return { ok: true, verified: true, channel: 'preview' };
+        return { ok: true, live: false };
       case 'submitBooking':
         return { ok: true, received: true, deliveryStatus: 'skipped',
                  requestId: 'preview', reason: 'not_configured' };
@@ -124,9 +107,6 @@ window.BenakaAPI = (function () {
     ready,
     mode:          () => mode,
     isLive:        () => mode === 'live',
-    otpChannel:    () => channel,
-    requestOtp:    d => post('requestOtp', d),
-    verifyOtp:     d => post('verifyOtp', d),
     submitBooking: d => post('submitBooking', d),
   };
 })();
