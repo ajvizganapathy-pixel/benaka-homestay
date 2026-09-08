@@ -125,19 +125,37 @@
        </figure>`;
     // Read the index off the element, not the closure: a live tile may have
     // turned over since it was built, and the click must open what is on it.
+    // `imgs` is whichever array this tile was built from — the whole group in
+    // the gallery, the filtered pool in the hero mosaic — and the rotation
+    // above stays inside it, so index and array never disagree.
     b.addEventListener('click', () => openLightbox(group, imgs, +b.dataset.index));
     return b;
   }
 
   /* ---- 2a. The hero mosaic ----------------------------------------------
-     The strip under the hero photograph, built from the two groups the owner
-     asked for — everything outside the house, and the pool and playroom. It
-     holds ten cells but draws on all 24 photographs: the live rotation below
-     turns them over, so every one appears within about a minute. Showing all
-     24 at once would be a contact sheet, not a hero.
+     The band under the story, built from the two groups the owner asked for —
+     everything around the property, and the pool and playroom. It holds ten
+     cells but draws on the whole pool of photographs: the live rotation below
+     turns them over, so every one appears within about a minute. Showing them
+     all at once would be a contact sheet, not a band.
+
+     THE INDOOR BILLIARDS PHOTOGRAPHS ARE EXCLUDED HERE, and only here. This is
+     the band that says "around the property", so a dark interior in it reads as
+     a mistake; the gallery below still shows them under "Pool and playroom".
+
+     That exclusion has to hold in TWO places, which is why HERO_POOLS exists.
+     Filtering only the opening cells would leave the live rotation free to turn
+     a cell into a billiards frame a minute later, and the fault would only ever
+     show up in a screenshot taken at the wrong moment.
 
      Shapes are weighted heavier than the gallery's cycle because there are
      fewer cells here and the composition has to stay asymmetric at a glance. */
+  const HERO_EXCLUDE = ['games'];
+
+  /* group id -> the exact array the mosaic's tiles index into. A tile's
+     data-index is an offset into this array, so the rotation and the lightbox
+     must both read it from here or they will open the wrong photograph. */
+  const HERO_POOLS = Object.create(null);
   const HERO_SHAPES = ['tile--b', 'tile--w', '', 'tile--t', '', 'tile--w',
                        'tile--t', '', 'tile--b', ''];
 
@@ -149,7 +167,12 @@
     if (!groups.length) return;
 
     // Interleave the two groups so the mosaic never shows a block of one place.
-    const pools = groups.map(g => ({ g, imgs: data.images.filter(i => i.galleryGroup === g.id) }));
+    const pools = groups.map(g => {
+      const imgs = data.images.filter(i => i.galleryGroup === g.id
+                                        && !HERO_EXCLUDE.includes(i.category));
+      HERO_POOLS[g.id] = imgs;
+      return { g, imgs };
+    });
     const picks = [];
     for (let i = 0; picks.length < HERO_SHAPES.length; i++) {
       const p = pools[i % pools.length];
@@ -192,7 +215,11 @@
       const tiles = live.flatMap(r => $$('.tile', r));
       if (!tiles.length) return;
       const tile = tiles[Math.floor(Math.random() * tiles.length)];
-      const pool = byGroup[tile.dataset.group] || [];
+      // A mosaic tile indexes into the filtered pool, not the whole group: it
+      // must turn over within the same array it was built from, or it would
+      // both show an excluded photograph and open a different one on click.
+      const inHero = !!tile.closest('[data-hero-mosaic]');
+      const pool = (inHero ? HERO_POOLS[tile.dataset.group] : byGroup[tile.dataset.group]) || [];
       if (pool.length < 2) return;
 
       const showing = +tile.dataset.index;

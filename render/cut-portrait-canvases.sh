@@ -45,3 +45,7 @@ cut assets/raw/courtyard-pavilion-02.jpg       $OUT/04-buffet-table.jpg    0.20
 cut assets/raw/games-hall-01.jpg               $OUT/05-billiards.jpg       0.45
 cut assets/raw/room-heritage-double-03.jpg     $OUT/06-room.jpg            0.35
 cut assets/raw/pool-hills-04.jpg               $OUT/07-pool.jpg            0.45
+
+# NOTE: courtyard-pavilion-02.jpg was removed from assets/raw/ on the owner's
+# instruction. This script belongs to the rejected render chain and is not run;
+# if it ever is, that beat needs a different source photograph.
