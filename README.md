@@ -54,7 +54,7 @@ bad encode. `tools/test.sh` scans the atom order and fails the build.
 
 ## The photographs
 
-Below the film, a tiled gallery of all 47 photographs. The three groups — outside the house, inside the rooms, pool and
+Below the film, a tiled gallery of all 41 photographs. The three groups — outside the house, inside the rooms, pool and
 playroom — sit side by side as a single block rather than stacked, so the whole
 library reads at a glance.
 
@@ -142,7 +142,7 @@ from 360px through 2560px.
 | Path | What |
 |---|---|
 | `web/` | the page, the CSS, the JS, self-hosted fonts |
-| `assets/raw/` | 47 property photographs, named for what they show |
+| `assets/raw/` | 41 property photographs, named for what they show |
 | `assets/video/` | the property film and its poster — the only tracked video |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `assets/scenes/`, `assets/handoff/` | stills from the rejected render chain |

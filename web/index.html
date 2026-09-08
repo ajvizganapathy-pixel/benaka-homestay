@@ -50,9 +50,10 @@
      ======================================================================== */ -->
 <div class="before" data-before>
 
-  <!-- 1. The hero: the gate at full height with the name on it, then a low strip
-       of the grounds and the pool so the first screen shows more than one view
-       of the place. -->
+  <!-- 1. The hero: one photograph at full height with the name on it. The
+       grounds mosaic used to sit inside this header; it now follows the story
+       section instead, so the visitor is told what the place is before being
+       handed a wall of pictures of it. -->
   <header class="ed-hero" id="top">
     <div class="ed-hero__frame">
       <img class="ed-hero__img"
@@ -66,24 +67,11 @@
         <p class="micro ed-hero__where">Near Irpu Falls &middot; Kodagu</p>
       </div>
     </div>
-
-    <div class="ed-strip">
-      <div class="ed-strip__intro">
-        <p class="micro">The grounds</p>
-        <h2 class="ed-strip__h">Outside the house.</h2>
-        <p class="ed-strip__note">
-          A pool with the hill behind it, a brick courtyard, cottage rooms under
-          green tile, and a billiards table for the wet afternoons.
-        </p>
-        <p class="micro ed-strip__hint">These turn over as you watch &mdash; tap any one to open it.</p>
-      </div>
-      <!-- Built from the manifest in site.js: ten cells drawing on all 24
-           photographs of the grounds and the pool, turning over as you watch. -->
-      <div class="ed-mosaic tiles" data-hero-mosaic></div>
-    </div>
   </header>
 
-  <!-- 2. What the place actually is, in real photographs. -->
+  <!-- 2. What the place actually is, in real photographs. This now comes
+       BEFORE the grounds mosaic: the visitor is told what the place is before
+       being handed a wall of pictures of it. -->
   <section class="ed-story" aria-labelledby="story-h">
     <div class="ed-story__text reveal">
       <p class="micro">Our story</p>
@@ -91,19 +79,40 @@
       <p>Eight rooms, a verandah along the whole front, a courtyard that stays wet
          all monsoon, and a hill behind it. Meals are cooked here and eaten
          together. Nothing about it is hurried.</p>
-      <p class="ed-story__meta micro">Every photograph on this page was taken on the property.</p>
+      <p class="ed-story__meta micro">The photographs on this page were taken on the property.</p>
     </div>
+    <!-- Lead is the pool through the leaves: it is the strongest frame of the
+         three and the one that should land first. The two supporting plates are
+         both 3:2 sources, because the lead used to be a 16:9 and cropping one of
+         those into the 4:5 tall plate threw most of the picture away. -->
     <div class="ed-story__plate">
       <figure class="ed-plate ed-plate--lead reveal">
-        <img src="../assets/raw/exterior-mainhouse-front-02.jpg" alt="The main house across the courtyard, verandah and balcony along its full length" loading="lazy" decoding="async">
+        <img src="../assets/raw/cottages-pool-02.jpg" alt="The cottage row and the pool framed through overhanging leaves" loading="lazy" decoding="async">
       </figure>
       <figure class="ed-plate ed-plate--tall reveal">
-        <img src="../assets/raw/courtyard-pavilion-01.jpg" alt="The open courtyard with the dining pavilion on one side" loading="lazy" decoding="async">
+        <img src="../assets/raw/exterior-mainhouse-front-01.jpg" alt="The main house across the brick courtyard, palms framing the verandah" loading="lazy" decoding="async">
       </figure>
       <figure class="ed-plate ed-plate--small reveal">
-        <img src="../assets/raw/cottages-pool-02.jpg" alt="The cottage row and the pool seen through the trees" loading="lazy" decoding="async">
+        <img src="../assets/raw/garden-cottage-01.jpg" alt="A green-tiled cottage behind the garden trees" loading="lazy" decoding="async">
       </figure>
     </div>
+  </section>
+
+  <!-- 3. The grounds, after the story. A section rather than a bare div: it
+       carries a heading, so it is a landmark a screen reader can jump to. -->
+  <section class="ed-strip" aria-labelledby="grounds-h">
+    <div class="ed-strip__intro">
+      <p class="micro">The grounds</p>
+      <h2 class="ed-strip__h" id="grounds-h">Outside the house.</h2>
+      <p class="ed-strip__note">
+        A pool with the hill behind it, a brick courtyard, cottage rooms under
+        green tile, and a billiards table for the wet afternoons.
+      </p>
+      <p class="micro ed-strip__hint">These turn over as you watch &mdash; tap any one to open it.</p>
+    </div>
+    <!-- Built from the manifest in site.js: ten cells drawing on all 24
+         photographs of the grounds and the pool, turning over as you watch. -->
+    <div class="ed-mosaic tiles" data-hero-mosaic></div>
   </section>
 
 </div>

@@ -6,7 +6,7 @@
     "region": "Coorg (Kodagu), Karnataka, India",
     "season": "monsoon / overcast, wet ground in most frames"
   },
-  "imageCount": 42,
+  "imageCount": 41,
   "categories": [
     "approach",
     "bath",
@@ -22,21 +22,6 @@
     "room"
   ],
   "images": [
-    {
-      "file": "bath-basin-01.jpg",
-      "origin": "IMG-20260903-WA0013.jpg",
-      "width": 1600,
-      "height": 1066,
-      "aspect": 1.5009,
-      "orientation": "landscape",
-      "category": "bath",
-      "description": "Bathroom washbasin and mirror seen past the open door",
-      "sceneRole": "reference",
-      "sceneBeat": null,
-      "sceneId": null,
-      "note": null,
-      "galleryGroup": "inside"
-    },
     {
       "file": "bath-ensuite-01.jpg",
       "origin": "IMG-20260903-WA0046.jpg",

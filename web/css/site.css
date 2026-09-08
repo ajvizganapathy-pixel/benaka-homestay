@@ -211,7 +211,10 @@ body.book-on .book { opacity: 1; visibility: visible; }
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 2.28fr);
   align-items: start;
   padding: clamp(30px, 5vw, 68px) var(--s-gut);
-  border-bottom: 1px solid var(--s-line);
+  /* A rule ABOVE, not below: the grounds now follow the story, and what needs
+     separating is the two ivory sections from each other. Below it is the
+     forest band, which separates itself. */
+  border-top: 1px solid var(--s-line);
 }
 .ed-strip__intro .micro { display: block; }
 .ed-strip__h {
