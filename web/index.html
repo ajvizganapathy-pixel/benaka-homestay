@@ -13,7 +13,7 @@
      production rewrite) or at /web/index.html (local, or a non-Apache host).
      Replace with the absolute https://yourdomain/... URL once the domain is
      live: most link-preview scrapers will not resolve a relative one. -->
-<meta property="og:image" content="../assets/scenes/02-gate-arch.jpg">
+<meta property="og:image" content="../assets/brand/hero-wide.jpg">
 <meta property="og:type" content="website">
 <meta property="og:url" content="/">
 <meta name="twitter:card" content="summary_large_image">
@@ -56,10 +56,19 @@
        handed a wall of pictures of it. -->
   <header class="ed-hero" id="top">
     <div class="ed-hero__frame">
-      <img class="ed-hero__img"
-           src="../assets/raw/gate-arch-benaka-01.jpg"
-           alt="The entrance arch at Benaka By The Hills, the drive running under it to the house"
-           width="1600" height="900" fetchpriority="high" decoding="async">
+      <!-- TWO sources, not one image and a clever crop. A 16:9 frame
+           cover-cropped into a 390x844 phone shows about a quarter of its
+           width, so the portrait hero is a separately made 9:16 frame. The
+           <source> media query matches the 700px breakpoint in site.css where
+           the hero goes full-screen; keep the two in step if either moves. -->
+      <picture>
+        <source media="(max-width: 700px)" srcset="../assets/brand/hero-tall.jpg"
+                width="1200" height="2150">
+        <img class="ed-hero__img"
+             src="../assets/brand/hero-wide.jpg"
+             alt="Benaka By The Hills from above at sunset: the pool, the tiled mural beside it, and the house under its green tiled roof against the Kodagu hills"
+             width="2200" height="1228" fetchpriority="high" decoding="async">
+      </picture>
       <div class="ed-hero__copy">
         <p class="micro">Coorg &middot; Karnataka</p>
         <h1 class="ed-hero__name">Benaka<br><em>By The Hills</em></h1>
@@ -149,7 +158,7 @@
     <header class="section__head reveal">
       <span class="micro">The photographs</span>
       <h2 class="macro" id="gallery-h">Look around properly.</h2>
-      <p>Every picture on this page is the place as it is, taken on an ordinary wet week. Click any one to open it full size.</p>
+      <p>Every photograph below is the place as it is, taken on an ordinary wet week. Click any one to open it full size.</p>
     </header>
     <div data-gallery><noscript><p>Enable JavaScript to browse the photographs.</p></noscript></div>
   </section>

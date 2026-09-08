@@ -155,9 +155,10 @@ body.book-on .book { opacity: 1; visibility: visible; }
   color: var(--s-ink);
 }
 
-/* --- hero: the gate at full height, then a strip of the grounds -------------
-   The wash over this photograph is one-sided and clears well before the arch
-   and the signboard, which is the thing the visitor came for. */
+/* --- hero: one image at full height, the name over it ----------------------
+   The wash is one-sided and clears well before the pool and the house, which
+   are what the picture is of. Its stops are measured against this particular
+   photograph -- see the phone override further down. */
 .ed-hero__frame {
   position: relative;
   /* No pixel cap. It used to be min(88svh, 820px), which stopped the
@@ -170,7 +171,10 @@ body.book-on .book { opacity: 1; visibility: visible; }
 }
 .ed-hero__img {
   position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover; object-position: 60% 55%;
+  /* Centred, because each viewport is now served a source already cut to its
+     shape: the 60%/55% bias existed to keep an arch signboard in frame when a
+     single 16:9 photograph had to serve every width. */
+  width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
   z-index: -2;
 }
 .ed-hero__frame::after {
@@ -203,9 +207,9 @@ body.book-on .book { opacity: 1; visibility: visible; }
 }
 .ed-hero__where { margin: 24px 0 0 !important; color: rgba(243, 239, 230, .6) !important; }
 
-/* The strip: four real frames of the grounds and the pool, with one short note.
-   It sits directly under the gate so the first screenful and the one after it
-   between them show the whole property, not a single view of a signboard. */
+/* The strip: the grounds and the pool as a live mosaic, with one short note.
+   It used to sit directly under the hero; it now follows the story section, so
+   the visitor is told what the place is before being handed a wall of it. */
 .ed-strip {
   display: grid; gap: clamp(18px, 3vw, 40px);
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 2.28fr);
@@ -289,16 +293,22 @@ body.book-on .book { opacity: 1; visibility: visible; }
    strip follows immediately, two frames across. */
 @media (max-width: 700px) {
   .ed-hero__frame { min-height: 100svh; }
-  /* A 1600x900 source cover-cropped into a 390x844 window shows only about a
-     quarter of its width, so this is not a taste setting: it is the number that
-     puts the whole signboard in that quarter. Check it, do not nudge it. */
-  .ed-hero__img { object-position: 41% 50%; }
+  /* No object-position override here any more. Phones are served the 9:16
+     source by the <picture> element, so there is nothing to rescue from a
+     landscape crop. */
+  /* Deepened through the middle when the hero photograph changed. The old
+     stops were cut against a dark arch picture; over a sunset frame the 12px
+     "Coorg . Karnataka" line, which sits highest in the copy block where a
+     bottom-up wash is weakest, measured 3.27:1 against the 4.5 that size needs.
+     These are measured numbers, not taste - re-measure if the picture changes
+     again rather than nudging them. */
   .ed-hero__frame::after {
     background: linear-gradient(to top,
-      rgba(14, 20, 17, 0.86) 0%,
-      rgba(14, 20, 17, 0.58) 30%,
-      rgba(14, 20, 17, 0.12) 62%,
-      rgba(14, 20, 17, 0.24) 100%);
+      rgba(14, 20, 17, 0.90) 0%,
+      rgba(14, 20, 17, 0.78) 30%,
+      rgba(14, 20, 17, 0.58) 45%,
+      rgba(14, 20, 17, 0.18) 68%,
+      rgba(14, 20, 17, 0.26) 100%);
   }
   .ed-hero__copy { padding-bottom: clamp(54px, 12vh, 110px); }
   .ed-hero__name { font-size: clamp(2.7rem, 13vw, 4rem); }

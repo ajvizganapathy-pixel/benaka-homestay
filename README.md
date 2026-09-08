@@ -6,6 +6,13 @@ closes with a tiled gallery, a footer, a booking flow and the venue.
 
 ![The name over the road in](docs/screenshots/01-hero.jpg)
 
+The hero is the property from the air at sunset, served as two separately made
+frames — 16:9 above 700px, 9:16 below it, because a landscape frame
+cover-cropped into a phone shows about a quarter of its width. It is the one
+generated image on the page, made from the owner's own aerial brand reference;
+everything below it is a photograph taken on the property, which is why the page
+says exactly that and no more.
+
 Static and framework-free — plain HTML, vanilla JS, no build step, no
 dependencies. Serve the repo over HTTP and open `/web/`.
 
@@ -143,6 +150,7 @@ from 360px through 2560px.
 |---|---|
 | `web/` | the page, the CSS, the JS, self-hosted fonts |
 | `assets/raw/` | 41 property photographs, named for what they show |
+| `assets/brand/` | the two hero images and the owner's aerial reference they came from |
 | `assets/video/` | the property film and its poster — the only tracked video |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `assets/scenes/`, `assets/handoff/` | stills from the rejected render chain |

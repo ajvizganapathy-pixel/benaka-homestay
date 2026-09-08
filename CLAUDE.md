@@ -110,7 +110,8 @@ web/index.html        page shell: editorial band, the film, gallery, footer, boo
 web/css/              fonts, tokens, site chrome, booking
 web/js/               api adapter, site behaviour, booking flow
 web/fonts/            self-hosted woff2 (no CDN at runtime)
-assets/raw/           the property photographs — everything the page shows
+assets/raw/           the property photographs — the gallery, mosaic and plates
+assets/brand/         the hero images and the owner's reference they came from
 assets/video/         benaka-tour.mp4 and its poster. The ONLY tracked video.
 assets/scenes/        canvases from the rejected render chain (+ portrait/)
 assets/handoff/       leg handoff frames from the same chain
@@ -142,6 +143,31 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    outside the site's theme. It carries the forest ground deliberately, so the
    page reads ivory, forest, ivory and the film is the one dark chapter in the
    middle.
+
+4. **The hero is TWO images, and the wash over it is measured.** `<picture>`
+   serves `assets/brand/hero-tall.jpg` (9:16) below 700px and
+   `assets/brand/hero-wide.jpg` (16:9) above it — a separately generated frame,
+   not a crop, for the reason in the architecture note above. The `media` query
+   in the markup and the 700px breakpoint in `site.css` have to move together.
+
+   The gradient stops in the phone `.ed-hero__frame::after` are **measured, not
+   chosen**. Over the old dark arch photograph the 12px "Coorg · Karnataka"
+   line — highest in the copy block, where a bottom-up wash is weakest — sat at
+   3.27:1 against the 4.5 that size needs; the current stops put it at 5.98.
+   If the hero photograph is ever replaced, re-measure all four copy elements
+   at 390 / 1440 / 2560 rather than nudging the numbers.
+
+### The hero is the one generated image on the page
+
+Everything else is a photograph taken on the property. The two hero files are
+**Nano Banana Pro `image2image` at 4K**, generated from
+`assets/brand/hero-reference.png` — the aerial the owner supplied as the brand
+image — at 72 credits each after the Plus discount.
+
+This is why the page says "The photographs on this page were taken on the
+property" and the gallery says "Every photograph **below**". Both were reworded
+when the hero changed. Keep them true: if a generated image ever appears below
+the hero, those sentences have to change again.
 
 ### Two entry points, on purpose
 
