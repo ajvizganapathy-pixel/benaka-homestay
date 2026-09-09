@@ -62,8 +62,32 @@ Options -Indexes
   </FilesMatch>
 
   # The year-long expiry below is only an Expires header without this.
+  # These are safe to freeze: a photograph, a font or the film never changes at
+  # the same filename — replacing one means a new name.
   <FilesMatch "\.(jpg|jpeg|png|webp|svg|woff2|mp4)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # THE OPPOSITE, AND IT IS LOAD-BEARING. site.css, site.js, api.js, booking.js
+  # and manifest.json all change in place, at the same URLs, on every deploy.
+  # They used to be cached for a day, and that made a deploy invisible: the HTML
+  # came back fresh (0 seconds, above) but the browser kept yesterday's
+  # JavaScript, and since the gallery and the mosaic are BUILT BY THAT
+  # JAVASCRIPT from manifest.json, a returning visitor saw yesterday's page
+  # rendered by a page shell that looked new. It presents as "the change did not
+  # deploy", which is a bad hour to spend.
+  #
+  # no-cache does NOT mean "do not store". It means "revalidate before use": the
+  # browser still keeps the file, sends If-Modified-Since, and Apache answers
+  # 304 Not Modified with no body when nothing changed. So the cost is four tiny
+  # conditional requests per visit, and the payoff is that a deploy is live the
+  # moment it lands, with nothing for anyone to remember.
+  #
+  # The usual alternative is a content hash in the filename. This repo has no
+  # build step by design, so there is nothing to stamp one with; if you ever add
+  # one, you may put the long expiry back IN THE SAME CHANGE, and not before.
+  <FilesMatch "\.(css|js|json)$">
+    Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>
 
@@ -126,11 +150,13 @@ AddDefaultCharset UTF-8
   ExpiresByType image/webp              "access plus 1 year"
   ExpiresByType font/woff2              "access plus 1 year"
   ExpiresByType video/mp4               "access plus 1 year"
-  # Code and data change on deploy, so keep these short.
-  ExpiresByType text/css                "access plus 1 day"
-  ExpiresByType text/javascript         "access plus 1 day"
-  ExpiresByType application/javascript  "access plus 1 day"
-  ExpiresByType application/json        "access plus 1 hour"
+  # Code and data change IN PLACE on deploy, at the same URLs, so they must not
+  # be cached at all — see the Cache-Control: no-cache block below for why a day
+  # was wrong and what "no-cache" actually does.
+  ExpiresByType text/css                "access plus 0 seconds"
+  ExpiresByType text/javascript         "access plus 0 seconds"
+  ExpiresByType application/javascript  "access plus 0 seconds"
+  ExpiresByType application/json        "access plus 0 seconds"
   ExpiresByType text/html               "access plus 0 seconds"
 </IfModule>
 

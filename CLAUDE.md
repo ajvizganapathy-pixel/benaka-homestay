@@ -192,6 +192,22 @@ Live tiles run on the hero mosaic **only** now. The stacks are a curated
 selection and cards reshuffling under the visitor would fight the one thing they
 are for.
 
+### Two things that make a deploy look like it failed
+
+1. **The gallery is not in the HTML.** `web/index.html` holds only
+   `<div data-gallery>`; `buildGallery()` renders the stacks at runtime from
+   `assets/manifest.json`. Grepping the HTML for the markup finds nothing, and
+   that is correct.
+
+2. **CSS, JS and JSON are served `Cache-Control: no-cache`, on purpose.** They
+   change in place at the same URLs on every deploy, and there is no build step
+   to stamp a hash into their names. They were cached for a day once: the HTML
+   came back fresh while the browser kept yesterday's `site.js`, so a returning
+   visitor saw yesterday's gallery drawn inside a new-looking page. `no-cache`
+   means revalidate, not do not store — the browser still caches and Apache
+   answers 304. Do not give them a long expiry again without adding
+   cache-busting filenames in the same change.
+
 ### The hero is the one generated image on the page
 
 Everything else is a photograph taken on the property. The two hero files are

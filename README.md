@@ -1,8 +1,9 @@
 # Benaka By The Hills
 
-A site for a homestay in Coorg (Kodagu), Karnataka. It opens as a property
-brochure in real photographs, carries one film of the place in the middle, and
-closes with a tiled gallery, a footer, a booking flow and the venue.
+A site for a homestay in Coorg (Kodagu), Karnataka. In order: the hero, the
+family's own account of the place, a live mosaic of the grounds, one film shot
+on the property, the photographs as three stacks, a footer, a booking flow that
+ends on WhatsApp, and the venue.
 
 ![The name over the road in](docs/screenshots/01-hero.jpg)
 
@@ -33,6 +34,23 @@ The site itself lives in `web/`. The root `index.html` is a small redirect so
 that opening the repository root gives the homestay rather than a directory
 listing. On Hostinger it is never reached: `.htaccess` maps `/` to
 `web/index.html` internally, so visitors get a clean `/` with no hop.
+
+## Our story, and the grounds
+
+Under the hero the page says what the place actually is — eight rooms, a
+verandah along the whole front, a courtyard wet all monsoon — beside three
+photographs, the pool through the leaves leading.
+
+The band below it is a live mosaic of the grounds: ten cells drawn from the
+whole set, turning over one at a time every couple of seconds, so the wall
+reshuffles itself over about a minute. Tap any cell to open it.
+
+**The indoor billiards frames are excluded from that band, deliberately.** It is
+the band that says "around the property", so a dark interior in it reads as a
+mistake. That exclusion has to hold in two places — the opening cells *and* the
+rotation pool — because filtering only the first ten would let a cell turn into
+a billiards frame a minute later, which no single screenshot would ever catch.
+The gallery further down still shows them, under *Pool and playroom*.
 
 ## Explore Benaka
 
@@ -144,8 +162,47 @@ plain link opens the visitor's own map app anyway.
 The hero photograph takes the whole screen with the name on it, and the mosaic
 under it keeps its wide and tall cells rather than flattening to a uniform grid —
 solved for two columns so it tiles flush, ten cells, turning over as you watch.
+
+**The gallery stacks stay large.** They go one per row at full gutter width, the
+biggest print about 57% of the screen — never a dense grid of thumbnails, which
+is the whole point of a stack. That took fixing twice: `order` alone moved the
+pictures into the narrow column on the flipped row, and the mobile rule lost a
+specificity fight to the mirrored one because a media query adds no specificity
+of its own.
+
 The film goes full width. Type scales with the viewport. No horizontal overflow
 from 360px through 2560px.
+
+## Deploying
+
+Upload the repository to the host; there is no build step and nothing to
+compile. On Hostinger, `.htaccess` maps `/` to `web/index.html` internally, so
+visitors get a clean `/`.
+
+**If a change looks like it did not deploy, read this before anything else.**
+
+The gallery, the grounds mosaic and the hero mosaic are all **built by
+`web/js/site.js` at runtime** from `assets/manifest.json`. `web/index.html`
+contains only `<div data-gallery>` — searching the HTML for the stack markup
+finds nothing, and that is correct, not a failed deploy.
+
+Which used to have a nastier consequence. `.htaccess` cached CSS and JS for a
+day and the files carry no version in their URLs, so a returning visitor got a
+*fresh* HTML shell running *yesterday's* JavaScript, and therefore yesterday's
+gallery. It looked exactly like a change that had not shipped.
+
+Those four text files — the three stylesheets, the three scripts, and the
+manifest — are now served `Cache-Control: no-cache`. That means *revalidate
+before use*, not *do not store*: the browser keeps the file, asks
+`If-Modified-Since`, and Apache answers **304 Not Modified** with no body when
+nothing changed. A deploy is live the moment it lands.
+
+Photographs, fonts and the film keep a year-long `immutable` expiry. They never
+change at the same filename — replacing one means a new name — so they are safe
+to freeze, and they are the bytes that actually matter for weight.
+
+If you ever add a build step that stamps content hashes into filenames, you may
+put the long expiry back on CSS and JS **in that same change**, and not before.
 
 ## Layout
 
