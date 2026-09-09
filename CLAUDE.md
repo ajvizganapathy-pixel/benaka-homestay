@@ -157,6 +157,41 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    If the hero photograph is ever replaced, re-measure all four copy elements
    at 390 / 1440 / 2560 rather than nudging the numbers.
 
+### The gallery is three stacks, not a tile grid
+
+Each group is five photographs laid over each other like prints, with the
+section's name beside them and one control. Clicking a stack calls
+`openLightbox(g, imgsInGroup, 0)` — **the whole group**, so nothing is hidden by
+showing five: 12, 16 and 10 photographs are still one click away.
+
+Three things to know before editing it:
+
+1. **`.tiles` and `.tile` in `site.css` are still load-bearing.** The gallery
+   stopped using them, but the hero mosaic (`.ed-mosaic.tiles`) is built on
+   them. Deleting them as "dead tile-gallery CSS" collapses the band under the
+   story.
+
+2. **Which five photographs is data, not code** — `stack` on each galleryGroup
+   in `assets/manifest.json`. `tools/test.sh` fails if a name is not in its own
+   group or not on disk, because a typo there shows up only as a card that
+   silently 404s.
+
+3. **The fan's offsets are fixed per `nth-child`, not random,** and every
+   supporting card must keep a clear corner. The first cut put card 5 wholly
+   inside the hero card's span, so all that showed was a strip along its top —
+   which in all three stacks happened to be blown sky or a white ceiling, and
+   read as an empty mount. If you move the numbers, re-measure the visible
+   fraction of each card rather than eyeballing one screenshot.
+
+   The mobile block must override **both** `.stack-row` and
+   `.stack-row:nth-child(even)`. A media query adds no specificity, so the
+   mirrored even-row rule (0,2,0) beats a bare `.stack-row` (0,1,0) inside it
+   and the middle row stays in two columns on a phone.
+
+Live tiles run on the hero mosaic **only** now. The stacks are a curated
+selection and cards reshuffling under the visitor would fight the one thing they
+are for.
+
 ### The hero is the one generated image on the page
 
 Everything else is a photograph taken on the property. The two hero files are

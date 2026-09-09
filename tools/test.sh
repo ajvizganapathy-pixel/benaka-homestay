@@ -118,6 +118,35 @@ PY
 n=$(python3 -c "import json;print(len(json.load(open('assets/manifest.json'))['images']))")
 [ -z "$missing" ] && ok "all $n manifest photographs exist" || bad "missing photographs" "$missing"
 
+# Every galleryGroup's `stack` names the five photographs shown as its stack in
+# the gallery. A typo there does not throw — the card is simply built with a src
+# that 404s, or the group quietly falls back to fewer cards — so it has to be
+# checked here rather than noticed in a screenshot.
+stackbad=$(python3 - <<'PY'
+import json, os
+m = json.load(open('assets/manifest.json'))
+by = {}
+for i in m['images']:
+    by.setdefault(i.get('galleryGroup'), set()).add(i['file'])
+bad = []
+for g in m.get('galleryGroups', []):
+    st = g.get('stack')
+    if not st:
+        bad.append(g['id'] + ': no stack')
+        continue
+    if not 3 <= len(st) <= 5:
+        bad.append('%s: %d in stack, want 3-5' % (g['id'], len(st)))
+    for f in st:
+        if f not in by.get(g['id'], set()):
+            bad.append('%s: %s is not in that group' % (g['id'], f))
+        elif not os.path.isfile('assets/raw/' + f):
+            bad.append('%s: %s is not on disk' % (g['id'], f))
+print('\n'.join(bad))
+PY
+)
+ng=$(python3 -c "import json;print(len(json.load(open('assets/manifest.json'))['galleryGroups']))")
+[ -z "$stackbad" ] && ok "all $ng gallery stacks resolve" || bad "gallery stack" "$stackbad"
+
 # manifest count must match what is actually in the array
 php -r '$m=json_decode(file_get_contents("assets/manifest.json"),true); exit($m["imageCount"]===count($m["images"])?0:1);' \
   && ok "manifest imageCount matches the array" || bad "manifest imageCount is stale"

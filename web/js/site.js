@@ -57,10 +57,24 @@
     });
   }
 
-  /* ---- 2. Gallery, built from the manifest ------------------------------ */
+  /* ---- 2. Gallery — three stacks of photographs -------------------------
+     This used to render all 38 photographs at once as three columns of ~90px
+     tiles. It read as an archive rather than as a collection anyone chose, so
+     each group is now a small stack of prints laid over each other, with one
+     way in. Nothing is hidden by that: clicking a stack opens the group's
+     COMPLETE set in the lightbox, which already took a whole group and needed
+     no change at all.
+
+     Which five photographs are on top is data, not code — `stack` on each
+     galleryGroup in the manifest, so the choice can be re-ordered without
+     touching this file. tools/test.sh fails the build if one of those names is
+     not in its group or not on disk, because a bad name here would show up only
+     as a card that silently 404s.                                            */
+
   // Tile shapes cycle so the mosaic never lines up into a plain grid. Wide and
   // tall cells fall on different beats of the cycle, which is what gives the
-  // Windows-8 look without hand-placing anything.
+  // Windows-8 look without hand-placing anything. USED BY THE HERO MOSAIC ONLY
+  // now — the gallery below stopped being a tile grid.
   const SHAPES = ['tile--b', '', 'tile--w', '', '', 'tile--t', 'tile--w', '', ''];
 
   async function buildGallery() {
@@ -75,36 +89,57 @@
       return;
     }
 
-    const groups = data.galleryGroups || [];
     host.innerHTML = '';
-    // One block holding all three groups side by side, rather than stacked.
-    const block = document.createElement('div');
-    block.className = 'groups';
-    host.appendChild(block);
-
-    groups.forEach(g => {
+    (data.galleryGroups || []).forEach(g => {
       const imgs = data.images.filter(i => i.galleryGroup === g.id);
       if (!imgs.length) return;
 
-      const sec = document.createElement('section');
-      sec.className = 'group reveal';
-      sec.innerHTML =
-        `<div class="group__head">
-           <h3>${esc(g.label)}</h3>
-           <span class="micro count">${imgs.length} photographs</span>
-           <span class="micro" style="flex-basis:100%;color:var(--s-ink-faint)">${esc(g.blurb || '')}</span>
-         </div>
-         <div class="tiles"></div>`;
+      // Fall back to the head of the group if `stack` is missing, so a manifest
+      // written before this existed still renders something sensible.
+      const byFile = new Map(imgs.map(i => [i.file, i]));
+      const cards = (g.stack || []).map(f => byFile.get(f)).filter(Boolean);
+      if (!cards.length) cards.push(...imgs.slice(0, 5));
 
-      const grid = $('.tiles', sec);
-      imgs.forEach((im, i) => grid.appendChild(makeTile(im, i, g, imgs, SHAPES[i % SHAPES.length])));
+      const row = document.createElement('article');
+      row.className = 'stack-row reveal';
 
-      block.appendChild(sec);
+      // The cards are decorative duplicates of what the button opens, so they
+      // are hidden from assistive technology rather than announced a second
+      // time. Alt text is empty for the same reason.
+      const fig = document.createElement('figure');
+      fig.className = 'stack';
+      fig.setAttribute('aria-hidden', 'true');
+      fig.innerHTML = cards.map(im =>
+        `<span class="stack__card">
+           <img src="../assets/raw/${encodeURIComponent(im.file)}" alt=""
+                loading="lazy" decoding="async" width="${im.width}" height="${im.height}">
+         </span>`).join('');
+
+      const words = document.createElement('div');
+      words.className = 'stack__words';
+      const n = imgs.length;
+      words.innerHTML =
+        `<p class="micro stack__eyebrow">Gallery</p>
+         <h3 class="stack__h">${esc(g.label)}</h3>
+         <p class="stack__blurb">${esc(g.blurb || '')}</p>
+         <button class="stack__cta" type="button">
+           View all ${n} photograph${n === 1 ? '' : 's'} <i aria-hidden="true">&rarr;</i>
+         </button>`;
+
+      // ONE control in the tab order. The figure forwards its click to the same
+      // handler so the stack is clickable by mouse and touch, without giving a
+      // keyboard or a screen reader two stops that do the identical thing.
+      const open = () => openLightbox(g, imgs, 0);
+      $('.stack__cta', words).addEventListener('click', open);
+      fig.addEventListener('click', open);
+
+      row.append(fig, words);
+      host.appendChild(row);
     });
 
     buildHeroMosaic(data);
     observeReveals();
-    startLiveTiles(data);
+    startLiveTiles();
   }
 
   /* One tile, used by both the gallery and the hero mosaic, so the two cannot
@@ -195,31 +230,27 @@
      prefers-reduced-motion. Whatever a tile is currently showing is what its
      click opens, so the two never disagree.                                */
   let liveTimer = null;
-  function startLiveTiles(data) {
+  function startLiveTiles() {
     if (reduced) return;
-    const roots = [$('[data-gallery]'), $('[data-hero-mosaic]')].filter(Boolean);
+    // The hero mosaic only. The gallery used to be tiles and turned over here
+    // too; it is three curated stacks now, and cards reshuffling under the
+    // visitor would fight the one thing those stacks are for — looking chosen.
+    const roots = [$('[data-hero-mosaic]')].filter(Boolean);
     if (!roots.length) return;
-
-    const byGroup = {};
-    (data.galleryGroups || []).forEach(g => {
-      byGroup[g.id] = data.images.filter(i => i.galleryGroup === g.id);
-    });
 
     const visible = new Set();
 
     const turn = () => {
-      // Only turn cells in a mosaic that is actually on screen. Drawing from
-      // both roots at once spent half the turns on gallery tiles nobody was
-      // looking at, which made the hero appear to sit still.
+      // Only turn cells in a mosaic that is actually on screen.
       const live = visible.size ? [...visible] : roots;
       const tiles = live.flatMap(r => $$('.tile', r));
       if (!tiles.length) return;
       const tile = tiles[Math.floor(Math.random() * tiles.length)];
-      // A mosaic tile indexes into the filtered pool, not the whole group: it
-      // must turn over within the same array it was built from, or it would
-      // both show an excluded photograph and open a different one on click.
-      const inHero = !!tile.closest('[data-hero-mosaic]');
-      const pool = (inHero ? HERO_POOLS[tile.dataset.group] : byGroup[tile.dataset.group]) || [];
+      // HERO_POOLS, not the whole group: a mosaic tile's data-index is an offset
+      // into the FILTERED array it was built from, so turning it over anywhere
+      // else would both show an excluded photograph and open a different one on
+      // click. buildHeroMosaic fills this map, and runs before this does.
+      const pool = HERO_POOLS[tile.dataset.group] || [];
       if (pool.length < 2) return;
 
       const showing = +tile.dataset.index;

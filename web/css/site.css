@@ -374,21 +374,185 @@ body.book-on .book { opacity: 1; visibility: visible; }
 .reveal.in { opacity: 1; transform: none; }
 
 /* ---------------------------------------------------------------------------
-   5. Tile gallery — three groups, mosaic cells
+   5. Gallery — three stacks of prints, and the tile rules the mosaic needs
    ------------------------------------------------------------------------ */
-/* The three groups sit together as one block rather than stacked, so the whole
-   library reads at a glance. Each keeps its own heading, count and mosaic. */
-.groups {
+/* The gallery used to be three columns of ~90px tiles showing all 38
+   photographs at once. It is three stacks now: five prints laid over each
+   other, the section's name beside them, and one control that opens the whole
+   group in the lightbox.
+
+   .tiles / .tile BELOW ARE STILL LOAD-BEARING. The hero mosaic up the page is
+   built on them (.ed-mosaic.tiles), so they are not dead with the tile gallery
+   gone — deleting them collapses the band under the story. */
+
+/* --- the three rows ------------------------------------------------------ */
+.stack-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(20px, 2.4vw, 40px);
-  align-items: start;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 90px);
 }
-@media (max-width: 1100px) { .groups { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-@media (max-width: 700px)  { .groups { grid-template-columns: 1fr; gap: 40px; } }
-.group__head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.group__head h3 { font-family: var(--s-font-macro); font-weight: 400; font-size: clamp(1.25rem, 1.9vw, 1.7rem); margin: 0; }
-.group__head .count { color: var(--s-ink-faint); }
+.stack-row + .stack-row { margin-top: clamp(56px, 10vh, 128px); }
+/* The zigzag. Ordering by column rather than reordering the DOM keeps the
+   reading order — picture, then its words — intact for a screen reader and for
+   keyboard focus, whichever side the pictures are on.
+
+   The template is mirrored as well as the order: `order` alone moves the figure
+   into the narrower column, which shrank the middle row's prints to 23% of the
+   viewport against 31% either side of it. The pictures are the wide column on
+   both sides. */
+.stack-row:nth-child(even) {
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+}
+.stack-row:nth-child(even) .stack       { order: 2; }
+.stack-row:nth-child(even) .stack__words { order: 1; }
+
+/* --- the stack of prints -------------------------------------------------- */
+/* Every offset, width and angle below is a FIXED value per nth-child, not a
+   random one. A random fan cannot be reviewed: it would compose differently on
+   every load, and a bad overlap would be unreproducible. Angles stay inside
+   +/-3.4deg — enough to read as prints put down by hand, short of the angular
+   look the brief rules out.
+
+   --spread scales every offset from one place, so phones can hold the same
+   composition at a smaller amplitude instead of needing a second set of
+   numbers. */
+.stack {
+  position: relative; margin: 0;
+  aspect-ratio: 4 / 3;
+  --spread: 1;
+  cursor: pointer;
+}
+.stack__card {
+  position: absolute;
+  display: block;
+  background: #fbf9f5;                 /* the mount, warmer than white */
+  padding: 8px 8px 8px;
+  border-radius: var(--s-radius);
+  box-shadow: 0 1px 2px rgba(20, 24, 20, .10),
+              0 14px 34px rgba(20, 24, 20, .13);
+  transition: transform .55s var(--s-ease), box-shadow .55s var(--s-ease);
+  will-change: transform;
+}
+.stack__card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* 1 is the top card and the largest; 2-5 sit at the four corners around it.
+
+   EVERY SUPPORTING CARD KEEPS A CLEAR CORNER. The first cut of these numbers
+   put card 5 at left 30%, wholly inside the hero card's span, so all that
+   showed of it was a thin strip along the top — and in all three stacks that
+   strip happened to be blown sky or a white ceiling, which read as an empty
+   mount rather than a photograph. Card 1 spans x 16-76%, y 14-74% of the frame;
+   keep the others outside that box on at least one side.
+
+   `left`/`top` percentages resolve against the frame's width and height
+   respectively, and the frame is 4:3, so a card's height as a fraction of the
+   frame is (width x 3/4) / (3/4) = its width percentage for a 4:3 card. */
+.stack__card:nth-child(1) {           /* hero: x 16-76%, y 14-74% */
+  width: 60%; left: calc(16% * var(--spread)); top: calc(14% * var(--spread));
+  aspect-ratio: 4 / 3; z-index: 5; transform: rotate(-1.6deg);
+}
+.stack__card:nth-child(2) {           /* top right, clear above and right */
+  width: 38%; left: calc(58% * var(--spread)); top: 0;
+  aspect-ratio: 4 / 3; z-index: 4; transform: rotate(3.1deg);
+}
+.stack__card:nth-child(3) {           /* bottom right, upright */
+  width: 32%; left: calc(62% * var(--spread)); top: calc(40% * var(--spread));
+  aspect-ratio: 3 / 4; z-index: 3; transform: rotate(-2.4deg);
+}
+.stack__card:nth-child(4) {           /* bottom left, clear of the hero's edge */
+  width: 30%; left: 0; top: calc(48% * var(--spread));
+  aspect-ratio: 4 / 3; z-index: 2; transform: rotate(2.6deg);
+}
+.stack__card:nth-child(5) {           /* top left, a clear column down its side */
+  width: 26%; left: calc(1% * var(--spread)); top: calc(4% * var(--spread));
+  aspect-ratio: 1 / 1; z-index: 1; transform: rotate(-3.4deg);
+}
+
+/* Hover/focus lifts the top card and eases the fan open a little. Focus is
+   driven from the button, which is the thing that actually takes focus. */
+.stack-row:hover .stack__card:nth-child(1),
+.stack-row:focus-within .stack__card:nth-child(1) {
+  transform: rotate(-1.6deg) translate(-6px, -8px);
+  box-shadow: 0 2px 4px rgba(20, 24, 20, .12), 0 22px 48px rgba(20, 24, 20, .18);
+}
+.stack-row:hover .stack__card:nth-child(2),
+.stack-row:focus-within .stack__card:nth-child(2) { transform: rotate(3.1deg) translate(8px, -5px); }
+.stack-row:hover .stack__card:nth-child(3),
+.stack-row:focus-within .stack__card:nth-child(3) { transform: rotate(-2.4deg) translate(9px, 7px); }
+.stack-row:hover .stack__card:nth-child(4),
+.stack-row:focus-within .stack__card:nth-child(4) { transform: rotate(2.6deg) translate(-9px, 6px); }
+.stack-row:hover .stack__card:nth-child(5),
+.stack-row:focus-within .stack__card:nth-child(5) { transform: rotate(-3.4deg) translate(-4px, -9px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stack__card { transition: none; }
+  .stack-row:hover .stack__card, .stack-row:focus-within .stack__card { transform: none; }
+  /* Without the rotations the fan would stack dead square, so keep the angles
+     and drop only the movement. */
+  .stack-row:hover .stack__card:nth-child(1),
+  .stack-row:focus-within .stack__card:nth-child(1) { transform: rotate(-1.6deg); }
+  .stack-row:hover .stack__card:nth-child(2),
+  .stack-row:focus-within .stack__card:nth-child(2) { transform: rotate(3.1deg); }
+  .stack-row:hover .stack__card:nth-child(3),
+  .stack-row:focus-within .stack__card:nth-child(3) { transform: rotate(-2.4deg); }
+  .stack-row:hover .stack__card:nth-child(4),
+  .stack-row:focus-within .stack__card:nth-child(4) { transform: rotate(2.6deg); }
+  .stack-row:hover .stack__card:nth-child(5),
+  .stack-row:focus-within .stack__card:nth-child(5) { transform: rotate(-3.4deg); }
+}
+
+/* --- the words beside them ------------------------------------------------ */
+.stack__eyebrow { display: block; color: var(--s-ink-faint); }
+.stack__eyebrow::after {
+  content: ''; display: inline-block; width: 34px; height: 1px;
+  background: currentColor; margin-left: 12px; vertical-align: middle;
+}
+/* Forest green on the headings ONLY. The eyebrow, blurb and control stay the
+   page's charcoal, so the gallery reads as the same document as the story and
+   the footer rather than as a separate chapter. */
+.stack__h {
+  font-family: var(--s-font-macro); font-weight: 400;
+  font-size: clamp(2rem, 4.2vw, 3.4rem); line-height: 1.02;
+  letter-spacing: -0.015em; margin: 14px 0 0;
+  max-width: 11ch;
+  color: #1c2f26;
+}
+.stack__blurb { color: var(--s-ink-soft); margin: 18px 0 0; max-width: 34ch; }
+.stack__cta {
+  margin-top: clamp(22px, 3vh, 34px);
+  display: inline-flex; align-items: center; gap: 12px;
+  min-height: 44px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--s-font-micro); font-size: .78rem;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--s-ink);
+}
+.stack__cta i { font-style: normal; transition: transform var(--s-quick); }
+.stack__cta:hover i, .stack__cta:focus-visible i { transform: translateX(6px); }
+.stack__cta:hover, .stack__cta:focus-visible { color: var(--s-accent); }
+
+/* --- phones ---------------------------------------------------------------
+   One column, stack above its words, and the prints stay LARGE. The brief is
+   explicit that they must never collapse into a dense grid, so the amplitude
+   comes down through --spread while the cards themselves keep their share of
+   a full-width frame. */
+@media (max-width: 860px) {
+  /* BOTH selectors, and that is not belt-and-braces. A media query adds no
+     specificity, so `.stack-row` alone (0,1,0) loses to the mirrored
+     `.stack-row:nth-child(even)` (0,2,0) above and the middle row stayed in two
+     columns on a phone — its stack squeezed into a third of the width while the
+     words ran alongside. */
+  .stack-row,
+  .stack-row:nth-child(even) { grid-template-columns: 1fr; gap: clamp(22px, 4vh, 36px); }
+  .stack-row:nth-child(even) .stack        { order: 0; }
+  .stack-row:nth-child(even) .stack__words { order: 0; }
+  .stack-row + .stack-row { margin-top: clamp(48px, 8vh, 88px); }
+  .stack { aspect-ratio: 5 / 4; --spread: .92; }
+  .stack__card { padding: 6px; }
+  .stack__h { max-width: none; }
+  .stack__blurb { max-width: 42ch; }
+}
 
 .tiles {
   display: grid;

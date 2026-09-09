@@ -597,17 +597,38 @@
     {
       "id": "outside",
       "label": "Around the property",
-      "blurb": "The road in, the arch, the courtyard and the grounds."
+      "blurb": "The road in, the arch, the courtyard and the grounds.",
+      "stack": [
+        "gate-arch-benaka-01.jpg",
+        "exterior-mainhouse-front-02.jpg",
+        "cottages-pool-02.jpg",
+        "courtyard-pavilion-01.jpg",
+        "landscape-hills-01.jpg"
+      ]
     },
     {
       "id": "inside",
       "label": "Inside the rooms",
-      "blurb": "Where you sleep, and the bathrooms attached."
+      "blurb": "Where you sleep, and the bathrooms attached.",
+      "stack": [
+        "room-heritage-double-01.jpg",
+        "room-family-twin-01.jpg",
+        "room-ac-double-01.jpg",
+        "room-heritage-vaulted-01.jpg",
+        "bath-ensuite-01.jpg"
+      ]
     },
     {
       "id": "play",
       "label": "Pool and playroom",
-      "blurb": "The billiards table, the water, the afternoon."
+      "blurb": "The billiards table, the water, the afternoon.",
+      "stack": [
+        "pool-threequarter-01.jpg",
+        "games-billiards-01.jpg",
+        "pool-hills-01.jpg",
+        "pool-headon-01.jpg",
+        "games-hall-01.jpg"
+      ]
     }
   ]
 }

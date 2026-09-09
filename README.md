@@ -61,14 +61,17 @@ bad encode. `tools/test.sh` scans the atom order and fails the build.
 
 ## The photographs
 
-Below the film, a tiled gallery of all 38 photographs. The three groups — around the property, inside the rooms, pool and
-playroom — sit side by side as a single block rather than stacked, so the whole
-library reads at a glance.
+Below the film, the gallery is three stacks — five photographs per group laid
+over each other like prints on a table, the section's name beside them, and one
+control. Around the property, inside the rooms, pool and playroom.
 
-![The tiled gallery](docs/screenshots/08-gallery.jpg)
+![The gallery stacks](docs/screenshots/08-gallery.jpg)
 
-Click any tile and it opens into a horizontal carousel across that group —
-arrow keys, swipe, `Esc` to close.
+Showing five hides nothing: a stack opens its group's **complete** set in the
+carousel — 12, 16 and 10 photographs — with arrow keys, swipe and `Esc`. The
+fan's offsets are fixed rather than random, so the composition can be reviewed
+and repeated instead of rolling differently on every load, and every supporting
+card keeps a corner clear of the one on top of it.
 
 ![The carousel](docs/screenshots/09-lightbox.jpg)
 
