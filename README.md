@@ -14,10 +14,10 @@ generated image on the page, made from the owner's own aerial brand reference;
 everything below it is a photograph taken on the property, which is why the page
 says exactly that and no more.
 
-**On a phone the hero moves.** A 3.5-second silent loop plays over the still —
-three swimmers in the pool, the palm shifting in the breeze, a flock crossing
-the sky — fading in over an opening frame that is the same photograph, so the
-swap is invisible. It is fetched only after the page has loaded, and not at all
+**On a phone the hero moves.** A 3.4-second silent loop plays over the still —
+one man sitting on the far edge of the pool kicking his legs in the water, the
+palm shifting in the breeze, a flock crossing the sky — fading in over an
+opening frame that is the same photograph, so the swap is invisible. It is fetched only after the page has loaded, and not at all
 on desktop, under reduced-motion, or on a metered or 2g connection; every one of
 those cases simply keeps the still.
 

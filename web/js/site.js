@@ -58,8 +58,9 @@
   }
 
   /* ---- 1b. The phone hero's living loop ---------------------------------
-     A 3.5s silent clip of the pool — three swimmers, the palm moving, a flock
-     crossing the sky — laid over the still hero on phones only.
+     A 3.4s silent clip of the pool — one man sitting on the far edge kicking
+     his legs in the water, the palm moving, a flock crossing the sky — laid
+     over the still hero on phones only.
 
      It is deliberately the LAST thing the page does. The still is the LCP
      element; giving the video a src before load would put 860KB in front of
