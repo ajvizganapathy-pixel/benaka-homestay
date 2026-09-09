@@ -57,6 +57,56 @@
     });
   }
 
+  /* ---- 1b. The phone hero's living loop ---------------------------------
+     A 3.5s silent clip of the pool — three swimmers, the palm moving, a flock
+     crossing the sky — laid over the still hero on phones only.
+
+     It is deliberately the LAST thing the page does. The still is the LCP
+     element; giving the video a src before load would put 860KB in front of
+     the one paint that decides how fast the site feels. So: wait for window
+     load, then fetch, then fade in over an opening frame that is the same
+     photograph, which is why the swap is invisible rather than a cut.
+
+     Four reasons it never runs, and none of them is a failure:
+       - not a phone. The <picture> serves the 9:16 still below 700px and the
+         16:9 one above; the loop follows the same line, and the CSS hides it
+         above 700px as well in case this ever gets called anyway.
+       - prefers-reduced-motion. A moving hero is exactly what that asks about.
+       - Save-Data, or a 2g connection. Nobody metering their data wants an
+         autoplaying hero, and on 2g it would arrive long after they had gone.
+       - autoplay refused. Muted inline autoplay is allowed everywhere that
+         matters, but if a browser says no the still simply stays, which is a
+         perfectly good hero.                                                 */
+  function mountHeroLoop() {
+    const v = $('[data-hero-loop]');
+    if (!v) return;
+    if (reduced) return;
+    if (!matchMedia('(max-width: 700px)').matches) return;
+
+    const c = navigator.connection;
+    if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+
+    const start = () => {
+      v.src = '../assets/video/hero-loop.mp4';
+      // readyState as well as the event: a `once` listener that attaches after
+      // canplay has already passed never fires, and the video would then sit at
+      // opacity 0 for ever. Failing that way is safe — the still stays — but it
+      // fails silently, which is the worst kind.
+      const live = () => v.classList.add('is-live');
+      if (v.readyState >= 3) live();
+      else v.addEventListener('canplay', live, { once: true });
+      v.play().catch(() => {});          // refused: the still stays, no harm
+
+      // Do not hold a decoder open for a hero nobody is looking at.
+      new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) v.play().catch(() => {}); else { try { v.pause(); } catch {} }
+      }), { threshold: 0.1 }).observe(v);
+    };
+
+    if (document.readyState === 'complete') start();
+    else addEventListener('load', start, { once: true });
+  }
+
   /* ---- 2. Gallery — three stacks of photographs -------------------------
      This used to render all 38 photographs at once as three columns of ~90px
      tiles. It read as an archive rather than as a collection anyone chose, so
@@ -412,6 +462,7 @@
   window.addEventListener('resize', onScroll);
 
   mountTour();
+  mountHeroLoop();
   buildGallery().then(onScroll);
   onScroll();
 })();

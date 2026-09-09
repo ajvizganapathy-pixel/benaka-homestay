@@ -14,6 +14,13 @@ generated image on the page, made from the owner's own aerial brand reference;
 everything below it is a photograph taken on the property, which is why the page
 says exactly that and no more.
 
+**On a phone the hero moves.** A 3.5-second silent loop plays over the still —
+three swimmers in the pool, the palm shifting in the breeze, a flock crossing
+the sky — fading in over an opening frame that is the same photograph, so the
+swap is invisible. It is fetched only after the page has loaded, and not at all
+on desktop, under reduced-motion, or on a metered or 2g connection; every one of
+those cases simply keeps the still.
+
 Static and framework-free — plain HTML, vanilla JS, no build step, no
 dependencies. Serve the repo over HTTP and open `/web/`.
 
@@ -211,7 +218,7 @@ put the long expiry back on CSS and JS **in that same change**, and not before.
 | `web/` | the page, the CSS, the JS, self-hosted fonts |
 | `assets/raw/` | 38 property photographs, named for what they show |
 | `assets/brand/` | the two hero images and the owner's aerial reference they came from |
-| `assets/video/` | the property film and its poster — the only tracked video |
+| `assets/video/` | the property film, its poster, and the phone hero loop |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `assets/scenes/`, `assets/handoff/` | stills from the rejected render chain |
 | `assets/clips/` | 14 rendered legs, **untracked**; on disk, and in history at `76bab70` |

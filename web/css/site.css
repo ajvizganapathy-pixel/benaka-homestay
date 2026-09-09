@@ -177,6 +177,23 @@ body.book-on .book { opacity: 1; visibility: visible; }
   width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
   z-index: -2;
 }
+/* The phone hero's living loop. It sits directly over the still, at the same
+   z-index but later in the DOM, so it paints on top of it while the gradient
+   wash (-1) stays above both. Hidden until it can actually play, so a stalled
+   download never shows a black rectangle where the photograph was.
+
+   Desktop never loads it: the mount in site.js gates on the same 700px query
+   the <picture> uses, and this display:none is the belt to that braces. */
+.ed-hero__loop {
+  position: absolute; inset: 0; z-index: -2;
+  width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
+  opacity: 0; transition: opacity .9s var(--s-ease);
+  pointer-events: none;
+}
+.ed-hero__loop.is-live { opacity: 1; }
+@media (min-width: 701px) { .ed-hero__loop { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ed-hero__loop { display: none; } }
+
 .ed-hero__frame::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(100deg,

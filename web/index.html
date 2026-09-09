@@ -69,6 +69,16 @@
              alt="Benaka By The Hills from above at sunset: the pool, the tiled mural beside it, and the house under its green tiled roof against the Kodagu hills"
              width="2200" height="1228" fetchpriority="high" decoding="async">
       </picture>
+
+      <!-- PHONES ONLY, and it arrives late on purpose. The still above is the
+           LCP element and paints first; site.js waits for window load, then
+           gives this a src and fades it in over the identical opening frame, so
+           there is no pop and no cost to first paint. No src and no poster
+           here: the photograph underneath IS the poster, and a poster attribute
+           would just download the same picture twice. -->
+      <video class="ed-hero__loop" data-hero-loop
+             muted loop playsinline preload="none" aria-hidden="true"
+             width="720" height="1280"></video>
       <div class="ed-hero__copy">
         <p class="micro">Coorg &middot; Karnataka</p>
         <h1 class="ed-hero__name">Benaka<br><em>By The Hills</em></h1>

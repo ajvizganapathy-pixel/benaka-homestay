@@ -99,13 +99,27 @@ bash tools/check-css-invariants.sh >/dev/null 2>&1 \
 # whole 8.8MB downloads before anything appears. It fails silently: the video
 # still works, it just takes forever to start, which is easy to blame on the
 # network rather than on the encode.
-atoms=$(python3 tools/atom-order.py assets/video/benaka-tour.mp4)
-mo=$(printf '%s\n' $atoms | grep -n '^moov$' | cut -d: -f1)
-md=$(printf '%s\n' $atoms | grep -n '^mdat$' | cut -d: -f1)
-if [ -n "$mo" ] && [ -n "$md" ] && [ "$mo" -lt "$md" ]; then
-  ok "the property film is faststart (moov before mdat)"
+# EVERY tracked video, not just the film: the phone hero loop is the more
+# sensitive of the two, because it plays on the first screen.
+for mp4 in assets/video/*.mp4; do
+  atoms=$(python3 tools/atom-order.py "$mp4")
+  mo=$(printf '%s\n' $atoms | grep -n '^moov$' | cut -d: -f1)
+  md=$(printf '%s\n' $atoms | grep -n '^mdat$' | cut -d: -f1)
+  if [ -n "$mo" ] && [ -n "$md" ] && [ "$mo" -lt "$md" ]; then
+    ok "$(basename "$mp4") is faststart (moov before mdat)"
+  else
+    bad "$(basename "$mp4") is not faststart" "atom order: $atoms"
+  fi
+done
+
+# The hero loop plays over the still on the FIRST SCREEN. It is deliberately
+# fetched after window load, but a fat file would still steal bandwidth from
+# the rest of the page the moment it lands, so hold it to a budget.
+hs=$(stat -c %s assets/video/hero-loop.mp4)
+if [ "$hs" -le 1500000 ]; then
+  ok "the hero loop is $((hs/1024))KB (budget 1500KB)"
 else
-  bad "the property film is not faststart" "atom order: $atoms"
+  bad "the hero loop is too heavy" "$((hs/1024))KB, budget 1500KB"
 fi
 
 missing=$(python3 - <<'PY'

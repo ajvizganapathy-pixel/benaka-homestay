@@ -157,6 +157,32 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    If the hero photograph is ever replaced, re-measure all four copy elements
    at 390 / 1440 / 2560 rather than nudging the numbers.
 
+### The phone hero has a living loop, and it must stay late
+
+`assets/video/hero-loop.mp4` — 720x1280, 3.5s, silent, 860KB — plays over the
+still hero **on phones only**: three swimmers, the palm moving in the breeze, a
+flock crossing the sky. PixVerse V6 `image2video` from the shipped
+`hero-tall.jpg`, 63 credits.
+
+**It is fetched after `window load`, on purpose.** The still is the LCP element;
+giving the video a `src` any earlier would put 860KB in front of the one paint
+that decides how fast the site feels. `mountHeroLoop()` in `site.js` also
+declines to run at all on desktop, under `prefers-reduced-motion`, and under
+Save-Data or a 2g connection. Verified: one request on a phone and it lands
+after load, zero requests on desktop and under reduced motion.
+
+**Every failure mode is the still.** No `src` until it is wanted, no `poster`
+(the photograph underneath *is* the poster — a poster attribute would fetch the
+same picture twice), and `opacity: 0` until `canplay`. If the download stalls or
+autoplay is refused, the visitor sees exactly the hero they see today.
+
+The loop is seamless because the tail is dissolved back into the head with
+ffmpeg, not because the model produced a loop. The raw clip starts on an empty
+pool and ends with three swimmers in it — measured, that cut is 16.8 dB against
+23.6 dB for the crossfaded version, where genuinely adjacent frames score 25.9.
+If you ever regenerate it, re-do that crossfade, or the pool will visibly empty
+itself every few seconds.
+
 ### The gallery is three stacks, not a tile grid
 
 Each group is five photographs laid over each other like prints, with the
