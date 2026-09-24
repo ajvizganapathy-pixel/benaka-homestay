@@ -2,8 +2,11 @@
 
 A site for a homestay in Coorg (Kodagu), Karnataka. In order: the hero, the
 family's own account of the place, a live mosaic of the grounds, one film shot
-on the property, the photographs as three stacks, a footer, a booking flow that
-ends on WhatsApp, and the venue.
+on the property, the photographs as three stacks, a footer with the WhatsApp and
+call numbers, and the venue. The round BENAKA logo stays fixed top left, and
+it takes you back to the top. A section menu sits top right: a row of links on desktop, a
+*Menu* button on phones. The phone's Back button closes the menu and the photo
+viewer instead of leaving the site.
 
 ![The name over the road in](docs/screenshots/01-hero.jpg)
 
@@ -14,27 +17,26 @@ generated image on the page, made from the owner's own aerial brand reference;
 everything below it is a photograph taken on the property, which is why the page
 says exactly that and no more.
 
-**On a phone the hero moves.** A 3.4-second silent loop plays over the still —
-one man sitting on the far edge of the pool kicking his legs in the water, the
-palm shifting in the breeze, a flock crossing the sky — fading in over an
-opening frame that is the same photograph, so the swap is invisible. It is fetched only after the page has loaded, and not at all
-on desktop, under reduced-motion, or on a metered or 2g connection; every one of
-those cases simply keeps the still.
+**The hero moves, on every screen.** A few seconds of silent footage plays over
+the still: one man sitting on the edge of the pool kicking his legs in the water,
+the palms shifting in the breeze, a flock crossing the sky. It fades in over
+an opening frame that is the same photograph, so the swap is invisible. Phones
+get a 9:16 clip and desktop a 16:9 one. The desktop clip was rendered to start
+**and end** on its own still, then its seam was dissolved, so it loops without
+reading as a replay. It is fetched only after the page has loaded, and not at
+all under reduced-motion or on a metered or 2g connection. Every one of those
+cases simply keeps the still.
 
 Static and framework-free — plain HTML, vanilla JS, no build step, no
 dependencies. Serve the repo over HTTP and open `/web/`.
 
 ```bash
-php -S localhost:8765 -t .
+php -S localhost:8765 -t .     # or python3 -m http.server 8765
 # http://localhost:8765/   — the root index.html sends you to the site
 ```
 
-**`php -S`, not `python3 -m http.server`.** The static server cannot execute
-`api/booking.php`, so the booking form would silently stay in preview and the
-endpoint would never be exercised.
-
 ```bash
-bash tools/test.sh   # the full suite: syntax, secrets, assets, and the live API
+bash tools/test.sh   # the full suite: syntax, secrets, assets, budgets, contact numbers
 ```
 
 The site itself lives in `web/`. The root `index.html` is a small redirect so
@@ -44,9 +46,10 @@ listing. On Hostinger it is never reached: `.htaccess` maps `/` to
 
 ## Our story, and the grounds
 
-Under the hero the page says what the place actually is — eight rooms, a
-verandah along the whole front, a courtyard wet all monsoon — beside three
-photographs, the pool through the leaves leading.
+Under the hero the page says what the place actually is: rooms along a
+verandah, a courtyard wet all monsoon, meals at one table. It is just the words.
+The three photographs that used to sit beside them, and the line saying they
+were taken on the property, came out at the owner's request.
 
 The band below it is a live mosaic of the grounds: ten cells drawn from the
 whole set, turning over one at a time every couple of seconds, so the wall
@@ -100,64 +103,30 @@ card keeps a corner clear of the one on top of it.
 
 ![The carousel](docs/screenshots/09-lightbox.jpg)
 
-## Booking
+## Getting in touch
 
-A quiet **Book** link appears in the top right once the hero is behind you. It
-opens one step: name, where you are travelling from, a WhatsApp number, arriving
-and leaving — then **Send**.
+There is no booking form. It was removed at the owner's request, along with
+the PHP endpoint behind it. The footer and the venue block carry the numbers
+directly:
 
 | | |
 |---|---|
-| ![The footer](docs/screenshots/10-footer.jpg) | ![The booking panel](docs/screenshots/11-booking.jpg) |
+| **WhatsApp** | 94486 47831 · 81975 58321 |
+| **Call** | 88610 70431 · 81975 58321 · 96477 82880 |
 
-**There is no verification step, no email and no password.** The owner asked for
-the shortest path between a visitor deciding to come and a message on their
-phone, so the form posts once and the owner replies on WhatsApp. The OTP round
-trip, the six code boxes and the resend timer are gone.
+*Enquire on WhatsApp* in the footer opens a chat with a short message already typed in.
+`tools/test.sh` fails if any call or WhatsApp link carries a number that is
+not one of these. A typo in a number does not look broken; it dials a stranger.
 
-**What stands in place of it.** Nothing now proves a visitor owns the number they
-typed, so four guards protect the owners' phones — none of them an identity
-check: a honeypot field, a minimum fill time, a per-IP rate limit and a
-per-number rate limit. A post that trips the honeypot or the timer is answered
-*exactly as a success is*, and nothing is stored or sent; an error message would
-only tell a script which check to defeat. The suite proves they fire by asserting
-that no booking file and no outbox line were written.
-
-**The server decides whether booking is live, not the JavaScript.** On load the
-page asks `api/booking.php` for its status. With no `api/config.php` it answers
-`live: false`, the page runs a local preview, and the panel says plainly that
-nothing is being delivered. Put a filled config on the server and the same page
-goes live — no source edit, no build step, no flag anyone can forget to flip.
-
-**The owner's message is an approved template.** It is business-initiated, and
-Meta rejects free-form text outside the 24-hour window, so the notification goes
-out as a **utility** template with five fields: name, coming from, WhatsApp
-number, the stay as one line, and when it came in. Values may not contain
-newlines, which is why the layout lives in the approved body. Setting it up is
-[docs/DEPLOY-hostinger.md](docs/DEPLOY-hostinger.md) §3.
-
-**The request carries dates, and reaches both owners.** Arrival and departure
-are asked for in the form, checked in the browser and again on the server, and
-travel to WhatsApp as one single-line parameter. The notification goes to every
-number on the owner list, each send recorded separately, so one unreachable
-phone cannot lose a booking for the other.
-
-**A request is never lost and never oversold.** The record is written to disk
-before the send is attempted, and the guest is told which of four things
-happened: received and delivered, received but delivery failed, received but
-delivery is switched off, or the system is unreachable. Nothing claims a booking
-was delivered that was not.
-
-**No accounts, no passwords.** The form asks for a name, where you are coming
-from, a WhatsApp number and two dates. There is nothing else to store and
-nothing to leak.
+![The footer](docs/screenshots/10-footer.jpg)
 
 ## Where it is
 
 ![The venue block](docs/screenshots/15-venue.jpg)
 
 The last block on the page: the name at the size it deserves, **Near Irpu Falls,
-Kodagu**, both numbers as tap-to-call, and one button out to Google Maps. Not an
+Kodagu**, the three call numbers as tap-to-call, both WhatsApp numbers, and one
+button out to Google Maps. Not an
 embedded map — an iframe would need google.com in the Content-Security-Policy
 and would set third-party cookies on a site that has neither, and on a phone a
 plain link opens the visitor's own map app anyway.
@@ -166,9 +135,13 @@ plain link opens the visitor's own map app anyway.
 
 ![On a phone](docs/screenshots/12-mobile.jpg)
 
-The hero photograph takes the whole screen with the name on it, and the mosaic
-under it keeps its wide and tall cells rather than flattening to a uniform grid —
-solved for two columns so it tiles flush, ten cells, turning over as you watch.
+The hero photograph takes the whole screen with the name on it. The logo sits top
+left at 44px, and the *Menu* button opens a full-screen list of the sections.
+
+The grounds mosaic keeps the desktop's four columns, so each cell is a quarter
+of the size it used to be. The whole band is about 270px tall on a 390px phone,
+down from about 1,090px when it was re-cut into two columns. It still has ten cells,
+tiles flush, and turns over as you watch.
 
 **The gallery stacks stay large.** They go one per row at full gutter width, the
 biggest print about 57% of the screen — never a dense grid of thumbnails, which
@@ -198,7 +171,7 @@ day and the files carry no version in their URLs, so a returning visitor got a
 *fresh* HTML shell running *yesterday's* JavaScript, and therefore yesterday's
 gallery. It looked exactly like a change that had not shipped.
 
-Those four text files — the three stylesheets, the three scripts, and the
+Those text files — the three stylesheets, `site.js`, and the
 manifest — are now served `Cache-Control: no-cache`. That means *revalidate
 before use*, not *do not store*: the browser keeps the file, asks
 `If-Modified-Since`, and Apache answers **304 Not Modified** with no body when
@@ -217,13 +190,12 @@ put the long expiry back on CSS and JS **in that same change**, and not before.
 |---|---|
 | `web/` | the page, the CSS, the JS, self-hosted fonts |
 | `assets/raw/` | 38 property photographs, named for what they show |
-| `assets/brand/` | the two hero images and the owner's aerial reference they came from |
-| `assets/video/` | the property film, its poster, and the phone hero loop |
+| `assets/brand/` | the logo, the two hero stills and the owner's aerial reference |
+| `assets/video/` | the property film, its poster, and the two hero loops (phone, desktop) |
 | `assets/manifest.json` | every image: dimensions, category, gallery group, scene role |
 | `assets/scenes/`, `assets/handoff/` | stills from the rejected render chain |
 | `assets/clips/` | 14 rendered legs, **untracked**; on disk, and in history at `76bab70` |
-| `api/` | the booking endpoint for Hostinger, inert until configured |
-| `tools/test.sh` | the production suite — php, node, curl, jq; no framework |
+| `tools/test.sh` | the production suite: bash, node, python3; no framework |
 | `render/` | the OpenArt render chain: prompts, run book, costs, encoders |
 | `docs/` | deployment guide and these screenshots |
 

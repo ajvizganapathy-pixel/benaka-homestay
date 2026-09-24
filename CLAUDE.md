@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A site for a homestay in Coorg (Kodagu), Karnataka. It opens as a property
 brochure — real photographs, ivory ground, editorial serif — carries one film
-of the place in the middle, and closes with a tiled photograph gallery, a
-footer, a booking flow and the venue.
+of the place in the middle, and closes with a photograph gallery, a footer
+with the WhatsApp and call numbers, and the venue. The round BENAKA logo sits
+fixed top left on every screen, with a section menu top right.
 
 Static and framework-free — plain HTML, no build step, no package manifest.
 Serve the repo root over HTTP and open `/web/`.
@@ -56,9 +57,8 @@ generated footage. This is the place itself.
 
 ```bash
 php -S localhost:8765 -t .      # then http://localhost:8765/ (root index.html redirects)
-                                # NOT python3 -m http.server: it cannot run api/booking.php,
-                                # so the booking form silently stays in preview.
-bash tools/test.sh              # syntax, secrets, assets, and the live booking API
+                                # python3 -m http.server works too: there is no PHP any more
+bash tools/test.sh              # syntax, secrets, assets, budgets, contact numbers
 bash tools/check-css-invariants.sh   # run after ANY edit to web/css/site.css
 
 # re-cut the property film if it is ever replaced. +faststart is NOT optional:
@@ -106,29 +106,39 @@ they are the scene mid-crossfade. `addStyleTag({content:'html{scroll-behavior:au
 
 ```
 index.html            root redirect stub -> web/ (see the note under Layout)
-web/index.html        page shell: editorial band, the film, gallery, footer, booking
-web/css/              fonts, tokens, site chrome, booking
-web/js/               api adapter, site behaviour, booking flow
+web/index.html        page shell: logo + menu, editorial band, the film, gallery, footer, venue
+web/css/              fonts, tokens, site chrome
+web/js/site.js        all behaviour: film, hero loop, gallery, mosaic, lightbox, menu
 web/fonts/            self-hosted woff2 (no CDN at runtime)
-assets/raw/           the property photographs — the gallery, mosaic and plates
-assets/brand/         the hero images and the owner's reference they came from
-assets/video/         benaka-tour.mp4 and its poster. The ONLY tracked video.
+assets/raw/           the property photographs — the gallery and the mosaic
+assets/brand/         the logo, the hero images and the owner's reference (README there)
+assets/video/         benaka-tour.mp4 + poster, hero-loop.mp4, hero-loop-wide.mp4.
+                      The ONLY tracked videos.
 assets/scenes/        canvases from the rejected render chain (+ portrait/)
 assets/handoff/       leg handoff frames from the same chain
 assets/clips/         14 rendered legs, UNTRACKED, kept on disk only
-api/                  booking.php + config.example.php — inert until configured
 render/               the OpenArt render chain: model, prompts, run book, costs
 ```
 
-### Three things that will bite
+### Things that will bite
 
 1. **The film is not fetched until you are near it, and is paused when you are
    not.** `mountTour()` in `site.js` uses two observers on purpose: a loose one
-   at `rootMargin: 150%` decides when to spend bandwidth by setting `src`, and a
+   at `rootMargin: 100%` decides when to spend bandwidth by setting `src`, and a
    tight one at `threshold: 0.25` decides when to spend a decoder by calling
    `play()`. The `<video>` ships with **no `src` attribute at all** and
    `preload="none"`; that pair is what keeps a visitor who never scrolls that far
    from paying 8.8MB for it.
+
+   **`mountTour()` runs only after `buildGallery()` settles**, and that order is
+   load-bearing. The grounds mosaic above the film is built from the manifest,
+   so until the manifest arrives the mosaic is 0px tall and the film sits up to
+   ~950px higher than it really is. An observer attached before that took its
+   first reading inside the margin and fetched the film on load, intermittently
+   (it depends on how fast the manifest arrives). The margin was also 150% until
+   the story lost its photographs and the phone mosaic shrank. Those changes put the
+   film 1,937px down a 390x844 phone, inside 150%. If the page above the film
+   gets shorter again, re-measure it against the margin.
 
 2. **The film must stay faststart.** `ffmpeg` writes the `moov` index *after*
    the media data unless `-movflags +faststart` is given, and a browser cannot
@@ -146,7 +156,7 @@ render/               the OpenArt render chain: model, prompts, run book, costs
 
 4. **The hero is TWO images, and the wash over it is measured.** `<picture>`
    serves `assets/brand/hero-tall.jpg` (9:16) below 700px and
-   `assets/brand/hero-wide.jpg` (16:9) above it — a separately generated frame,
+   `assets/brand/hero-wide-pool.jpg` (16:9) above it — a separately generated frame,
    not a crop, for the reason in the architecture note above. The `media` query
    in the markup and the 700px breakpoint in `site.css` have to move together.
 
@@ -157,37 +167,65 @@ render/               the OpenArt render chain: model, prompts, run book, costs
    If the hero photograph is ever replaced, re-measure all four copy elements
    at 390 / 1440 / 2560 rather than nudging the numbers.
 
-### The phone hero has a living loop, and it must stay late
+### The hero has a living loop on every screen, and it must stay late
 
-`assets/video/hero-loop.mp4` — 720x1280, 3.4s, silent, 650KB — plays over the
-still hero **on phones only**: one man sitting on the far edge of the pool
-kicking his legs in the water, the palm moving in the breeze, a flock crossing
-the sky. PixVerse V6 `image2video` from the shipped `hero-tall.jpg`, 63 credits
-a roll. The first roll put three swimmers in the water and was rejected; the
-second seats one figure on the **right-hand** edge, which is where he actually
-reads — the left of the frame is under the headline and the darkest part of the
-wash.
+Two clips, one per still, picked by the same 700px query the `<picture>` uses.
+`mountHeroLoop()` in `site.js` also swaps them if the window crosses 700px, so a
+clip never sits over the other photograph.
+
+| | phones | desktop |
+|---|---|---|
+| clip | `hero-loop.mp4`, 720x1280, 3.4s, 650KB | `hero-loop-wide.mp4`, 1920x1072, 4.3s, 2.0MB |
+| still under it | `hero-tall.jpg` | `hero-wide-pool.jpg` |
+| budget in `tools/test.sh` | 1500KB | 3000KB |
+
+Both show the same scene: one man sitting on the **right-hand** edge of the pool
+kicking his legs in the water, the palms moving in the breeze, a flock crossing
+the sky. The right-hand edge is deliberate. The left of the frame is under the
+headline and the darkest part of the wash.
 
 **It is fetched after `window load`, on purpose.** The still is the LCP element;
-giving the video a `src` any earlier would put 650KB in front of the one paint
-that decides how fast the site feels. `mountHeroLoop()` in `site.js` also
-declines to run at all on desktop, under `prefers-reduced-motion`, and under
-Save-Data or a 2g connection. Verified: one request on a phone and it lands
-after load, zero requests on desktop and under reduced motion.
+giving the video a `src` any earlier would put the clip in front of the one paint
+that decides how fast the site feels. `mountHeroLoop()` declines to run at all
+under `prefers-reduced-motion`, Save-Data or a 2g connection. Verified: exactly
+one request per viewport (the right clip), landing after load. Zero requests
+under reduced motion.
 
 **Every failure mode is the still.** No `src` until it is wanted, no `poster`
 (the photograph underneath *is* the poster — a poster attribute would fetch the
 same picture twice), and `opacity: 0` until `canplay`. If the download stalls or
-autoplay is refused, the visitor sees exactly the hero they see today.
+autoplay is refused, the visitor sees the still hero, which is a perfectly good hero.
+(Playwright's bundled Chromium has **no H.264**, so `canplay` never fires there.
+To check the fade wiring, dispatch it by hand. Checking the motion itself needs a
+real browser.)
 
-The loop is seamless because the tail is dissolved back into the head with
-ffmpeg, not because the model produced a loop. The raw clip opens on an empty
-pool and takes about a second to settle the figure onto the edge, so the first
-second is trimmed off and then the last 0.7s is dissolved back over the head.
-Measured on the shipped file: the seam scores **30.1 dB**, against 33.2 for
-genuinely adjacent frames, 23.9 for frames a second apart, and 20.6 for the raw
-uncrossfaded cut. If you ever regenerate it, trim and crossfade again, or the
-pool will visibly empty itself every few seconds.
+**Phone clip.** PixVerse V6 `image2video` from `hero-tall.jpg`, 63 credits a
+roll. The first roll put three swimmers in the water and was rejected. The raw
+clip opens on an empty pool and takes about a second to settle the figure onto
+the edge, so the first second is trimmed off and the last 0.7s is dissolved back
+over the head. Seam **30.1 dB**, against 33.2 for adjacent frames, 23.9 for
+frames a second apart, and 20.6 for the raw uncrossfaded cut.
+
+**Desktop clip, made the other way round, and the better way.** An open-ended
+roll from the old `hero-wide.jpg` (150 credits, 1080p, 5s) dollied the camera
+in for the whole clip and walked the man into frame. That can never loop. So:
+
+1. Nano Banana Pro `image2image` (2K, 40 credits) put the seated man into the
+   still. It came back slightly tighter than the original, which is why it became
+   a new still, `hero-wide-pool.jpg`, rather than being pasted into the old one.
+2. PixVerse V6 `image2video` (1080p, 5s, 150 credits) with that still as **both**
+   `startFrame` and `endFrame`. That locks the camera and brings the clip home to
+   where it began.
+3. The model's last frame still lands only near its first (27.6 dB), so the last
+   0.7s (17 frames) is dissolved over the head as for the phone clip. Seam
+   **31.0 dB**, against 31.4–37.3 for adjacent frames: inside the normal
+   frame-to-frame range, so it does not read as a restart.
+4. The still was colour-matched to the clip's first frame with a per-channel linear fit.
+   The video's grade is a touch warmer, and without the match the fade-in shows a
+   visible shift.
+
+If either clip is ever regenerated, crossfade it again. And if the desktop still
+changes, regenerate the clip from the new still, because they have to be the same frame.
 
 ### The gallery is three stacks, not a tile grid
 
@@ -242,23 +280,49 @@ are for.
 
 ### The hero is the one generated image on the page
 
-Everything else is a photograph taken on the property. The two hero files are
-**Nano Banana Pro `image2image` at 4K**, generated from
-`assets/brand/hero-reference.png` — the aerial the owner supplied as the brand
-image — at 72 credits each after the Plus discount.
+Everything else is a photograph taken on the property. The hero stills and both
+hero loops are generated from `assets/brand/hero-reference.png`, the aerial the
+owner supplied as the brand image (see `assets/brand/README.md`).
 
-This is why the page says "The photographs on this page were taken on the
-property" and the gallery says "Every photograph **below**". Both were reworded
-when the hero changed. Keep them true: if a generated image ever appears below
-the hero, those sentences have to change again.
+That is why the gallery says "Every photograph **below**" and the footer bar
+says "Photographs taken on the property". The story used to carry a line saying
+"The photographs on this page were taken on the property". It went with the
+story's three photographs, at the owner's request. Keep the remaining sentences
+true: if a generated image ever appears below the hero, they have to change.
+
+### The logo, the menu, and the Back button
+
+The logo (`assets/brand/logo-112.png`/`-168.png`) is fixed top left on every
+screen: 56px on desktop, 44px on phones. It is cut round from the owner's mark
+with a transparent outside and never stretched. It is also the way home:
+clicking it scrolls to the top **without** adding a `#top` history entry.
+
+The section menu is **one list** in the markup. Above 820px CSS shows it as a
+row of links on forest glass. At 820px and below it is a *Menu* button that opens a
+full-height forest panel with the section names in the serif. 820, not the
+hero's 700: the seven-link row ran 8px into the logo between 701 and ~720px.
+`phoneQ` in `site.js` must match it. Keep the list and
+the section ids (`#top #story #grounds #explore #gallery #visit #venue`) in step.
+
+**Back closes things instead of leaving the site.** Opening the menu or the
+lightbox pushes one history entry. `popstate` closes whichever overlay is no
+longer current, and closing one any other way (X, Escape, a link) calls
+`history.back()` so no dead entries pile up. Two details matter:
+
+- `history.scrollRestoration` is set to `manual` while an overlay entry exists.
+  Without that, Chromium restores the page entry's saved scroll position when
+  Back pops it. A jump made from the menu then gets undone, and you land where
+  you opened the menu.
+- A menu link scrolls from the `popstate` handler (`afterPop`), not straight
+  away, because `history.back()` is asynchronous.
 
 ### Two entry points, on purpose
 
 The site is `web/index.html`. The root `index.html` is a redirect stub, not a
 copy — keep it that way, and never let the two drift.
 
-On Hostinger the stub is never reached for `/`: `.htaccess:4` sets
-`DirectoryIndex web/index.html index.html` and `.htaccess:47` rewrites `^$` to
+On Hostinger the stub is never reached for `/`: `.htaccess:9` sets
+`DirectoryIndex web/index.html index.html` and `.htaccess:35` rewrites `^$` to
 `web/index.html` **internally**, so the URL stays clean. The stub is the fallback
 for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
 non-Apache host, opening the files directly. It uses `location.replace()` so it
@@ -274,67 +338,33 @@ Copy rule: plain English, short, and only about what is visible in the
 photographs. No invented distances, rates or amenities. If a sentence could
 describe any hotel anywhere, rewrite it.
 
-### Booking
+### Contact, and the booking flow that was removed
 
-One step. Name, where they are travelling from, a WhatsApp number, arriving and
-leaving — then **Send**. The request goes to the owners' WhatsApp and the owner
-replies there. That is the whole flow.
+There is no booking form. Enquiries go to the owners directly:
 
-**There is no verification, and that was asked for.** The OTP round trip is gone
-along with the email field, the separate "WhatsApp is a different number" field
-and the AUTHENTICATION template. Do not reintroduce any of them without being
-asked: the owner wanted the shortest path between a visitor deciding to come and
-a message on their phone.
-
-**Know what that costs.** Nothing now proves a visitor owns the number they
-typed, so the endpoint can be used to put text on the owners' phones. Four
-things stand in place of the OTP, and none of them is an identity check:
-
-| Guard | Where |
+| | numbers |
 |---|---|
-| Honeypot field (`website`) | `.bk__trap` in the markup, `looks_scripted()` in PHP |
-| Minimum fill time (3s from opening the panel) | `elapsed`, same function |
-| Per-IP limit, `RATE_PER_IP_HOUR` | `rate_ok()` |
-| Per-number limit, `BOOKINGS_PER_NUMBER_DAY` | `rate_ok()` on the phone number |
+| WhatsApp (`https://wa.me/91…`) | 94486 47831, 81975 58321 |
+| Call (`tel:+91…`) | 88610 70431, 81975 58321, 96477 82880 |
 
-A post that trips the honeypot or the timer is **answered exactly as a success
-is** — same shape, same fields, a plausible reference — and nothing is stored or
-sent. An error would tell a script which check to defeat. `tools/test.sh` proves
-these fire by asserting that no booking file and no outbox line were written,
-because the reply alone cannot tell you.
+They appear twice, in the footer (`#visit`) and in the venue block (`#venue`).
+The footer's *Enquire on WhatsApp* button opens a chat with 94486 47831 and a
+short message already typed in. `tools/test.sh` fails if any `tel:` or `wa.me` link
+carries a number not on that list, so a new number has to be added there too.
 
-A missing `elapsed` is deliberately *not* suspicious: a cached older page or a
-client with JavaScript off will not send one.
+**The booking system was removed at the owner's request**: the one-step form,
+`api/booking.php` and its WhatsApp-template delivery, the honeypot and rate
+limits, `web/js/api.js`, `web/js/booking.js`, `web/css/booking.css`, and the
+test section that drove the endpoint over HTTP. Do not bring back a Book
+button or a form without being asked. If it is ever wanted again, the last
+commit that had it is `2533d7f`:
 
-**The WhatsApp template has FIVE parameters now, not seven.** Name, coming from,
-WhatsApp number, the stay as one line, and when it came in. If a seven-variable
-template is still approved in WhatsApp Manager, every send fails on parameter
-count — edit it to the body in `api/config.example.php` and wait for
-re-approval. Template values may not contain newlines, which is why the layout
-lives in the approved body. It is business-initiated, so it must stay a
-template; free-form text is rejected outside the 24-hour window.
-
-`WA_TRANSPORT` picks where a send goes: `cloud` (Meta), `log` (write the payload
-to the data dir — this is how `tools/test.sh` drives the whole journey with no
-credentials), or `off`.
-
-Every network call goes through `web/js/api.js`, and **the server decides the
-mode**: on load the page POSTs `{action:'status'}` and switches to live only if
-the endpoint says so. There is no `LIVE` constant to flip. Going live is one
-thing: `api/config.php` on the server with `CONFIGURED => true`.
-
-**The booking record is written before the send is attempted.** Losing a guest's
-request because an API was down is the one failure this endpoint exists to
-prevent. Never make the form claim a booking was received or delivered when it
-was not — and the record carries `verified: false`, because there is no
-verification step and nothing should later read an old booking as though there
-had been.
-
-There are no accounts and no passwords. A password field existed once, was
-required, was sent to the server, and was used by nothing — do not bring it back.
-
-`DATA_DIR` must resolve **outside** the document root; `booking.php` refuses to
-start otherwise.
+```bash
+git show 2533d7f:api/booking.php        # also api/config.example.php
+git show 2533d7f:web/js/booking.js      # also web/js/api.js, web/css/booking.css
+git show 2533d7f:tools/test.sh          # section 4 is the endpoint's test suite
+git show 2533d7f:CLAUDE.md              # the "Booking" section: guards, template, DATA_DIR
+```
 
 ## HISTORICAL — the rejected render chain
 

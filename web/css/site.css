@@ -112,37 +112,118 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 
 /* ---------------------------------------------------------------------------
-   2. Book — a quiet fixed link in the top right, not a rail
-   The vertical BOOK rail down the left edge is gone. It reserved 64px of every
-   band's width for one word, it had to change ink between the ivory and the
-   page, and on a phone it stood between the thumb and the photographs. This
-   replaces it: micro register, no box, and absent until the hero has passed so
-   the first screen is only the property.
+   2. The mark and the section menu
+   The round logo fixed top left, which doubles as the way home, and the
+   section menu top right: a hamburger up to 820px, a quiet row of links above
+   it. The menu wears forest glass, so nothing up there needs to change ink
+   between the hero and the ivory pages.
+
+   The menu's 820px is deliberately NOT the hero's 700px. Seven links in a row
+   need about 615px plus the mark, and between 701 and ~720 the row ran 8px
+   into the logo. Keep NAV_Q in site.js in step with this number.
    ------------------------------------------------------------------------ */
-.book {
-  position: fixed;
-  top: clamp(14px, 2.4vw, 26px); right: clamp(16px, 3vw, 34px);
-  z-index: 120;
-  padding: 10px 16px;
-  font-family: var(--s-font-micro);
-  font-size: var(--s-micro); font-weight: 600;
-  letter-spacing: var(--s-micro-track); text-transform: uppercase;
-  color: #f2ede2;
+.brand {
+  position: fixed; z-index: 120;
+  top: clamp(12px, 2vw, 22px); left: clamp(14px, 2.4vw, 30px);
+  width: 56px; height: 56px; border-radius: 50%;
+  display: block;
+  /* A soft lift so the disc separates from an ivory page as well as from the
+     photograph. Not a scrim: it sits under the logo, not over any picture. */
+  box-shadow: 0 1px 2px rgba(20, 24, 20, .18), 0 6px 18px rgba(20, 24, 20, .20);
+  transition: transform var(--s-quick);
+}
+.brand img { width: 100%; height: 100%; display: block; }
+.brand:hover { transform: scale(1.04); }
+.brand:focus-visible { outline-offset: 4px; }
+
+.nav {
+  position: fixed; z-index: 120;
+  top: clamp(20px, 2.6vw, 30px); right: clamp(16px, 3vw, 34px);
+}
+.nav__toggle { display: none; }
+.nav__list {
+  list-style: none; margin: 0; padding: 4px 8px;
+  display: flex; gap: 2px;
   background: color-mix(in srgb, #1c2f26 62%, transparent);
   border: 1px solid color-mix(in srgb, #f2ede2 26%, transparent);
   border-radius: var(--s-radius);
   backdrop-filter: blur(6px);
-  opacity: 0; visibility: hidden;
-  transition: opacity .4s var(--s-ease), visibility .4s,
-              background var(--s-quick), border-color var(--s-quick);
 }
-/* site.js turns this on once the hero is behind you. */
-body.book-on .book { opacity: 1; visibility: visible; }
-.book:hover, .book:focus-visible {
-  background: color-mix(in srgb, #1c2f26 88%, transparent);
-  border-color: color-mix(in srgb, #f2ede2 52%, transparent);
+.nav__list a {
+  display: block; padding: 8px 11px;
+  font-family: var(--s-font-micro);
+  font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: var(--s-micro-track); text-transform: uppercase;
+  color: #f2ede2; text-decoration: none;
+  border-radius: var(--s-radius);
+  transition: background var(--s-quick), color var(--s-quick);
 }
-@media (max-width: 700px) { .book { padding: 9px 14px; } }
+.nav__list a:hover, .nav__list a:focus-visible {
+  background: color-mix(in srgb, #f2ede2 12%, transparent); color: #fff;
+}
+/* The logo is already the way home on a wide screen. */
+.nav__home { display: none; }
+/* Tighter tracking where the row only just fits beside the mark. */
+@media (max-width: 1000px) and (min-width: 821px) {
+  .nav__list a { padding: 8px 8px; letter-spacing: .12em; }
+}
+
+@media (max-width: 700px) {
+  .brand { width: 44px; height: 44px; }
+}
+
+@media (max-width: 820px) {
+  .nav { top: 14px; right: 14px; }
+  .nav__toggle {
+    position: relative; z-index: 2;
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 44px; padding: 0 14px;
+    font-family: var(--s-font-micro);
+    font-size: var(--s-micro); font-weight: 600;
+    letter-spacing: var(--s-micro-track); text-transform: uppercase;
+    color: #f2ede2;
+    background: color-mix(in srgb, #1c2f26 62%, transparent);
+    border: 1px solid color-mix(in srgb, #f2ede2 26%, transparent);
+    border-radius: var(--s-radius);
+    backdrop-filter: blur(6px);
+  }
+  .nav__bars { display: grid; gap: 4px; width: 18px; }
+  .nav__bars i {
+    display: block; height: 1.5px; background: currentColor; border-radius: 1px;
+    transition: transform .3s var(--s-ease), opacity .2s;
+  }
+  .nav.is-open .nav__bars i:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+  .nav.is-open .nav__bars i:nth-child(2) { opacity: 0; }
+  .nav.is-open .nav__bars i:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+  /* The open panel: the forest ground, full height, section names in the
+     serif. It is the one place the macro register is used for navigation,
+     because on a phone these are the targets a thumb is aiming for. */
+  .nav__list {
+    position: fixed; inset: 0; z-index: 1;
+    flex-direction: column; justify-content: center; gap: 0;
+    padding: 88px var(--s-gut) 48px;
+    background: #1c2f26; border: 0; border-radius: 0;
+    backdrop-filter: none;
+    opacity: 0; visibility: hidden;
+    transition: opacity .3s var(--s-ease), visibility .3s;
+  }
+  .nav.is-open .nav__list { opacity: 1; visibility: visible; }
+  .nav__home { display: block; }
+  .nav__list li + li { border-top: 1px solid #33493d; }
+  .nav__list a {
+    padding: 14px 0;
+    font-family: var(--s-font-macro); font-weight: 400;
+    font-size: clamp(1.7rem, 8vw, 2.3rem); line-height: 1.1;
+    letter-spacing: -0.01em; text-transform: none;
+    border-radius: 0;
+  }
+  .nav__list a:hover, .nav__list a:focus-visible { background: none; color: #e9b795; }
+  body.nav-open { overflow: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav__list, .nav__bars i { transition: none; }
+}
 
 /* ===========================================================================
    3. THE EDITORIAL BAND — the brochure the visitor reads before the film
@@ -177,13 +258,12 @@ body.book-on .book { opacity: 1; visibility: visible; }
   width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
   z-index: -2;
 }
-/* The phone hero's living loop. It sits directly over the still, at the same
-   z-index but later in the DOM, so it paints on top of it while the gradient
-   wash (-1) stays above both. Hidden until it can actually play, so a stalled
-   download never shows a black rectangle where the photograph was.
-
-   Desktop never loads it: the mount in site.js gates on the same 700px query
-   the <picture> uses, and this display:none is the belt to that braces. */
+/* The hero's living loop, on phones AND desktop now: each is served the clip
+   cut for its own still (site.js picks by the same 700px query the <picture>
+   uses). It sits directly over the still, at the same z-index but later in the
+   DOM, so it paints on top of it while the gradient wash (-1) stays above
+   both. Hidden until it can actually play, so a stalled download never shows a
+   black rectangle where the photograph was. */
 .ed-hero__loop {
   position: absolute; inset: 0; z-index: -2;
   width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
@@ -191,7 +271,6 @@ body.book-on .book { opacity: 1; visibility: visible; }
   pointer-events: none;
 }
 .ed-hero__loop.is-live { opacity: 1; }
-@media (min-width: 701px) { .ed-hero__loop { display: none; } }
 @media (prefers-reduced-motion: reduce) { .ed-hero__loop { display: none; } }
 
 .ed-hero__frame::after {
@@ -268,41 +347,19 @@ body.book-on .book { opacity: 1; visibility: visible; }
   .ed-strip { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
-  /* Phones used to flatten this into a uniform two-across grid with four of the
-     ten cells hidden. That was calm and it was also dead: the live rotation
-     spent turns on tiles nobody could see. All ten show now, and they keep the
-     wide/tall/big shapes — at two columns a wide cell is the full width, a tall
-     one is half the width and twice the height, and the big one is both.
+  /* A QUARTER of what it was. Phones used to re-cut the mosaic into two
+     columns at 26vw rows - ten rows, about 1,090px of a 390px screen, and the
+     owner read it as tiles blown up far past their worth. Phones now keep the
+     desktop's four columns, so every cell is half as wide and half as tall (a
+     quarter of the area) and the band is about 270px tall.
 
-     The shapes are RE-CUT here rather than inherited. HERO_SHAPES was solved
-     against FOUR columns; replayed at two it leaves a hole in the right-hand
-     column near the bottom, and grid-auto-flow: dense cannot close it because
-     the only cells left to backfill with are full-width. So the order below is
-     solved for two columns instead: 4+1+2+1+2+2+1+1+2+4 = 20 cells of area in
-     exactly ten rows of two, which tiles flush with no hole and no ragged last
-     row. Change one shape here and you have to re-solve the sum.
-
-         row 1-2  [ ---- big ---- ]
-         row 3      [ a ][ tall ]
-         row 4      [ a ][      ]
-         row 5    [ --- wide --- ]
-         row 6      [ tall ][ a ]
-         row 7      [      ][ a ]
-         row 8    [ --- wide --- ]
-         row 9-10 [ ---- big ---- ]                                          */
+     Four columns is also what HERO_SHAPES in site.js was solved for: 4+2+1+2+
+     1+2+2+1+4+1 = 20 cells of area in five rows of four, flush, no hole. So the
+     phone needs no shape overrides of its own any more. */
   .ed-mosaic.tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 26vw;
+    grid-auto-rows: 12.5vw;
+    gap: 5px;
   }
-  /* Beat the .tile--b/w/t spans, which are cut for the four-column desktop
-     grid. Three classes to their one, so this wins without !important. */
-  .ed-mosaic.tiles .tile { grid-column: span 1; grid-row: span 1; }
-  .ed-mosaic.tiles .tile:nth-child(1),
-  .ed-mosaic.tiles .tile:nth-child(10) { grid-column: span 2; grid-row: span 2; }
-  .ed-mosaic.tiles .tile:nth-child(5),
-  .ed-mosaic.tiles .tile:nth-child(9)  { grid-column: span 2; }
-  .ed-mosaic.tiles .tile:nth-child(3),
-  .ed-mosaic.tiles .tile:nth-child(6)  { grid-row: span 2; }
 }
 
 /* PHONES: the gate photograph takes the whole screen with the name on it —
@@ -331,40 +388,28 @@ body.book-on .book { opacity: 1; visibility: visible; }
   .ed-hero__name { font-size: clamp(2.7rem, 13vw, 4rem); }
 }
 
-/* --- story: one lead photograph, two supporting, deliberately off-grid ---- */
+/* --- story: the words alone -----------------------------------------------
+   It used to sit beside three overlapping photographs and a line saying they
+   were taken on the property. The owner took both out: the grounds band right
+   under it already shows the place, and the story reads better on its own. */
 .ed-story {
-  display: grid; gap: clamp(28px, 5vw, 72px);
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  align-items: start;
   padding: var(--s-section) var(--s-gut);
   border-top: 1px solid var(--s-line);
 }
 .ed-story__text .micro { display: block; margin-bottom: 20px; }
 .ed-story__text p { color: var(--s-ink-soft); max-width: 40ch; margin: 22px 0 0; }
-.ed-story__meta { color: var(--s-ink-faint); margin-top: 32px !important; }
-/* The plate is deliberately off-grid: a wide lead photograph, then two smaller
-   ones that overlap its lower edge and step down. Asymmetry is the point — a
-   tidy 2x2 reads as a template, which is the thing being designed away from. */
-.ed-story__plate {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  grid-auto-rows: minmax(0, auto);
-  gap: clamp(10px, 1.4vw, 18px);
-}
-.ed-plate { margin: 0; overflow: hidden; background: var(--s-bg-raised); }
-.ed-plate img { width: 100%; height: 100%; object-fit: cover; }
-/* Both supporting frames are mostly blown white sky above the roofline, so a
-   centred crop fills a third of the plate with nothing. Bias them downward. */
-.ed-plate--tall img  { object-position: 50% 74%; }
-.ed-plate--small img { object-position: 50% 50%; }
-.ed-plate--lead  { grid-column: 1 / 11; aspect-ratio: 3 / 2; }
-.ed-plate--tall  { grid-column: 4 / 9;  aspect-ratio: 4 / 5; margin-top: clamp(-40px, -3.2vw, -14px); z-index: 1; }
-.ed-plate--small { grid-column: 9 / 13; aspect-ratio: 1 / 1; align-self: end; }
-@media (max-width: 900px) {
-  .ed-story { grid-template-columns: 1fr; }
-  .ed-plate--lead  { grid-column: 1 / 12; }
-  .ed-plate--tall  { grid-column: 2 / 9; margin-top: clamp(-40px, -6vw, -14px); }
-  .ed-plate--small { grid-column: 9 / 13; }
+/* Wide screens: the heading on the left, the paragraph across from it on the
+   right, both hung from the same top line. On its own in one column the story
+   left the right half of a desktop page empty. */
+@media (min-width: 901px) {
+  .ed-story__text {
+    display: grid; column-gap: clamp(40px, 7vw, 120px);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    align-items: end;
+  }
+  .ed-story__text .micro { grid-column: 1 / -1; }
+  .ed-story__text .macro { grid-column: 1; max-width: 16ch; }
+  .ed-story__text p      { grid-column: 2; margin: 0; font-size: calc(var(--s-body) * 1.06); }
 }
 
 /* ---------------------------------------------------------------------------
@@ -654,6 +699,9 @@ body.lb-open { overflow: hidden; }
 .foot dd { margin: 0 0 20px; color: var(--s-ink); }
 .foot a { color: var(--s-ink); text-decoration: none; border-bottom: 1px solid var(--s-line); }
 .foot a:hover { border-color: var(--s-accent); color: var(--s-accent-soft); }
+/* The WhatsApp button is a link, so it has to opt back out of the footer's
+   underlined-link treatment above or it paints ink on the accent. */
+.foot a.btn, .foot a.btn:hover { color: #fff; border-bottom: 0; }
 .foot__bar { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--s-line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 .btn {

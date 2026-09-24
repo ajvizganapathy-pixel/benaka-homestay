@@ -1,8 +1,9 @@
 # Benaka By The Hills — Apache/LiteSpeed config for Hostinger shared hosting.
 # Upload alongside the site in public_html.
 #
-# Two things this file must never break: PHP execution under /api/, and the
-# fonts, stylesheets, the film and photographs the page needs. Every deny rule
+# The one thing this file must never break: the fonts, stylesheets, scripts,
+# the film and photographs the page needs. (There is no server-side code any
+# more; the booking endpoint under /api/ was removed with the booking flow.) Every deny rule
 # below names a specific path or extension for exactly that reason.
 
 DirectoryIndex web/index.html index.html
@@ -12,8 +13,8 @@ DirectoryIndex web/index.html index.html
 Options -Indexes
 
 # ---------------------------------------------------------------------------
-# HTTPS. The booking form carries a guest's phone number and email; it has no
-# business travelling in the clear. HSTS is deliberately conservative at one
+# HTTPS. There is no form on the site any more, but a homestay's page has no
+# business being served in the clear either. HSTS is deliberately conservative at one
 # year with no preload — add `preload` only once you are certain every
 # subdomain is HTTPS, because it is very hard to undo.
 # ---------------------------------------------------------------------------
@@ -43,16 +44,18 @@ Options -Indexes
 
   # Content Security Policy. Every value here is load-bearing:
   #   script-src 'self'        no inline scripts anywhere in this site
-  #   style-src  'unsafe-inline'  the booking summary and a few layout blocks
-  #                            set style attributes; there are no inline <style>
+  #   style-src  'unsafe-inline'  a few layout blocks in the footer set style
+  #                            attributes; there are no inline <style>
   #                            elements, and no stylesheet is loaded off-origin
   #   media-src  'self'        the property film is a plain src on <video>.
   #                            blob: used to be here for the scroll-world clips
   #                            and came out with them — nothing creates a blob
   #                            URL for media any more
-  #   img-src    data: blob:   the favicon is inline SVG; the live tiles decode
+  #   img-src    data: blob:   the live tiles decode
   #                            an Image() before swapping it in
-  #   connect-src 'self'       the booking endpoint, and nothing else
+  #   connect-src 'self'       the manifest fetch, and nothing else. The WhatsApp
+  #                            and tel: links are navigations, not fetches, so
+  #                            they need no entry here
   # There are no third-party origins in this site at all, which is why every
   # directive can be this tight.
   Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
@@ -68,8 +71,8 @@ Options -Indexes
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 
-  # THE OPPOSITE, AND IT IS LOAD-BEARING. site.css, site.js, api.js, booking.js
-  # and manifest.json all change in place, at the same URLs, on every deploy.
+  # THE OPPOSITE, AND IT IS LOAD-BEARING. The stylesheets, site.js and
+  # manifest.json all change in place, at the same URLs, on every deploy.
   # They used to be cached for a day, and that made a deploy invisible: the HTML
   # came back fresh (0 seconds, above) but the browser kept yesterday's
   # JavaScript, and since the gallery and the mosaic are BUILT BY THAT
@@ -79,7 +82,7 @@ Options -Indexes
   #
   # no-cache does NOT mean "do not store". It means "revalidate before use": the
   # browser still keeps the file, sends If-Modified-Since, and Apache answers
-  # 304 Not Modified with no body when nothing changed. So the cost is four tiny
+  # 304 Not Modified with no body when nothing changed. So the cost is a few tiny
   # conditional requests per visit, and the payoff is that a deploy is live the
   # moment it lands, with nothing for anyone to remember.
   #
@@ -106,8 +109,8 @@ Options -Indexes
 </FilesMatch>
 RedirectMatch 404 (?i)/\.(git|data|env|svn|hg)(/|$)
 
-# Editor leftovers, archives and dumps. A stray booking.php.bak would otherwise
-# be served as plain text, credentials and all.
+# Editor leftovers, archives and dumps. A stray *.bak or *.sql would otherwise
+# be served as plain text.
 <FilesMatch "\.(bak|old|orig|save|swp|swo|sql|sqlite|log|ini|sh|py|md|yml|yaml|lock)$">
   Require all denied
 </FilesMatch>

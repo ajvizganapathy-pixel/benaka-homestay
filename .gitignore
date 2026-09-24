@@ -16,5 +16,4 @@ __pycache__/
 .DS_Store
 .data/
 benaka-data/
-api/config.php
 assets/enhanced/

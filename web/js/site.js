@@ -1,7 +1,7 @@
 /* ============================================================================
-   Site behaviour: play the property film, build the gallery and the hero
-   mosaic, turn the live tiles over, run the lightbox and drive the book
-   control.
+   Site behaviour: play the property film and the hero loop, build the gallery
+   and the hero mosaic, turn the live tiles over, run the lightbox, and drive
+   the logo and the section menu.
    ========================================================================== */
 
 (function () {
@@ -19,7 +19,10 @@
      engine and world.config.js are gone from the repo (history keeps them).
 
      Two observers, the same split the live tiles use below: the loose one
-     decides when to spend 8.8MB of bandwidth by setting src, the tight one
+     (one screen ahead) decides when to spend 8.8MB of bandwidth by setting src.
+     It was 150% until the story lost its photographs and the phone mosaic
+     shrank; that brought the film to 1,937px down a 844px phone, inside a
+     150% margin, and it downloaded on load. The tight one
      decides when to spend a decoder. Nothing is fetched on load, and a visitor
      who never reaches this section never pays for it.
 
@@ -37,7 +40,7 @@
         if (!v.src) { v.src = SRC; v.load(); }
         o.disconnect();
       });
-    }, { rootMargin: '150% 0px' }).observe(v);
+    }, { rootMargin: '100% 0px' }).observe(v);
 
     new IntersectionObserver(es => {
       es.forEach(e => {
@@ -57,46 +60,63 @@
     });
   }
 
-  /* ---- 1b. The phone hero's living loop ---------------------------------
-     A 3.4s silent clip of the pool — one man sitting on the far edge kicking
-     his legs in the water, the palm moving, a flock crossing the sky — laid
-     over the still hero on phones only.
+  /* ---- 1b. The hero's living loop --------------------------------------
+     A few seconds of silent footage over the still: one man sitting on the far
+     edge of the pool kicking his legs in the water, the palms moving, a flock
+     crossing the sky. Phones and desktop each get the clip cut for their own
+     still, chosen by the same 700px query the <picture> uses:
+       - phones:  hero-loop.mp4, 9:16, over hero-tall.jpg
+       - desktop: hero-loop-wide.mp4, 16:9, over hero-wide-pool.jpg. That clip
+         starts AND ends on the still itself, which is why it loops with no
+         visible seam rather than being stitched afterwards.
 
      It is deliberately the LAST thing the page does. The still is the LCP
-     element; giving the video a src before load would put 860KB in front of
-     the one paint that decides how fast the site feels. So: wait for window
+     element; giving the video a src before load would put the clip in front
+     of the one paint that decides how fast the site feels. So: wait for window
      load, then fetch, then fade in over an opening frame that is the same
      photograph, which is why the swap is invisible rather than a cut.
 
-     Four reasons it never runs, and none of them is a failure:
-       - not a phone. The <picture> serves the 9:16 still below 700px and the
-         16:9 one above; the loop follows the same line, and the CSS hides it
-         above 700px as well in case this ever gets called anyway.
+     Three reasons it never runs, and none of them is a failure:
        - prefers-reduced-motion. A moving hero is exactly what that asks about.
        - Save-Data, or a 2g connection. Nobody metering their data wants an
          autoplaying hero, and on 2g it would arrive long after they had gone.
        - autoplay refused. Muted inline autoplay is allowed everywhere that
          matters, but if a browser says no the still simply stays, which is a
          perfectly good hero.                                                 */
+  const HERO_LOOPS = { tall: '../assets/video/hero-loop.mp4',
+                       wide: '../assets/video/hero-loop-wide.mp4' };
+
   function mountHeroLoop() {
     const v = $('[data-hero-loop]');
     if (!v) return;
     if (reduced) return;
-    if (!matchMedia('(max-width: 700px)').matches) return;
 
     const c = navigator.connection;
     if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
 
-    const start = () => {
-      v.src = '../assets/video/hero-loop.mp4';
+    const phone = matchMedia('(max-width: 700px)');
+    const live = () => v.classList.add('is-live');
+
+    const load = () => {
+      const want = phone.matches ? HERO_LOOPS.tall : HERO_LOOPS.wide;
+      if (v.getAttribute('src') === want) return;
+      // Hide first: a window dragged across 700px swaps the still under the
+      // video, and the old clip must not sit over the other photograph while
+      // the new one loads.
+      v.classList.remove('is-live');
+      v.src = want;
       // readyState as well as the event: a `once` listener that attaches after
       // canplay has already passed never fires, and the video would then sit at
       // opacity 0 for ever. Failing that way is safe — the still stays — but it
       // fails silently, which is the worst kind.
-      const live = () => v.classList.add('is-live');
       if (v.readyState >= 3) live();
       else v.addEventListener('canplay', live, { once: true });
       v.play().catch(() => {});          // refused: the still stays, no harm
+    };
+
+    const start = () => {
+      load();
+      phone.addEventListener('change', load);
 
       // Do not hold a decoder open for a hero nobody is looking at.
       new IntersectionObserver(es => es.forEach(e => {
@@ -354,7 +374,7 @@
   const lbCount  = $('[data-lb-count]');
   const lbCap    = $('[data-lb-caption]');
   const lbGroup  = $('[data-lb-group]');
-  let lbImages = [], lbIndex = 0, lbOpener = null;
+  let lbImages = [], lbIndex = 0, lbOpener = null, lbOpen = false;
 
   function openLightbox(group, imgs, index) {
     lbImages = imgs; lbIndex = index; lbOpener = document.activeElement;
@@ -367,7 +387,9 @@
        </div>`).join('');
 
     lb.hidden = false;
+    lbOpen = true;
     lbOutside().forEach(n => n.inert = true);
+    overlayOpened('lightbox');
     requestAnimationFrame(() => {
       lb.classList.add('open');
       document.body.classList.add('lb-open');
@@ -376,7 +398,10 @@
     });
   }
 
-  function closeLightbox() {
+  function closeLightbox(fromHistory) {
+    if (!lbOpen) return;
+    lbOpen = false;
+    if (fromHistory !== true) overlayClosed('lightbox');
     lb.classList.remove('open');
     document.body.classList.remove('lb-open');
     lbOutside().forEach(n => n.inert = false);
@@ -386,7 +411,7 @@
 
   // The lightbox is a modal and has to behave like one: the page behind it goes
   // inert, and Tab cycles inside it instead of walking out into the gallery
-  // tiles underneath. (The booking panel already did both; this did not.)
+  // tiles underneath.
   const lbOutside = () => [...document.body.children].filter(n => n !== lb);
 
   lb.addEventListener('keydown', e => {
@@ -407,7 +432,7 @@
     lbCap.textContent = lbImages[lbIndex] ? lbImages[lbIndex].description : '';
   }
 
-  $('[data-lb-close]').addEventListener('click', closeLightbox);
+  $('[data-lb-close]').addEventListener('click', () => closeLightbox());
   $('[data-lb-prev]').addEventListener('click', () => goTo(lbIndex - 1));
   $('[data-lb-next]').addEventListener('click', () => goTo(lbIndex + 1));
   lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
@@ -445,25 +470,113 @@
     $$('.reveal:not(.in)').forEach(n => io.observe(n));
   }
 
-  /* ---- 5. The book control ----------------------------------------------
-     All that is left of what was a canvas-to-gallery handoff: the page is
-     ordinary flow now, so there is no fixed stage to dissolve. */
-  let ticking = false;
+  /* ---- 5. The Back button ---------------------------------------------
+     On a phone, Back is the gesture people reach for to close whatever is
+     open. Without this it closed nothing and left the site instead. So opening
+     the menu or the lightbox pushes one history entry, Back pops it and closes
+     that overlay, and closing it any other way (the X, Escape, a link) pops the
+     entry itself so history never fills with dead states.                  */
+  const closers = { lightbox: () => closeLightbox(true), menu: () => closeMenu(true) };
 
-  function onScroll() {
-    // The book control only appears once the hero is behind you, so the first
-    // screen carries nothing but the property.
-    document.body.classList.toggle('book-on', window.scrollY > window.innerHeight * 0.75);
-    ticking = false;
+  function overlayOpened(name) {
+    if (history.state && history.state.overlay === name) return;
+    // Manual while an overlay entry exists: when Back pops it, the browser
+    // would otherwise restore the scroll position it saved for the page
+    // entry, which undoes a jump made from the menu. Put back after the pop.
+    history.scrollRestoration = 'manual';
+    history.pushState({ overlay: name }, '');
+  }
+  function overlayClosed(name) {
+    if (history.state && history.state.overlay === name) history.back();
+  }
+  let afterPop = null;          // a jump waiting for the history pop to land
+  addEventListener('popstate', () => {
+    // Whatever is open and is no longer the current entry, close it.
+    const now = history.state && history.state.overlay;
+    Object.keys(closers).forEach(k => { if (k !== now) closers[k](); });
+    if (afterPop) { const f = afterPop; afterPop = null; f(); }
+    setTimeout(() => { history.scrollRestoration = 'auto'; }, 0);
+  });
+
+  /* ---- 6. The logo and the section menu --------------------------------
+     The logo is the way home: it scrolls back to the hero without adding a
+     #top entry, so Back keeps meaning "close" or "leave". The menu is a
+     hamburger on phones and a row of links on desktop; the markup is one list
+     and CSS decides which it looks like, so only the phone panel needs any
+     open/close state here.                                                  */
+  const nav    = $('[data-nav]');
+  const toggle = $('[data-nav-toggle]');
+  const navList = $('#nav-list');
+  // The menu's own breakpoint, not the hero's 700px: see section 2 of site.css.
+  const phoneQ = matchMedia('(max-width: 820px)');
+
+  const goTo_ = hash => {
+    const el = hash === '#top' ? document.body : $(hash);
+    if (!el) return;
+    if (hash === '#top') scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    else el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  };
+
+  function openMenu() {
+    nav.classList.add('is-open');
+    document.body.classList.add('nav-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    overlayOpened('menu');
+    const first = $('a', navList);
+    if (first) first.focus();
+  }
+  function closeMenu(fromHistory) {
+    if (!nav.classList.contains('is-open')) return;
+    if (fromHistory !== true) overlayClosed('menu');
+    nav.classList.remove('is-open');
+    document.body.classList.remove('nav-open');
+    toggle.setAttribute('aria-expanded', 'false');
   }
 
-  window.addEventListener('scroll', () => {
-    if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
-  }, { passive: true });
-  window.addEventListener('resize', onScroll);
+  if (nav && toggle) {
+    toggle.addEventListener('click', () =>
+      nav.classList.contains('is-open') ? closeMenu() : openMenu());
 
-  mountTour();
+    $$('a', navList).forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      const hash = a.getAttribute('href');
+      // With the panel open, close it and scroll only once the history pop
+      // has landed: history.back() is asynchronous, and a browser restoring
+      // the old scroll position as it lands would otherwise undo the jump.
+      if (nav.classList.contains('is-open')) {
+        afterPop = () => goTo_(hash);
+        closeMenu();
+        toggle.focus({ preventScroll: true });
+        // If the entry was not ours there is no pop to wait for.
+        setTimeout(() => { if (afterPop) { afterPop = null; goTo_(hash); } }, 400);
+      } else {
+        goTo_(hash);
+      }
+    }));
+
+    document.addEventListener('keydown', e => {
+      if (!nav.classList.contains('is-open')) return;
+      if (e.key === 'Escape') { closeMenu(); toggle.focus(); }
+      // Keep Tab inside the open panel and its toggle.
+      if (e.key === 'Tab') {
+        const f = [toggle, ...$$('a', navList)];
+        const i = f.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+      }
+    });
+
+    // Leaving phone width with the panel open would strand the page locked.
+    phoneQ.addEventListener('change', () => { if (!phoneQ.matches) closeMenu(); });
+  }
+
+  const brand = $('[data-brand]');
+  if (brand) brand.addEventListener('click', e => { e.preventDefault(); goTo_('#top'); });
+
   mountHeroLoop();
-  buildGallery().then(onScroll);
-  onScroll();
+  // The film's observer starts only once the grounds mosaic is built. Before
+  // the manifest arrives the mosaic is 0px tall, which puts the film up to
+  // ~950px higher than it really is — inside the fetch margin — and its first
+  // reading would download 8.8MB for a visitor still looking at the hero.
+  buildGallery().finally(mountTour);
 })();
