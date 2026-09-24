@@ -284,11 +284,12 @@ Everything else is a photograph taken on the property. The hero stills and both
 hero loops are generated from `assets/brand/hero-reference.png`, the aerial the
 owner supplied as the brand image (see `assets/brand/README.md`).
 
-That is why the gallery says "Every photograph **below**" and the footer bar
-says "Photographs taken on the property". The story used to carry a line saying
-"The photographs on this page were taken on the property". It went with the
-story's three photographs, at the owner's request. Keep the remaining sentences
-true: if a generated image ever appears below the hero, they have to change.
+That is why the gallery says "Every photograph **below**". Two other lines used
+to say the same thing, and both were removed at the owner's request: "The
+photographs on this page were taken on the property" in the story (it went with
+the story's three photographs), and "Photographs taken on the property" in the
+footer bar. Keep the gallery sentence true: if a generated image ever appears
+below the hero, it has to change.
 
 ### The logo, the menu, and the Back button
 
