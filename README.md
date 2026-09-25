@@ -118,8 +118,8 @@ directly:
 | **Facebook** | [Benaka Bythehills](https://www.facebook.com/profile.php?id=61594081930585) |
 
 *Enquire on WhatsApp* in the footer opens a chat with a short message already typed in.
-Instagram and Facebook appear in the footer with each platform's mark and handle,
-and again as two buttons in the venue block.
+Instagram and Facebook appear once, in the footer, each with the platform's own
+logo in its own colours, its name and the handle.
 `tools/test.sh` fails if any call or WhatsApp link carries a number that is
 not one of these. A typo in a number does not look broken; it dials a stranger.
 
@@ -188,6 +188,11 @@ to freeze, and they are the bytes that actually matter for weight.
 
 If you ever add a build step that stamps content hashes into filenames, you may
 put the long expiry back on CSS and JS **in that same change**, and not before.
+
+**GitHub Pages ignores `.htaccess`**, so none of the above applies there, and
+it caches CSS for about ten minutes. That is why every stylesheet and script link in
+`web/index.html` carries a `?v=` version. Bump it whenever CSS or JS changes, or
+a visitor can get new HTML drawn with an old stylesheet.
 
 ## Layout
 

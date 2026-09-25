@@ -125,15 +125,31 @@ badnum=$(grep -oE '(tel:\+|wa\.me/)[0-9]+' web/index.html | grep -oE '[0-9]+$' |
 [ -z "$badnum" ] && ok "every tel: and wa.me link is an owner's number" \
                  || bad "unknown number in a contact link" "$badnum"
 
-# The two social links, in both places they appear (footer and venue). The
-# Facebook one is the Page's permanent profile.php address, not a share link:
-# share links are redirects Facebook can expire.
+# The two social links, in the footer and nowhere else: the venue block used to
+# repeat them and the owner asked for one set. The Facebook one is the Page's
+# permanent profile.php address, not a share link: share links are redirects
+# Facebook can expire.
 for url in 'https://www.instagram.com/benakabythehills/' \
            'https://www.facebook.com/profile.php?id=61594081930585'; do
   n=$(grep -cF "href=\"$url\"" web/index.html)
-  [ "$n" -eq 2 ] && ok "social link in footer and venue: $url" \
-                 || bad "social link should appear twice, found $n" "$url"
+  [ "$n" -eq 1 ] && ok "social link appears once, in the footer: $url" \
+                 || bad "social link should appear exactly once, found $n" "$url"
 done
+
+# Every local stylesheet and script carries the same ?v= version. GitHub Pages
+# ignores .htaccess, so the no-cache rule does not exist there, and a phone
+# once rendered the new HTML under a ten-minute-old site.css: icons drawn
+# column-wide, a button still underlined. A version in the URL is what makes a
+# deploy impossible to serve stale. Bump it whenever CSS or JS changes.
+vers=$(grep -oE '(href|src)="(css|js)/[^"]+"' web/index.html | grep -oE '\?v=[0-9A-Za-z._-]+"' | sort -u)
+nolv=$(grep -oE '(href|src)="(css|js)/[^"]+"' web/index.html | grep -v '?v=')
+if [ -n "$nolv" ]; then
+  bad "a local stylesheet or script has no ?v= cache-buster" "$nolv"
+elif [ "$(printf '%s\n' "$vers" | wc -l)" -ne 1 ]; then
+  bad "stylesheets and scripts carry different ?v= values" "$vers"
+else
+  ok "every stylesheet and script carries the same cache-buster ${vers%\"}"
+fi
 
 missing=$(python3 - <<'PY'
 import json, os
