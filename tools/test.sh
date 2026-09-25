@@ -125,6 +125,16 @@ badnum=$(grep -oE '(tel:\+|wa\.me/)[0-9]+' web/index.html | grep -oE '[0-9]+$' |
 [ -z "$badnum" ] && ok "every tel: and wa.me link is an owner's number" \
                  || bad "unknown number in a contact link" "$badnum"
 
+# The two social links, in both places they appear (footer and venue). The
+# Facebook one is the Page's permanent profile.php address, not a share link:
+# share links are redirects Facebook can expire.
+for url in 'https://www.instagram.com/benakabythehills/' \
+           'https://www.facebook.com/profile.php?id=61594081930585'; do
+  n=$(grep -cF "href=\"$url\"" web/index.html)
+  [ "$n" -eq 2 ] && ok "social link in footer and venue: $url" \
+                 || bad "social link should appear twice, found $n" "$url"
+done
+
 missing=$(python3 - <<'PY'
 import json, os
 m = json.load(open('assets/manifest.json'))

@@ -349,6 +349,22 @@ There is no booking form. Enquiries go to the owners directly:
 | Call (`tel:+91…`) | 88610 70431, 81975 58321, 96477 82880 |
 
 They appear twice, in the footer (`#visit`) and in the venue block (`#venue`).
+
+Social links sit in the same two places, the footer's *Follow* entry (mark,
+platform name and handle) and a pair of buttons in the venue block:
+
+| | link |
+|---|---|
+| Instagram | `https://www.instagram.com/benakabythehills/` |
+| Facebook | `https://www.facebook.com/profile.php?id=61594081930585` |
+
+The Facebook address is what the owner's share link
+(`facebook.com/share/19QqiByC3i/`) redirects to. Use the permanent
+`profile.php?id=` form, not the share link, because Facebook can expire share links. The
+Business portfolio ID (`1806534560356550`) is a Meta admin identifier, not a
+public page, so never link it. The icons are inline SVG in `currentColor`: no icon
+font and no third-party script, so the CSP needs no new origin. `tools/test.sh`
+fails unless each link appears exactly twice.
 The footer's *Enquire on WhatsApp* button opens a chat with 94486 47831 and a
 short message already typed in. `tools/test.sh` fails if any `tel:` or `wa.me` link
 carries a number not on that list, so a new number has to be added there too.

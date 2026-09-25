@@ -702,11 +702,26 @@ body.lb-open { overflow: hidden; }
 /* The WhatsApp button is a link, so it has to opt back out of the footer's
    underlined-link treatment above or it paints ink on the accent. */
 .foot a.btn, .foot a.btn:hover { color: #fff; border-bottom: 0; }
+/* Instagram and Facebook: the platform's mark, its name, and the handle the
+   visitor will find there, so it is clear where each link goes before it is
+   tapped. The marks are inline SVG in currentColor - no icon font, no
+   third-party script, nothing for the CSP to allow. */
+.social { display: grid; gap: 10px; }
+.foot .social__link {
+  display: inline-flex; align-items: center; gap: 10px;
+  border-bottom: 0; width: max-content; min-height: 32px;
+}
+.social__link > span { border-bottom: 1px solid var(--s-line); }
+.social__link:hover > span { border-color: var(--s-accent); }
+.social__icon { width: 20px; height: 20px; flex: none; }
+.social__handle { color: var(--s-ink-soft); }
+
 .foot__bar { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--s-line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 .btn {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 15px 26px; border-radius: var(--s-radius);
+  text-decoration: none;          /* .btn is used on <a> too: the map link */
   background: var(--s-accent); color: #fff;
   font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
   letter-spacing: var(--s-micro-track); text-transform: uppercase;
@@ -755,4 +770,15 @@ body.lb-open { overflow: hidden; }
 .venue__wa { color: var(--s-ink-faint); margin: 0; max-width: 34ch; line-height: 2; }
 .venue__wa a { color: var(--s-ink-soft); text-decoration: none; border-bottom: 1px solid var(--s-line); }
 .venue__wa a:hover { color: var(--s-accent-soft); border-color: var(--s-accent); }
+.venue__social { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.venue__soc {
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 0 18px;           /* 44 so a thumb can land on it */
+  border: 1px solid var(--s-line); border-radius: 999px;
+  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: var(--s-micro-track); text-transform: uppercase;
+  color: var(--s-ink); text-decoration: none;
+  transition: border-color var(--s-quick), color var(--s-quick);
+}
+.venue__soc:hover, .venue__soc:focus-visible { border-color: var(--s-accent); color: var(--s-accent-soft); }
 .venue__map { margin-top: 8px; }

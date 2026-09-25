@@ -114,7 +114,12 @@ directly:
 | **WhatsApp** | 94486 47831 · 81975 58321 |
 | **Call** | 88610 70431 · 81975 58321 · 96477 82880 |
 
+| **Instagram** | [@benakabythehills](https://www.instagram.com/benakabythehills/) |
+| **Facebook** | [Benaka Bythehills](https://www.facebook.com/profile.php?id=61594081930585) |
+
 *Enquire on WhatsApp* in the footer opens a chat with a short message already typed in.
+Instagram and Facebook appear in the footer with each platform's mark and handle,
+and again as two buttons in the venue block.
 `tools/test.sh` fails if any call or WhatsApp link carries a number that is
 not one of these. A typo in a number does not look broken; it dials a stranger.
 
