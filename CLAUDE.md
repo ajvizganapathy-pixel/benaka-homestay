@@ -326,6 +326,47 @@ longer current, and closing one any other way (X, Escape, a link) calls
 - A menu link scrolls from the `popstate` handler (`afterPop`), not straight
   away, because `history.back()` is asynchronous.
 
+### Link previews, and the Share button
+
+When the address is pasted into WhatsApp, an Instagram DM or Facebook, the
+preview shows `assets/brand/share-card.jpg`: the round logo, "Benaka By The
+Hills", a caption line, and the Instagram and Facebook marks with their handles.
+The picture sits between two strips of the hero photograph. A preview is a
+picture, not a page, so none of this can be live CSS: it is drawn once into a
+JPEG by `node tools/make-share-card.js` from `tools/share-card/card.html`.
+
+Four rules, all enforced by `tools/test.sh` except the last:
+
+1. **The tag block lives in BOTH `index.html` and `web/index.html`, identical**,
+   between `<!-- LINK PREVIEWS -->` markers. The root stub is the address
+   people share, and scrapers do not run its JS redirect, so a stub with no tags
+   previews as nothing. The test diffs the two blocks.
+2. **Every URL in it is absolute** (`og:url`, `og:image`, `twitter:image`).
+   Scrapers do not resolve relative ones; the old `../assets/...` og:image
+   never showed a picture anywhere. The base is
+   `https://ajvizganapathy-pixel.github.io/benaka-homestay/`. When
+   benakahomestay.com goes live, change it in both files.
+3. **The card is 1200x630 and at most 300KB.** WhatsApp silently drops bigger
+   preview images and the link then shares as bare text. The generator steps the
+   JPEG quality down until it fits.
+4. **Everything that matters sits in the centre 630x630.** WhatsApp sometimes
+   shows a square thumbnail cropped from the middle. Only the photo strips at the
+   edges may be cut.
+
+Images are cached immutable, so a changed card needs a **new filename** and a new
+`og:image` in both files. Meta caches previews too: after a change, run the URL
+through the Facebook Sharing Debugger (this covers Facebook and Instagram).
+WhatsApp keeps its own per-URL cache, so a chat that already has the link shows the old
+preview. An Instagram post caption or bio never renders link previews at all.
+
+**The Share button** (footer, under *Enquire on WhatsApp*, `data-share`) reads
+its caption and URL from `og:description` / `og:url`, so there is one copy of
+the words. On phones it calls `navigator.share`, which opens the OS share
+sheet. A cancelled sheet throws `AbortError`, which is swallowed. Without it
+(most desktops) it opens `https://wa.me/?text=…` **with no number**, which is
+WhatsApp's pick-a-chat screen. It never goes to the owner, and the contact-number
+test ignores it because it only matches `wa.me/<digits>`.
+
 ### Two entry points, on purpose
 
 The site is `web/index.html`. The root `index.html` is a redirect stub, not a

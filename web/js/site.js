@@ -570,6 +570,31 @@
     phoneQ.addEventListener('change', () => { if (!phoneQ.matches) closeMenu(); });
   }
 
+  /* ---- 7. Share -----------------------------------------------------------
+     The footer's Share button. It reads the caption and the address from the
+     og: tags in <head> - the same words a pasted link previews with - so there
+     is exactly one copy of the caption to keep true.
+       - Phones: navigator.share opens the OS share sheet (WhatsApp, Instagram,
+         Facebook, Messages...). Cancelling it throws AbortError, which is not
+         a failure and is ignored.
+       - Desktops without it: WhatsApp's own "choose a chat" screen with the
+         caption filled in. wa.me/?text= with NO number, so it goes to whoever
+         the visitor picks, never to the owner.                               */
+  const shareBtn = $('[data-share]');
+  if (shareBtn) {
+    const meta = p => { const m = document.querySelector(`meta[property="${p}"]`); return m ? m.content : ''; };
+    shareBtn.addEventListener('click', async () => {
+      const url   = meta('og:url') || location.href;
+      const title = meta('og:title') || document.title;
+      const text  = meta('og:description');
+      if (navigator.share) {
+        try { await navigator.share({ title, text, url }); } catch (e) { /* cancelled */ }
+        return;
+      }
+      open('https://wa.me/?text=' + encodeURIComponent(`${text}\n${url}`), '_blank', 'noopener');
+    });
+  }
+
   const brand = $('[data-brand]');
   if (brand) brand.addEventListener('click', e => { e.preventDefault(); goTo_('#top'); });
 

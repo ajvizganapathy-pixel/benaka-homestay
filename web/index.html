@@ -8,25 +8,38 @@
 <meta name="theme-color" content="#14171a">
 <link rel="icon" href="favicon-64.png" type="image/png" sizes="64x64">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta property="og:title" content="Benaka By The Hills">
-<meta property="og:description" content="A homestay in Coorg, Karnataka, near Irpu Falls. A pool with the hill behind it, rooms on a long verandah, and meals at one table.">
-<!-- ../ so this resolves to /assets/ whether the page is served at / (the
-     production rewrite) or at /web/index.html (local, or a non-Apache host).
-     Replace with the absolute https://yourdomain/... URL once the domain is
-     live: most link-preview scrapers will not resolve a relative one. -->
-<meta property="og:image" content="../assets/brand/hero-wide-pool.jpg">
+<!-- LINK PREVIEWS (WhatsApp, Instagram DMs, Facebook). Scrapers need ABSOLUTE
+     URLs and do not run JavaScript, so this exact block is ALSO in the root
+     index.html redirect stub - that is the address people share - and
+     tools/test.sh fails if the two copies differ. When benakahomestay.com goes
+     live, replace the base URL in both files. The picture is
+     assets/brand/share-card.jpg, rendered by tools/make-share-card.js. -->
+<meta property="og:site_name" content="Benaka By The Hills">
+<meta property="og:title" content="Benaka By The Hills — a homestay in Coorg">
+<meta property="og:description" content="A quiet homestay near Irpu Falls, Coorg: a pool with the hill behind it, rooms on a long verandah, meals at one table. Instagram @benakabythehills · Facebook Benaka Bythehills">
+<meta property="og:url" content="https://ajvizganapathy-pixel.github.io/benaka-homestay/">
 <meta property="og:type" content="website">
-<meta property="og:url" content="/">
+<meta property="og:locale" content="en_IN">
+<meta property="og:image" content="https://ajvizganapathy-pixel.github.io/benaka-homestay/assets/brand/share-card.jpg">
+<meta property="og:image:secure_url" content="https://ajvizganapathy-pixel.github.io/benaka-homestay/assets/brand/share-card.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The round Benaka logo on ivory, with the pool and the house at sunset either side, and the Instagram and Facebook handles">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="/">
+<meta name="twitter:title" content="Benaka By The Hills — a homestay in Coorg">
+<meta name="twitter:description" content="A quiet homestay near Irpu Falls, Coorg: a pool with the hill behind it, rooms on a long verandah, meals at one table. Instagram @benakabythehills · Facebook Benaka Bythehills">
+<meta name="twitter:image" content="https://ajvizganapathy-pixel.github.io/benaka-homestay/assets/brand/share-card.jpg">
+<!-- /LINK PREVIEWS -->
+<link rel="canonical" href="https://ajvizganapathy-pixel.github.io/benaka-homestay/">
 
 <link rel="preload" href="fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/instrument-serif-400-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/fonts.css?v=20260925">
-<link rel="stylesheet" href="css/tokens.css?v=20260925">
-<link rel="stylesheet" href="css/site.css?v=20260925">
+<link rel="stylesheet" href="css/fonts.css?v=20260926">
+<link rel="stylesheet" href="css/tokens.css?v=20260926">
+<link rel="stylesheet" href="css/site.css?v=20260926">
 </head>
 <body>
 
@@ -195,6 +208,11 @@
         <h2 id="visit-h">Rooms are held on a message.</h2>
         <p style="color:var(--s-ink-soft);max-width:38ch">Tell us who is coming and when. We reply on WhatsApp, usually the same day.</p>
         <p style="margin-top:26px"><a class="btn" href="https://wa.me/919448647831?text=Hello%2C%20I%27d%20like%20to%20ask%20about%20a%20stay%20at%20Benaka%20By%20The%20Hills." rel="noopener">Enquire on WhatsApp</a></p>
+        <!-- Shares the site itself, not a message to the owner: the phone's own
+             share sheet where there is one, WhatsApp's pick-a-contact screen
+             where there is not. The text is read from og:description and
+             og:url in <head>, so the caption lives in one place. -->
+        <p style="margin-top:14px"><button class="btn btn--ghost" type="button" data-share>Share Benaka</button></p>
       </div>
       <div class="reveal">
         <dl>
@@ -290,6 +308,6 @@
   </div>
 </div>
 
-<script defer src="js/site.js?v=20260925"></script>
+<script defer src="js/site.js?v=20260926"></script>
 </body>
 </html>

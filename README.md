@@ -125,6 +125,19 @@ not one of these. A typo in a number does not look broken; it dials a stranger.
 
 ![The footer](docs/screenshots/10-footer.jpg)
 
+## Sharing the link
+
+Paste the site's address into WhatsApp, an Instagram DM or Facebook and the
+preview shows the round Benaka logo, the name, a one-line caption, and the
+Instagram and Facebook handles:
+
+![The link preview card](assets/brand/share-card.jpg)
+
+The footer also has a **Share Benaka** button. On a phone it opens the phone's
+own share menu with the caption and link already filled in. On a desktop it opens
+WhatsApp's choose-a-chat screen. Regenerate the card with
+`node tools/make-share-card.js`. CLAUDE.md has the rules it has to keep.
+
 ## Where it is
 
 ![The venue block](docs/screenshots/15-venue.jpg)

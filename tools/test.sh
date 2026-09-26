@@ -136,6 +136,44 @@ for url in 'https://www.instagram.com/benakabythehills/' \
                  || bad "social link should appear exactly once, found $n" "$url"
 done
 
+# Link previews. WhatsApp, Instagram DMs and Facebook read og:/twitter: tags,
+# need ABSOLUTE URLs, and do not run JavaScript - so the root redirect stub,
+# which is the address people share, must carry the same block as the page.
+prev=$(python3 - <<'PY2'
+import re, os, struct
+def block(f):
+    s = open(f).read()
+    m = re.search(r'<!-- LINK PREVIEWS.*?<!-- /LINK PREVIEWS -->', s, re.S)
+    return m.group(0) if m else None
+a, b = block('index.html'), block('web/index.html')
+bad = []
+if not a or not b: bad.append('LINK PREVIEWS block missing from ' + ('index.html' if not a else 'web/index.html'))
+elif a != b: bad.append('the LINK PREVIEWS blocks in index.html and web/index.html differ')
+else:
+    tags = dict(re.findall(r'<meta (?:property|name)="([^"]+)" content="([^"]*)"', a))
+    for k in ('og:title', 'og:description', 'og:url', 'og:image', 'og:image:width', 'og:image:height', 'twitter:card'):
+        if not tags.get(k): bad.append('missing ' + k)
+    for k in ('og:url', 'og:image', 'twitter:image'):
+        if not tags.get(k, '').startswith('https://'): bad.append(k + ' is not an absolute https URL')
+    img = re.sub(r'^https://[^/]+/[^/]+/', '', tags.get('og:image', ''))
+    if not os.path.isfile(img): bad.append('og:image not on disk: ' + img)
+    else:
+        d = open(img, 'rb').read()
+        if len(d) > 300 * 1024: bad.append('%s is %dKB; WhatsApp drops previews over 300KB' % (img, len(d) // 1024))
+        i = 2   # walk JPEG segments to the SOF for the real dimensions
+        while i < len(d):
+            mk, ln = d[i + 1], struct.unpack('>H', d[i + 2:i + 4])[0]
+            if mk in (0xC0, 0xC1, 0xC2):
+                h, w = struct.unpack('>HH', d[i + 5:i + 9])
+                if (w, h) != (1200, 630): bad.append('%s is %dx%d, want 1200x630' % (img, w, h))
+                break
+            i += 2 + ln
+print('\n'.join(bad))
+PY2
+)
+[ -z "$prev" ] && ok "link-preview tags identical in both entry files, absolute, card 1200x630 under 300KB" \
+               || bad "link previews" "$prev"
+
 # Every local stylesheet and script carries the same ?v= version. GitHub Pages
 # ignores .htaccess, so the no-cache rule does not exist there, and a phone
 # once rendered the new HTML under a ten-minute-old site.css: icons drawn
