@@ -140,7 +140,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   position: fixed; z-index: 120;
   top: clamp(20px, 2.6vw, 30px); right: clamp(16px, 3vw, 34px);
 }
-.nav__toggle { display: none; }
+.nav__toggle, .nav__share { display: none; }
 .nav__list {
   list-style: none; margin: 0; padding: 4px 8px;
   display: flex; gap: 2px;
@@ -173,20 +173,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 
 @media (max-width: 820px) {
-  .nav { top: 14px; right: 14px; }
-  .nav__toggle {
+  /* Two icon-only squares, stacked: the hamburger, and under it Share. Same
+     size and the same forest glass, so they read as one control column. */
+  .nav { top: 14px; right: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .nav__toggle, .nav__share {
     position: relative; z-index: 2;
-    display: inline-flex; align-items: center; gap: 10px;
-    min-height: 44px; padding: 0 14px;
-    font-family: var(--s-font-micro);
-    font-size: var(--s-micro); font-weight: 600;
-    letter-spacing: var(--s-micro-track); text-transform: uppercase;
+    display: grid; place-items: center;
+    width: 44px; height: 44px; padding: 0;     /* 44 so a thumb can land on it */
     color: #f2ede2;
     background: color-mix(in srgb, #1c2f26 62%, transparent);
     border: 1px solid color-mix(in srgb, #f2ede2 26%, transparent);
     border-radius: var(--s-radius);
     backdrop-filter: blur(6px);
   }
+  .nav__share svg { display: block; }
+  /* The panel covers the page; the share square must not float over it. */
+  .nav.is-open .nav__share { display: none; }
   .nav__bars { display: grid; gap: 4px; width: 18px; }
   .nav__bars i {
     display: block; height: 1.5px; background: currentColor; border-radius: 1px;

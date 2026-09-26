@@ -308,8 +308,12 @@ with a transparent outside and never stretched. It is also the way home:
 clicking it scrolls to the top **without** adding a `#top` history entry.
 
 The section menu is **one list** in the markup. Above 820px CSS shows it as a
-row of links on forest glass. At 820px and below it is a *Menu* button that opens a
-full-height forest panel with the section names in the serif. 820, not the
+row of links on forest glass. At 820px and below it is an **icon-only** 44x44
+hamburger that opens a full-height forest panel with the section names in the
+serif. Its name is the `aria-label` ("Open menu"/"Close menu", flipped in
+`openMenu`/`closeMenu`), because there is no visible word any more. A 44x44
+**share square** (`.nav__share`, `data-share`) is stacked 8px under it in the same
+glass, and it hides while the panel is open. 820, not the
 hero's 700: the seven-link row ran 8px into the logo between 701 and ~720px.
 `phoneQ` in `site.js` must match it. Keep the list and
 the section ids (`#top #story #grounds #explore #gallery #visit #venue`) in step.
@@ -362,7 +366,17 @@ through the Facebook Sharing Debugger (this covers Facebook and Instagram).
 WhatsApp keeps its own per-URL cache, so a chat that already has the link shows the old
 preview. An Instagram post caption or bio never renders link previews at all.
 
-**The Share button** (footer, under *Enquire on WhatsApp*, `data-share`) reads
+**WhatsApp caches previews by page URL, and it never re-reads a URL it has
+seen.** After the card was replaced, pasting the bare address kept showing the
+old cream card, even though the live tags were already correct. So the share
+handler never shares the bare URL. It appends `?s=<hash of the og:image
+filename>`, which the host ignores. The hash changes by itself whenever the card
+gets a new filename, so the next share is a URL WhatsApp has never cached. `og:url`
+and canonical stay bare. A hand-pasted bare address keeps its old preview
+until WhatsApp's cache expires. Adding any `?x` to it by hand forces a fresh one.
+
+**The Share buttons**, every `[data-share]` (the footer's *Share Benaka* under
+*Enquire on WhatsApp*, and on phones the square under the hamburger), read
 its caption and URL from `og:description` / `og:url`, so there is one copy of
 the words. On phones it calls `navigator.share`, which opens the OS share
 sheet. A cancelled sheet throws `AbortError`, which is swallowed. Without it

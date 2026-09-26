@@ -521,6 +521,7 @@
     nav.classList.add('is-open');
     document.body.classList.add('nav-open');
     toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'Close menu');
     overlayOpened('menu');
     const first = $('a', navList);
     if (first) first.focus();
@@ -531,6 +532,7 @@
     nav.classList.remove('is-open');
     document.body.classList.remove('nav-open');
     toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Open menu');
   }
 
   if (nav && toggle) {
@@ -579,12 +581,25 @@
          a failure and is ignored.
        - Desktops without it: WhatsApp's own "choose a chat" screen with the
          caption filled in. wa.me/?text= with NO number, so it goes to whoever
-         the visitor picks, never to the owner.                               */
-  const shareBtn = $('[data-share]');
-  if (shareBtn) {
+         the visitor picks, never to the owner.
+
+     THE SHARED URL CARRIES ?s=<hash of the og:image filename>. WhatsApp caches
+     a link's preview by the page URL and never re-reads a URL it has seen, so
+     after the card changed it kept showing the old one. The hash changes by
+     itself whenever the card is regenerated under a new name, which makes the
+     next share a URL WhatsApp has never cached. The query is ignored by the
+     host; og:url and canonical stay the bare address.
+
+     Every [data-share] gets this: the footer button and, on phones, the
+     share square under the hamburger.                                      */
+  const shareEls = $$('[data-share]');
+  if (shareEls.length) {
     const meta = p => { const m = document.querySelector(`meta[property="${p}"]`); return m ? m.content : ''; };
-    shareBtn.addEventListener('click', async () => {
-      const url   = meta('og:url') || location.href;
+    const hash = s => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36).slice(0, 6); };
+    const share = async () => {
+      const base  = meta('og:url') || location.href.split(/[?#]/)[0];
+      const card  = meta('og:image').split('/').pop();
+      const url   = card ? `${base}${base.includes('?') ? '&' : '?'}s=${hash(card)}` : base;
       const title = meta('og:title') || document.title;
       const text  = meta('og:description');
       if (navigator.share) {
@@ -592,7 +607,8 @@
         return;
       }
       open('https://wa.me/?text=' + encodeURIComponent(`${text}\n${url}`), '_blank', 'noopener');
-    });
+    };
+    shareEls.forEach(el => el.addEventListener('click', share));
   }
 
   const brand = $('[data-brand]');
