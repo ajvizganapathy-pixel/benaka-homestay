@@ -1,4 +1,4 @@
-// Renders tools/share-card/card.html to assets/brand/share-card.jpg - the
+// Renders tools/share-card/card.html to assets/brand/share-card-photo.jpg - the
 // og:image every link preview shows (WhatsApp, Instagram DMs, Facebook).
 //
 //   node tools/make-share-card.js
@@ -17,7 +17,7 @@ try { pw = require('playwright'); } catch { pw = require('/opt/node22/lib/node_m
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'tools/share-card/card.html');
-const OUT = path.join(ROOT, 'assets/brand/share-card.jpg');
+const OUT = path.join(ROOT, 'assets/brand/share-card-photo.jpg');
 const LIMIT = 300 * 1024;
 
 (async () => {
@@ -32,6 +32,6 @@ const LIMIT = 300 * 1024;
     size = fs.statSync(OUT).size;
   }
   await browser.close();
-  if (size > LIMIT) { console.error(`share-card.jpg is ${size} bytes, over ${LIMIT}`); process.exit(1); }
+  if (size > LIMIT) { console.error(`share-card-photo.jpg is ${size} bytes, over ${LIMIT}`); process.exit(1); }
   console.log(`wrote ${path.relative(ROOT, OUT)}: 1200x630, ${Math.round(size / 1024)}KB, quality ${q + 4}`);
 })();

@@ -329,9 +329,12 @@ longer current, and closing one any other way (X, Escape, a link) calls
 ### Link previews, and the Share button
 
 When the address is pasted into WhatsApp, an Instagram DM or Facebook, the
-preview shows `assets/brand/share-card.jpg`: the round logo, "Benaka By The
+preview shows `assets/brand/share-card-photo.jpg`: the round logo, "Benaka By The
 Hills", a caption line, and the Instagram and Facebook marks with their handles.
-The picture sits between two strips of the hero photograph. A preview is a
+All of it sits over the full hero photograph, with a soft
+forest-tinted oval behind the type and small ivory pills under the two platform
+marks. It started as an ivory panel between two photo strips, and the owner asked
+for the panel to go. That first version was `share-card.jpg`, and is in history. A preview is a
 picture, not a page, so none of this can be live CSS: it is drawn once into a
 JPEG by `node tools/make-share-card.js` from `tools/share-card/card.html`.
 

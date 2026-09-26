@@ -4,44 +4,56 @@
      tools/make-share-card.js and served as og:image; nothing here runs on the
      live site.
 
-     Everything that matters - the logo, the name, the caption and both
-     platform marks - sits inside the centre 630x630, because WhatsApp
-     sometimes shows the preview as a square thumbnail cropped from the middle.
-     The photographs at the edges are the only thing allowed to be cut off. -->
+     The photograph fills the whole card; there is no ivory panel. Everything
+     that matters - the logo, the name, the caption and both platform marks -
+     sits inside the centre 630x630, because WhatsApp sometimes shows the
+     preview as a square thumbnail cropped from the middle. -->
 <html lang="en"><head><meta charset="utf-8">
 <style>
   @font-face { font-family: 'Instrument Serif'; src: url(../../web/fonts/instrument-serif-400-normal.woff2) format('woff2'); }
   @font-face { font-family: 'Instrument Serif'; font-style: italic; src: url(../../web/fonts/instrument-serif-400-italic.woff2) format('woff2'); }
   @font-face { font-family: 'Inter'; src: url(../../web/fonts/inter-var.woff2) format('woff2'); font-weight: 100 900; }
   html, body { margin: 0; }
+  /* The whole card is the hero photograph. A forest-tinted oval darkens the
+     middle just enough for light type to read over the pool and the brickwork;
+     it fades out well before the edges so the place still reads as a photo. */
   .card {
     width: 1200px; height: 630px; position: relative; overflow: hidden;
-    background: #f3efe6; color: #1c2f26;
-    display: grid; grid-template-columns: 285px 630px 285px;
+    background: url(../../assets/brand/hero-wide-pool.jpg) 50% 58% / cover;
+    display: flex; align-items: center; justify-content: center;
   }
-  .edge { background: url(../../assets/brand/hero-wide-pool.jpg) center / cover; }
-  .edge--l { background-position: 18% 60%; }
-  .edge--r { background-position: 82% 60%; }
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 430px 330px at 50% 50%,
+      rgba(14, 22, 17, .72) 0%, rgba(14, 22, 17, .56) 45%,
+      rgba(14, 22, 17, .18) 78%, rgba(14, 22, 17, 0) 100%);
+  }
   .mid {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 28px 30px;
-    box-shadow: -1px 0 0 #d9d2c3, 1px 0 0 #d9d2c3;
+    position: relative; width: 630px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    color: #f6f2e9;
   }
   .logo { width: 232px; height: 232px; border-radius: 50%;
-          box-shadow: 0 2px 4px rgba(20,24,20,.14), 0 14px 34px rgba(20,24,20,.16); }
-  .name { font-family: 'Instrument Serif', serif; font-size: 60px; line-height: 1;
-          letter-spacing: -.01em; margin: 26px 0 0; }
-  .name em { color: #a0522d; }
-  .line { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 15px;
-          letter-spacing: .18em; text-transform: uppercase; color: #5b6660; margin: 14px 0 0; }
-  .social { display: flex; gap: 28px; margin-top: 26px;
-            font-family: 'Inter', sans-serif; font-size: 20px; color: #26302b; }
-  .social span { display: inline-flex; align-items: center; gap: 10px; }
+          box-shadow: 0 2px 6px rgba(0,0,0,.35), 0 16px 40px rgba(0,0,0,.40); }
+  .name { font-family: 'Instrument Serif', serif; font-size: 62px; line-height: 1;
+          letter-spacing: -.01em; margin: 24px 0 0;
+          text-shadow: 0 2px 14px rgba(0,0,0,.55); }
+  .name em { color: #f0c29f; }
+  .line { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
+          letter-spacing: .18em; text-transform: uppercase; color: rgba(246,242,233,.92); margin: 14px 0 0;
+          text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 14px rgba(0,0,0,.5); }
+  /* The handles sit on a small ivory pill each: the platforms' marks are
+     designed for a light ground, and white Facebook blue on a dark photo
+     would lose its circle. */
+  .social { display: flex; gap: 16px; margin-top: 24px;
+            font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 500; color: #1c2f26; }
+  .social span { display: inline-flex; align-items: center; gap: 10px;
+                 background: rgba(246, 242, 233, .94); padding: 8px 16px 8px 10px;
+                 border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
 </style></head>
 <body>
 <div class="card">
-  <div class="edge edge--l"></div>
-  <div class="mid">
+    <div class="mid">
     <img class="logo" src="logo-360.png" alt="">
     <p class="name">Benaka <em>By The Hills</em></p>
     <p class="line">A quiet homestay &middot; Irpu Falls, Coorg</p>
@@ -50,6 +62,5 @@
       <span><svg class="social__icon" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#0866FF" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg>Benaka Bythehills</span>
     </div>
   </div>
-  <div class="edge edge--r"></div>
 </div>
 </body></html>
