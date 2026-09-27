@@ -243,6 +243,23 @@ else
   ok "no inline <script> (CSP script-src 'self' is satisfiable)"
 fi
 
+# On Apache the page is served from / by an internal rewrite, so every
+# page-relative path in web/index.html (css/, js/, fonts/, the icons) resolves
+# against / and needs its own rewrite back into web/. Without them the live site
+# once rendered with no stylesheet at all.
+unmapped=$(python3 - <<'PY2'
+import re
+html = open('web/index.html').read()
+rules = re.findall(r'^\s*RewriteRule\s+(\S+)\s+web/', open('.htaccess').read(), re.M)
+for ref in sorted(set(re.findall(r'(?:href|src)="([^"#:]+)"', html))):
+    if ref.startswith(('../', '/')): continue
+    path = ref.split('?')[0]
+    if not any(re.match(r, path) for r in rules): print(path)
+PY2
+)
+[ -z "$unmapped" ] && ok ".htaccess maps every page-relative asset path back into web/" \
+                   || bad "page-relative paths with no .htaccess rewrite into web/" "$unmapped"
+
 grep -q "Content-Security-Policy" .htaccess && ok ".htaccess sets a CSP" || bad ".htaccess has no CSP"
 grep -q "Options -Indexes"       .htaccess && ok ".htaccess disables directory listing" || bad "no Options -Indexes"
 grep -q "RewriteCond %{HTTPS}"   .htaccess && ok ".htaccess forces HTTPS" || bad "no HTTPS redirect"

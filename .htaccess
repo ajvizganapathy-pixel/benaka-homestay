@@ -33,6 +33,17 @@ Options -Indexes
   # Serve the site from / rather than /web/ — internal, so the address stays clean.
   RewriteCond %{REQUEST_URI} ^/$
   RewriteRule ^$ web/index.html [L]
+
+  # ...AND ITS PAGE-RELATIVE FILES. web/index.html refers to its own stylesheets,
+  # script, fonts and icons as css/..., js/..., fonts/... and favicon-64.png.
+  # Served from / by the rule above, the browser resolves those against / and
+  # asks for /css/site.css - which does not exist - so the live site once went
+  # up with no styles at all. These map them back into web/, internally.
+  # (../assets/... paths are unaffected: from / they clamp to /assets/.)
+  # tools/test.sh fails if web/index.html gains a page-relative path this does
+  # not cover.
+  RewriteRule ^(css|js|fonts)/(.+)$ web/$1/$2 [L]
+  RewriteRule ^(favicon-64\.png|apple-touch-icon\.png)$ web/$1 [L]
 </IfModule>
 
 <IfModule mod_headers.c>

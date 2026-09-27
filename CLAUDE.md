@@ -412,6 +412,15 @@ for everywhere `.htaccess` does not apply — `python3 -m http.server`, a
 non-Apache host, opening the files directly. It uses `location.replace()` so it
 leaves no history entry; `assign()` would trap the Back button.
 
+**The internal rewrite has a cost, and `.htaccess` pays it.** Served at `/`,
+`web/index.html`'s page-relative paths (`css/…`, `js/…`, `fonts/…`,
+`favicon-64.png`, `apple-touch-icon.png`) resolve against `/`, not `/web/`. The
+first Hostinger deploy went live with **no stylesheet at all**, because nothing
+ever had served the page from `/` behind this rewrite before. GitHub Pages serves it at
+`/web/`. Two `RewriteRule`s map those paths back into `web/`. `../assets/…`
+needs nothing, because from `/` it clamps to `/assets/`. `tools/test.sh` fails if the
+page gains a page-relative path that no rule covers.
+
 ### Type
 
 Two registers and nothing between them: an editorial serif (macro) and a small
