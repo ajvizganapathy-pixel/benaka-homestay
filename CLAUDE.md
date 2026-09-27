@@ -413,8 +413,9 @@ busters exist, but the link previews now point at benakahomestay.com.
   that doesn't parse, on a telephone that isn't an owner number, or on `sameAs`
   that doesn't match the footer's social links. Its facts come only from the
   page: `geo` is the pin of the Maps link in the venue block (11.972236,
-  75.9923074). `priceRange`, `postalCode`, check-in/out times, room count and
-  amenities are **deliberately absent**, because nothing on the site states them.
+  75.9923074). `postalCode` 571217 was confirmed by the owner. `priceRange`,
+  check-in/out times, room count and amenities are **deliberately absent**,
+  because nothing on the site states them.
 - `robots.txt` and `sitemap.xml` live at the repo root (PR #1).
 
 ### Two entry points, on purpose
