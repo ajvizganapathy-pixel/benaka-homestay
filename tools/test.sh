@@ -236,12 +236,44 @@ php -r '$m=json_decode(file_get_contents("assets/manifest.json"),true); exit($m[
   && ok "manifest imageCount matches the array" || bad "manifest imageCount is stale"
 
 # The CSP is script-src 'self'; an inline <script> would be blocked at runtime.
-if grep -nE '<script(?![^>]*src=)' web/index.html >/dev/null 2>&1 \
-   || grep -n '<script>' web/index.html >/dev/null 2>&1; then
-  bad "web/index.html has an inline <script>, which the CSP blocks"
-else
-  ok "no inline <script> (CSP script-src 'self' is satisfiable)"
-fi
+# The ONE exception is type="application/ld+json": structured data for Google,
+# which browsers never execute, so the CSP does not apply to it. Every other
+# <script> must load by src=. (This used to be two greps; the first used a
+# (?!...) lookahead that grep -E does not support, so it errored silently and
+# only a bare "<script>" was ever caught.)
+scriptbad=$(python3 - <<'PY2'
+import re, json
+html = re.sub(r'<!--.*?-->', '', open('web/index.html').read(), flags=re.S)  # prose about <script> is not a script
+bad = []
+for attrs, body in re.findall(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
+    if re.search(r'\bsrc=', attrs):
+        continue
+    if re.search(r'type="application/ld\+json"', attrs):
+        try:
+            d = json.loads(body)
+        except ValueError as e:
+            bad.append('JSON-LD does not parse: %s' % e); continue
+        if d.get('@type') != 'LodgingBusiness':
+            bad.append('JSON-LD @type is %r, want LodgingBusiness' % d.get('@type'))
+        owners = {'8861070431', '8197558321', '9647782880', '9448647831'}
+        phones = [d.get('telephone', '')] + [c.get('telephone', '') for c in d.get('contactPoint', [])]
+        for t in phones:
+            digits = re.sub(r'\D', '', t)[-10:]
+            if digits not in owners:
+                bad.append('JSON-LD telephone %r is not one of the owner numbers' % t)
+        social = set(re.findall(r'class="social__link" href="([^"]+)"', html))
+        if set(d.get('sameAs', [])) != social:
+            bad.append('JSON-LD sameAs %r != footer social links %r' % (d.get('sameAs'), sorted(social)))
+        img = d.get('image', '')
+        if not img.startswith('https://benakahomestay.com/') or not __import__('os').path.isfile(img.split('.com/', 1)[1]):
+            bad.append('JSON-LD image not an existing file on the live base: %r' % img)
+        continue
+    bad.append('inline executable <script%s> (CSP blocks it)' % attrs)
+print('\n'.join(bad))
+PY2
+)
+[ -z "$scriptbad" ] && ok "no inline executable <script>; the JSON-LD parses and matches the footer" \
+                   || bad "script/JSON-LD check" "$scriptbad"
 
 # On Apache the page is served from / by an internal rewrite, so every
 # page-relative path in web/index.html (css/, js/, fonts/, the icons) resolves
