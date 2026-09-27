@@ -400,6 +400,23 @@ GitHub Pages (`ajvizganapathy-pixel.github.io/benaka-homestay/`) still
 serves the same `main` too. It ignores `.htaccess`, which is why the `?v=` cache
 busters exist, but the link previews now point at benakahomestay.com.
 
+### Search
+
+- **Title and meta description** are the same in `web/index.html` and the root
+  stub. The meta description stays under 160 characters. It is separate from
+  `og:description`, which is the share caption inside the LINK PREVIEWS block.
+- **Structured data**: one `<script type="application/ld+json">`
+  `LodgingBusiness` block in `web/index.html` `<head>`. JSON-LD is data and
+  browsers never execute it, so CSP `script-src 'self'` does not block it. This
+  was checked under the live CSP header, with no violation. `tools/test.sh` allows exactly
+  that type of inline `<script>`, and fails on any other inline script, on JSON-LD
+  that doesn't parse, on a telephone that isn't an owner number, or on `sameAs`
+  that doesn't match the footer's social links. Its facts come only from the
+  page: `geo` is the pin of the Maps link in the venue block (11.972236,
+  75.9923074). `priceRange`, `postalCode`, check-in/out times, room count and
+  amenities are **deliberately absent**, because nothing on the site states them.
+- `robots.txt` and `sitemap.xml` live at the repo root (PR #1).
+
 ### Two entry points, on purpose
 
 The site is `web/index.html`. The root `index.html` is a redirect stub, not a
