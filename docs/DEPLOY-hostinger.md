@@ -10,6 +10,15 @@ recover it from history if it is ever wanted back.)
 
 ---
 
+## 0. How it is actually deployed now
+
+benakahomestay.com is set to **Git auto-deploy from the `main` branch** of
+`ajvizganapathy-pixel/benaka-homestay` into `public_html`. It was configured
+through the Hostinger API on 27 Sep 2026, and in hPanel it lives under
+Websites → Manage → Advanced → Git. **Pushing to `main` is the whole deploy.**
+The manual upload below is only for rebuilding the site from scratch somewhere
+else.
+
 ## 1. What to upload
 
 Put these into `public_html`:

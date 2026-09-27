@@ -350,9 +350,9 @@ Four rules, all enforced by `tools/test.sh` except the last:
    previews as nothing. The test diffs the two blocks.
 2. **Every URL in it is absolute** (`og:url`, `og:image`, `twitter:image`).
    Scrapers do not resolve relative ones; the old `../assets/...` og:image
-   never showed a picture anywhere. The base is
-   `https://ajvizganapathy-pixel.github.io/benaka-homestay/`. When
-   benakahomestay.com goes live, change it in both files.
+   never showed a picture anywhere. The base is the live domain,
+   `https://benakahomestay.com/`, and the image must sit under it. It was the
+   GitHub Pages address until the Hostinger site went live on 27 Sep 2026.
 3. **The card is 1200x630 and at most 300KB.** WhatsApp silently drops bigger
    preview images and the link then shares as bare text. The generator steps the
    JPEG quality down until it fits.
@@ -383,6 +383,22 @@ sheet. A cancelled sheet throws `AbortError`, which is swallowed. Without it
 (most desktops) it opens `https://wa.me/?text=…` **with no number**, which is
 WhatsApp's pick-a-chat screen. It never goes to the owner, and the contact-number
 test ignores it because it only matches `wa.me/<digits>`.
+
+### Where it is live, and how it deploys
+
+**https://benakahomestay.com/** is on Hostinger (Single web hosting). The domain
+was registered on 27 Sep 2026 and expires on 27 Sep 2029, and the HTTPS
+certificate is Hostinger's own, renewed automatically. The website's document
+root is `public_html`, and it is fed by **Git auto-deploy from `main`** of this
+repository. **Every push to `main` goes live within about a minute. There is no
+other deploy step.** So don't push work in progress to `main`. The whole
+repository is cloned into `public_html` (about 80MB), and `.htaccess` is what
+keeps `render/`, `docs/`, `tools/`, `assets/handoff/`, dotfiles and `*.md` from
+being served. Verified after the first deploy: all of those answer 403 or 404.
+
+GitHub Pages (`ajvizganapathy-pixel.github.io/benaka-homestay/`) still
+serves the same `main` too. It ignores `.htaccess`, which is why the `?v=` cache
+busters exist, but the link previews now point at benakahomestay.com.
 
 ### Two entry points, on purpose
 

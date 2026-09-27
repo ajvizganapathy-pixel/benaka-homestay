@@ -155,7 +155,10 @@ else:
         if not tags.get(k): bad.append('missing ' + k)
     for k in ('og:url', 'og:image', 'twitter:image'):
         if not tags.get(k, '').startswith('https://'): bad.append(k + ' is not an absolute https URL')
-    img = re.sub(r'^https://[^/]+/[^/]+/', '', tags.get('og:image', ''))
+    base = tags.get('og:url', '')
+    img = tags.get('og:image', '')
+    if not img.startswith(base): bad.append('og:image is not under og:url ' + base)
+    img = img[len(base):]
     if not os.path.isfile(img): bad.append('og:image not on disk: ' + img)
     else:
         d = open(img, 'rb').read()
