@@ -72,11 +72,36 @@ fi
 for f in index.html web/index.html .htaccess assets/manifest.json \
          assets/brand/hero-wide-pool.jpg assets/brand/hero-tall.jpg \
          assets/brand/logo-112.png assets/brand/logo-168.png \
-         web/favicon-64.png web/apple-touch-icon.png \
+         web/favicon-64.png web/apple-touch-icon.png favicon.ico \
+         assets/brand/favicon-48.png assets/brand/favicon-96.png \
+         assets/brand/favicon-192.png \
          assets/video/benaka-tour.mp4 assets/video/benaka-tour-poster.jpg \
          assets/video/hero-loop.mp4 assets/video/hero-loop-wide.mp4; do
   [ -f "$f" ] && ok "present: $f" || bad "missing: $f"
 done
+
+# Google Search shows the favicon beside the result only if it is square and a
+# multiple of 48px; anything else gets a grey globe, silently. Check every
+# rel="icon" in both entry files resolves to such a PNG.
+icon_err=$(python3 - <<'PY'
+import re, os, struct
+errs = []
+for page, base in (("web/index.html", "web"), ("index.html", ".")):
+    for href in re.findall(r'<link rel="icon" href="([^"]+)"', open(page).read()):
+        path = os.path.normpath(os.path.join(base, href))
+        if not os.path.isfile(path):
+            errs.append(f"{page}: {href} does not exist"); continue
+        head = open(path, "rb").read(24)
+        if head[:8] != b"\x89PNG\r\n\x1a\n":
+            errs.append(f"{page}: {href} is not a PNG"); continue
+        w, h = struct.unpack(">II", head[16:24])
+        if w != h or w % 48:
+            errs.append(f"{page}: {href} is {w}x{h}, not a square multiple of 48")
+print("\n".join(errs))
+PY
+)
+[ -z "$icon_err" ] && ok "favicons are square multiples of 48px (Google shows them)" \
+                   || bad "favicon Google will not show" "$icon_err"
 
 # ===========================================================================
 head_ "3. Assets and CSS invariants"
