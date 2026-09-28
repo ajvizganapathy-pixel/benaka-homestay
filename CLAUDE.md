@@ -417,6 +417,12 @@ busters exist, but the link previews now point at benakahomestay.com.
   check-in/out times, room count and amenities are **deliberately absent**,
   because nothing on the site states them.
 - `robots.txt` and `sitemap.xml` live at the repo root (PR #1).
+- **The favicon in Google results** is `assets/brand/favicon-{48,96,192}.png`,
+  cut from the round logo, plus `/favicon.ico` at the root. Google shows a
+  favicon only if it is **square and a multiple of 48px**, and falls back to a
+  grey globe without saying why. The old `web/favicon-64.png` was 64px, so
+  results showed the globe. `tools/test.sh` checks every `rel="icon"` in both
+  entry files. `favicon-64.png` stays on disk only because `.htaccess` names it.
 
 ### Two entry points, on purpose
 
