@@ -416,6 +416,12 @@ busters exist, but the link previews now point at benakahomestay.com.
   75.9923074). `postalCode` 571217 was confirmed by the owner. `priceRange`,
   check-in/out times, room count and amenities are **deliberately absent**,
   because nothing on the site states them.
+- **Site name**: a second JSON-LD block, `@type` `WebSite`, tells Google to
+  label results "Benaka By The Hills" instead of the bare domain. Its `name`
+  must equal `og:site_name`, and `tools/test.sh` checks that and that there is
+  exactly one `WebSite` and one `LodgingBusiness` block. Sitelinks (the extra
+  links under a result) cannot be requested anywhere. Google picks them itself,
+  and it rarely picks `#` sections of a one-page site.
 - `robots.txt` and `sitemap.xml` live at the repo root (PR #1).
 - **The favicon in Google results** is `assets/brand/favicon-{48,96,192}.png`,
   cut from the round logo, plus `/favicon.ico` at the root. Google shows a

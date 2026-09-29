@@ -100,6 +100,18 @@
   ]
 }
 </script>
+<!-- SITE NAME for Google results: without it Google labels the result with the
+     bare domain, "benakahomestay.com". Google reads this only on the home page.
+     name must match og:site_name; tools/test.sh checks it. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Benaka By The Hills",
+  "alternateName": ["Benaka", "Benaka Homestay"],
+  "url": "https://benakahomestay.com/"
+}
+</script>
 
 <link rel="preload" href="fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/instrument-serif-400-italic.woff2" as="font" type="font/woff2" crossorigin>
