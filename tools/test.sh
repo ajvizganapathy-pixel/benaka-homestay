@@ -270,6 +270,7 @@ scriptbad=$(python3 - <<'PY2'
 import re, json
 html = re.sub(r'<!--.*?-->', '', open('web/index.html').read(), flags=re.S)  # prose about <script> is not a script
 bad = []
+seen = []
 for attrs, body in re.findall(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
     if re.search(r'\bsrc=', attrs):
         continue
@@ -278,8 +279,19 @@ for attrs, body in re.findall(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
             d = json.loads(body)
         except ValueError as e:
             bad.append('JSON-LD does not parse: %s' % e); continue
+        seen.append(d.get('@type'))
+        if d.get('@type') == 'WebSite':
+            # The site name Google shows above the result. It must be the same
+            # name the link previews use, on the canonical home URL.
+            og = re.search(r'<meta property="og:site_name" content="([^"]+)"', html)
+            if not og or d.get('name') != og.group(1):
+                bad.append('WebSite name %r != og:site_name %r' % (d.get('name'), og and og.group(1)))
+            if d.get('url') != 'https://benakahomestay.com/':
+                bad.append('WebSite url %r is not the canonical home URL' % d.get('url'))
+            continue
         if d.get('@type') != 'LodgingBusiness':
-            bad.append('JSON-LD @type is %r, want LodgingBusiness' % d.get('@type'))
+            bad.append('JSON-LD @type is %r, want LodgingBusiness or WebSite' % d.get('@type'))
+            continue
         owners = {'8861070431', '8197558321', '9647782880', '9448647831'}
         phones = [d.get('telephone', '')] + [c.get('telephone', '') for c in d.get('contactPoint', [])]
         for t in phones:
@@ -294,6 +306,9 @@ for attrs, body in re.findall(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
             bad.append('JSON-LD image not an existing file on the live base: %r' % img)
         continue
     bad.append('inline executable <script%s> (CSP blocks it)' % attrs)
+for t in ('LodgingBusiness', 'WebSite'):
+    if seen.count(t) != 1:
+        bad.append('want exactly one %s JSON-LD block, found %d' % (t, seen.count(t)))
 print('\n'.join(bad))
 PY2
 )
