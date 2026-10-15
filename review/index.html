@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Leave a review · Benaka By The Hills</title>
+<!-- Reached only from a guest's own link (/review/#t=...). Never indexed.
+     no-referrer: nothing on this page tells another site where the visitor
+     came from. The token is in the #fragment, which browsers never send. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="icon" href="../assets/brand/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="stylesheet" href="../web/css/fonts.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/tokens.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/site.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/review-pages.css?v=20261015-1">
+<script defer src="review.js?v=20261015-1"></script>
+</head>
+<body class="after rp">
+
+<header class="rp__bar">
+  <a class="rp__mark" href="../web/" aria-label="Benaka By The Hills, home"><img src="../assets/brand/logo-112.png" width="36" height="36" alt=""> <span class="micro">Benaka By The Hills</span></a>
+</header>
+
+<main class="rp__main">
+
+  <section class="rp__note" data-view="loading">
+    <p class="micro">One moment</p>
+    <noscript><p>This page needs JavaScript to send your review. You can also message us on WhatsApp.</p></noscript>
+  </section>
+
+  <!-- One message for every link that cannot be used: used, revoked, expired
+       or unknown. The server gives the page no way to tell them apart. -->
+  <section class="rp__note" data-view="dead" hidden>
+    <p class="micro">Guest review</p>
+    <h1 class="macro">This link is no longer open.</h1>
+    <p>Each review link works once and for a limited time. If you think this is a mistake, send us a message on WhatsApp and we will send you a new one.</p>
+    <a class="btn btn--ghost" href="../web/">Back to Benaka By The Hills</a>
+  </section>
+
+  <section class="rp__note" data-view="paused" hidden>
+    <p class="micro">Guest review</p>
+    <h1 class="macro">Reviews are paused for now.</h1>
+    <p>Please try your link again later. It has not been used up.</p>
+  </section>
+
+  <section class="rp__note" data-view="unavailable" hidden>
+    <p class="micro">Guest review</p>
+    <h1 class="macro">We could not reach the server.</h1>
+    <p>Please try again in a few minutes. Your link has not been used up.</p>
+    <button class="btn btn--ghost" type="button" data-retry>Try again</button>
+  </section>
+
+  <!-- The WhatsApp check, when the owner left it on for this invitation. -->
+  <section class="rp__panel" data-view="check" hidden>
+    <p class="micro">Guest review</p>
+    <h1 class="macro">First, a quick check.</h1>
+    <p class="rp__lede">Hello <span data-first></span>. So we know this review comes from you, send us this code on WhatsApp from the number we sent your link to.</p>
+    <div class="gcheck">
+      <p class="micro">Your code</p>
+      <p class="gcheck__code" data-code></p>
+      <span class="rp__actions">
+        <a class="btn" data-wa-confirm target="_blank" rel="noopener noreferrer">Send it on WhatsApp</a>
+        <button class="btn btn--ghost" type="button" data-recheck>I have sent it</button>
+      </span>
+      <p class="rp__msg" data-check-msg role="status" aria-live="polite"></p>
+    </div>
+    <p class="rp__small-print gcheck__after">We open the form once we have seen your message. That is usually the same day.</p>
+  </section>
+
+  <section class="rp__panel" data-view="form" hidden>
+    <p class="micro">Guest review</p>
+    <h1 class="macro">How was your stay?</h1>
+    <form class="rp__form" data-review-form novalidate>
+      <div class="rp__field">
+        <span class="micro">Your name, as it will appear</span>
+        <!-- From the invitation, not editable. The server ignores any name
+             sent with the review and uses the invitation's. -->
+        <p class="gform__who" data-name></p>
+      </div>
+
+      <fieldset class="gstars" data-stars>
+        <legend class="micro">Your rating</legend>
+        <span class="gstars__row">
+          <input type="radio" name="rating" id="r1" value="1"><label for="r1" aria-label="1 star, poor">★</label>
+          <input type="radio" name="rating" id="r2" value="2"><label for="r2" aria-label="2 stars">★</label>
+          <input type="radio" name="rating" id="r3" value="3"><label for="r3" aria-label="3 stars">★</label>
+          <input type="radio" name="rating" id="r4" value="4"><label for="r4" aria-label="4 stars">★</label>
+          <input type="radio" name="rating" id="r5" value="5"><label for="r5" aria-label="5 stars, excellent">★</label>
+        </span>
+      </fieldset>
+
+      <label class="rp__field"><span class="micro">Your review</span>
+        <textarea name="body" maxlength="1500" required aria-describedby="body-count"></textarea>
+        <span class="gcount micro" id="body-count" data-count></span>
+      </label>
+
+      <label class="rp__check"><input type="checkbox" name="consent">
+        <span>Show my full name with this review on benakahomestay.com. If you leave this unticked, only the owners will read it.</span></label>
+
+      <!-- Left empty by people. Bots fill it in. -->
+      <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <p class="rp__msg" data-form-msg role="status" aria-live="polite"></p>
+      <span class="rp__actions"><button class="btn" type="submit" data-send>Send my review</button></span>
+      <p class="rp__small-print">You can send one review with this link. The owners read every review before it appears on the site.</p>
+    </form>
+  </section>
+
+  <section class="rp__note" data-view="thanks" hidden tabindex="-1">
+    <p class="micro">Guest review</p>
+    <h1 class="macro">Thank you, <span data-first></span>.</h1>
+    <p data-thanks-line></p>
+    <a class="btn btn--ghost" href="../web/">Back to Benaka By The Hills</a>
+  </section>
+
+</main>
+</body>
+</html>

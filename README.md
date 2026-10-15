@@ -125,6 +125,16 @@ not one of these. A typo in a number does not look broken; it dials a stranger.
 
 ![The footer](docs/screenshots/10-footer.jpg)
 
+## Guest reviews
+
+Reviews are invitation-only. After a stay the owner creates an invitation at
+`/owner/` (behind a 3D safe-lock keypad), and sends the guest their own link from
+WhatsApp. The guest leaves stars and a review, once. The owner approves it, and
+approved reviews the guest agreed to show appear in a slow sideways slider
+between the photographs and the contact section. Thirty days after a review
+arrives, the guest's number and stay dates are deleted. Setup and rollback are in
+`docs/DEPLOY-hostinger.md`, section 5.
+
 ## Sharing the link
 
 Paste the site's address into WhatsApp, an Instagram DM or Facebook and the

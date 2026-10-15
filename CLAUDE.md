@@ -11,7 +11,9 @@ with the WhatsApp and call numbers, and the venue. The round BENAKA logo sits
 fixed top left on every screen, with a section menu top right.
 
 Static and framework-free — plain HTML, no build step, no package manifest.
-Serve the repo root over HTTP and open `/web/`.
+Serve the repo root over HTTP and open `/web/`. The one server-side part is the
+invitation-only guest review system (PHP 8 + MySQL, `review-api/`); see "Guest
+reviews" below before touching it.
 
 The property is signed **Benaka By The Hills** at its gate, which is what the
 site uses. The repo is still named `benaka-homestay`.
@@ -110,6 +112,13 @@ web/index.html        page shell: logo + menu, editorial band, the film, gallery
 web/css/              fonts, tokens, site chrome
 web/js/site.js        all behaviour: film, hero loop, gallery, mosaic, lightbox, menu
 web/fonts/            self-hosted woff2 (no CDN at runtime)
+web/js/reviews.js     #reviews: fetches review-api/public.php, month chips, the slider
+web/css/reviews.css   #reviews; web/css/review-pages.css styles /owner/ and /review/
+review-api/           guest reviews server: public.php, invite.php, owner.php, lib/ (never served)
+owner/                /owner/: the 3D safe-lock (lock.js + vendor/three r169) and the dashboard
+review/               /review/#t=<token>: the guest's form
+migrations/           001_guest_reviews.sql + .down.sql (additive, gr_* tables only)
+tests/reviews/        api-test.php (real HTTP, real MySQL), browser-test.cjs, seed.php
 assets/raw/           the property photographs — the gallery and the mosaic
 assets/brand/         the logo, the hero images and the owner's reference (README there)
 assets/video/         benaka-tour.mp4 + poster, hero-loop.mp4, hero-loop-wide.mp4.
@@ -429,6 +438,61 @@ busters exist, but the link previews now point at benakahomestay.com.
   grey globe without saying why. The old `web/favicon-64.png` was 64px, so
   results showed the globe. `tools/test.sh` checks every `rel="icon"` in both
   entry files. `favicon-64.png` stays on disk only because `.htaccess` names it.
+
+### Guest reviews
+
+Invitation-only. The owner invites a guest from `/owner/`, the guest reviews
+once at `/review/#t=<token>`, the owner approves, and approved reviews whose
+guest ticked consent appear in `#reviews` (between `#gallery` and `#visit`).
+Setup, rollback and the live checks are in `docs/DEPLOY-hostinger.md` section 5.
+
+Things that will bite:
+
+1. **`review-api/`, never `api/`.** `tools/test.sh` treats an `api/` folder as
+   the removed booking flow coming back, and fails.
+2. **The real config is ABOVE `public_html`**:
+   `/home/u531905492/domains/benakahomestay.com/benaka-reviews-config.php`.
+   `bootstrap.php` finds it at `dirname(<repo root>)`. The repo carries only
+   `review-api/config.example.php`, with placeholders, switched off. Never put a
+   real value in git: the whole repo is cloned into `public_html`.
+3. **The off switch is `REVIEWS_ENABLED`** in that config. Off: every endpoint
+   answers 503 `paused` without touching the database, the homepage section
+   stays hidden, and `/owner/` and `/review/` say "paused". It takes effect on
+   the next request (bootstrap invalidates OPcache for the config).
+4. **The homepage section is hidden in the HTML** and shown by `reviews.js`
+   only when the API returns valid JSON with at least one review. GitHub Pages
+   serves `public.php` as plain text, so there it stays hidden. That is the
+   intended behaviour, and the API-down test checks it. Don't add a `.reveal`
+   class inside `#reviews`: it is unhidden after `observeReveals()` has run, and
+   would stay at opacity 0.
+5. **The owner's code is never anywhere but the owner's head.** Only an
+   Argon2id hash exists, in `benaka-owner-code.hash` beside the config (or in
+   `OWNER_CODE_HASH`). It is set once through the setup phrase (`SETUP_KEY`).
+   Five wrong codes lock sign-in for 30 minutes per account, IP and device, on
+   the server. Lift a lock early with `DELETE FROM gr_login_locks`.
+6. **Day 30 runs at the start of every API request** (`lib/purge.php`). There is
+   no cron to forget. 30 days after submission the invitation (number, stay dates)
+   is deleted. An approved, consented review keeps name, stars, text and date.
+   Everything else is deleted.
+7. **One clock.** All times come from `gr_now()`, never SQL `NOW()`, so the tests
+   can move time. Stored in UTC; months and dates shown in Asia/Kolkata.
+8. **Guest text is only ever `textContent`.** `tools/test.sh` fails if
+   `reviews.js`, `owner.js`, `lock.js` or `review.js` uses `innerHTML`.
+9. **Three.js loads only on `/owner/`**, self-hosted as
+   `owner/vendor/three-0.169.0.module.min.js`, hash-checked by `tools/test.sh`.
+   The 3D lock only fills the `#code` field; if WebGL fails, the plain field is
+   the whole sign-in. Screenshots in headless Chromium need SwiftShader:
+   `--enable-unsafe-swiftshader --use-angle=swiftshader`.
+10. **The `?v=` on `/owner/` and `/review/` must equal the homepage's.**
+    `tools/test.sh` checks this. Bump all three pages together.
+11. **Tests need a database.** `tools/test.sh` section 4 runs
+    `tests/reviews/api-test.php` against MySQL/MariaDB: `REVIEWS_TEST_DSN`/`_USER`/
+    `_PASS`, or root over the local socket. CI starts the runner's MySQL 8 and
+    sets `REVIEWS_REQUIRE_DB=1`. In a workspace, `apt-get install mariadb-server`
+    and start `mysqld_safe`. Test data is always "Test Guest …". Never invent a
+    review, a name or a rating, not even for a screenshot.
+12. **The Google reviews link is deliberately absent** until the owner supplies
+    the listing's reviews URL.
 
 ### Two entry points, on purpose
 

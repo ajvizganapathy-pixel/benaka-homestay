@@ -2,9 +2,13 @@
 # Upload alongside the site in public_html.
 #
 # The one thing this file must never break: the fonts, stylesheets, scripts,
-# the film and photographs the page needs. (There is no server-side code any
-# more; the booking endpoint under /api/ was removed with the booking flow.) Every deny rule
-# below names a specific path or extension for exactly that reason.
+# the film and photographs the page needs. Every deny rule below names a
+# specific path or extension for exactly that reason.
+#
+# The only server-side code is the guest review system: review-api/*.php (three
+# endpoints), with its shared code in review-api/lib/ and its config ABOVE
+# public_html. The booking endpoint that used to live under /api/ was removed
+# with the booking flow; tools/test.sh fails if an api/ folder comes back.
 
 DirectoryIndex web/index.html index.html
 
@@ -133,6 +137,13 @@ RedirectMatch 404 (?i)/\.(git|data|env|svn|hg)(/|$)
 # docs/DEPLOY-hostinger.md — but if one ever is, it is not public.
 RedirectMatch 404 (?i)^/(render|docs|tools)(/|$)
 RedirectMatch 404 (?i)^/assets/handoff(/|$)
+
+# Guest reviews: the shared PHP (never an endpoint), the SQL migrations and the
+# test suites. lib/ also carries its own deny-all .htaccess and every file in it
+# refuses to run unless an endpoint loaded it, so this is the first of three
+# walls, not the only one. The real config is not in public_html at all.
+RedirectMatch 404 (?i)^/review-api/lib(/|$)
+RedirectMatch 404 (?i)^/(migrations|tests)(/|$)
 
 # ---------------------------------------------------------------------------
 # MIME types. ExpiresByType and Cache-Control only fire for types the server
