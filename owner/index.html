@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Owner · Benaka By The Hills</title>
+<!-- Private. Not linked from the site, not in the sitemap, and never indexed:
+     this meta, owner/.htaccess (X-Robots-Tag) and the API's own headers all
+     say so. No external script, no inline script: CSP script-src 'self'. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1c2f26">
+<link rel="icon" href="../assets/brand/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="stylesheet" href="../web/css/fonts.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/tokens.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/site.css?v=20261015-1">
+<link rel="stylesheet" href="../web/css/review-pages.css?v=20261015-1">
+<script type="module" src="owner.js?v=20261015-1"></script>
+</head>
+<body class="after rp">
+
+<header class="rp__bar">
+  <span class="rp__mark"><img src="../assets/brand/logo-112.png" width="36" height="36" alt=""> <span class="micro">Benaka · Owner</span></span>
+  <span class="rp__bar-actions" data-when="dash" hidden>
+    <button class="btn btn--ghost rp__small" type="button" data-refresh>Refresh</button>
+    <button class="btn btn--ghost rp__small" type="button" data-signout>Sign out</button>
+  </span>
+</header>
+
+<main class="rp__main">
+
+  <!-- Every state is a view; owner.js shows exactly one. -->
+  <section class="rp__note" data-view="loading">
+    <p class="micro">One moment</p>
+    <noscript><p>This page needs JavaScript.</p></noscript>
+  </section>
+
+  <section class="rp__note" data-view="paused" hidden>
+    <p class="micro">Guest reviews</p>
+    <h1 class="macro">Paused for now.</h1>
+    <p>Reviews are switched off on the server. Nothing has been lost.</p>
+  </section>
+
+  <section class="rp__note" data-view="unavailable" hidden>
+    <p class="micro">Guest reviews</p>
+    <h1 class="macro">Not available here.</h1>
+    <p>This page works only on benakahomestay.com. If you are there already, try again in a few minutes.</p>
+  </section>
+
+  <section class="rp__note" data-view="unconfigured" hidden>
+    <p class="micro">First sign-in</p>
+    <h1 class="macro">No code is set yet.</h1>
+    <p>Put a setup phrase of 20 characters or more in <code>SETUP_KEY</code> in the server config, then reload this page.</p>
+  </section>
+
+  <!-- One-time setup. Shown only while the server has no code hash and its
+       config holds a setup phrase. -->
+  <section class="rp__panel" data-view="setup" hidden>
+    <p class="micro">First sign-in</p>
+    <h1 class="macro">Choose your code.</h1>
+    <p class="rp__lede">Digits only, at least 8. It is stored only as a one-way hash, so nobody, including us, can read it back. Write it down somewhere safe.</p>
+    <form class="rp__form" data-setup-form novalidate>
+      <label class="rp__field"><span class="micro">Setup phrase from the server config</span>
+        <input name="setup_key" type="password" autocomplete="off" required></label>
+      <label class="rp__field"><span class="micro">New code</span>
+        <input name="code" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" minlength="8" maxlength="32" required></label>
+      <label class="rp__field"><span class="micro">The same code again</span>
+        <input name="code2" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" minlength="8" maxlength="32" required></label>
+      <p class="rp__msg" data-msg role="status" aria-live="polite"></p>
+      <button class="btn" type="submit">Set the code</button>
+    </form>
+    <div class="rp__result" data-setup-hash hidden>
+      <p>The server could not write the code file. Paste this line into <code>OWNER_CODE_HASH</code> in the config with hPanel's File Manager, then reload. It is the hash, not your code.</p>
+      <textarea class="rp__mono" readonly rows="3" data-hash-out></textarea>
+    </div>
+  </section>
+
+  <!-- The lock. The 3D keypad (lock.js) is drawn into data-lock-stage and is
+       hidden from assistive technology; the real control is the digit field
+       below it, which a screen reader, a keyboard and a phone without WebGL
+       all use directly. -->
+  <section class="lock band--forest" data-view="lock" hidden>
+    <div class="lock__inner">
+      <p class="micro lock__eyebrow">Benaka By The Hills</p>
+      <h1 class="lock__h">Owner sign-in</h1>
+      <div class="lock__stage" data-lock-stage></div>
+      <p class="lock__dots" data-lock-dots aria-hidden="true"></p>
+      <form class="lock__form" data-lock-form novalidate>
+        <label class="lock__label" for="code">Sign-in code, digits only</label>
+        <input class="lock__input" id="code" name="code" type="password" inputmode="numeric" pattern="[0-9]*"
+               autocomplete="current-password" minlength="8" maxlength="32" required>
+        <span class="lock__buttons">
+          <button class="btn btn--ghost" type="button" data-lock-clear>Clear</button>
+          <button class="btn" type="submit" data-lock-go>Unlock</button>
+        </span>
+      </form>
+      <p class="lock__msg" data-lock-msg role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- The dashboard. -->
+  <section class="dash" data-view="dash" hidden>
+    <div class="dash__head">
+      <div>
+        <p class="micro">Guest reviews</p>
+        <h1 class="macro">Dashboard</h1>
+      </div>
+      <button class="btn" type="button" data-new-invite>New invitation</button>
+    </div>
+
+    <div class="dash__tabs" role="tablist" aria-label="Lists">
+      <button role="tab" id="tab-waiting" aria-controls="panel-waiting" aria-selected="true" data-tab="waiting">Waiting <span data-count="waiting"></span></button>
+      <button role="tab" id="tab-published" aria-controls="panel-published" aria-selected="false" tabindex="-1" data-tab="published">Published <span data-count="published"></span></button>
+      <button role="tab" id="tab-invitations" aria-controls="panel-invitations" aria-selected="false" tabindex="-1" data-tab="invitations">Invitations <span data-count="invitations"></span></button>
+    </div>
+    <p class="rp__msg dash__msg" data-dash-msg role="status" aria-live="polite"></p>
+
+    <div role="tabpanel" id="panel-waiting" aria-labelledby="tab-waiting" data-panel="waiting"></div>
+    <div role="tabpanel" id="panel-published" aria-labelledby="tab-published" data-panel="published" hidden></div>
+    <div role="tabpanel" id="panel-invitations" aria-labelledby="tab-invitations" data-panel="invitations" hidden></div>
+  </section>
+
+</main>
+
+<!-- New invitation. -->
+<dialog class="dlg" data-invite-dialog aria-labelledby="dlg-h">
+  <form class="rp__form" data-invite-form method="dialog" novalidate>
+    <p class="micro">New invitation</p>
+    <h2 class="dlg__h" id="dlg-h">Invite a guest to review.</h2>
+    <label class="rp__field"><span class="micro">Full name</span>
+      <input name="name" autocomplete="off" maxlength="80" required></label>
+    <label class="rp__field"><span class="micro">WhatsApp number</span>
+      <input name="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="98765 43210 or +44 …" required></label>
+    <div class="rp__row">
+      <label class="rp__field"><span class="micro">Check-in</span><input name="stay_from" type="date" required></label>
+      <label class="rp__field"><span class="micro">Check-out</span><input name="stay_to" type="date" required></label>
+    </div>
+    <label class="rp__field rp__field--short"><span class="micro">Link expires after (days)</span>
+      <input name="expiry_days" type="number" min="1" max="90" value="30" required></label>
+    <label class="rp__check"><input name="require_check" type="checkbox" checked>
+      <span>Guest confirms on WhatsApp first. They send you a short code from their number, and you tap Verified before the form opens.</span></label>
+    <p class="rp__msg" data-msg role="status" aria-live="polite"></p>
+    <span class="rp__actions">
+      <button class="btn btn--ghost" type="button" data-dlg-close>Cancel</button>
+      <button class="btn" type="submit" value="default">Create the link</button>
+    </span>
+  </form>
+
+  <div class="dlg__done" data-invite-done hidden>
+    <p class="micro">Invitation ready</p>
+    <h2 class="dlg__h" data-done-h tabindex="-1"></h2>
+    <label class="rp__field"><span class="micro">Guest link (shown once)</span>
+      <input class="rp__mono" data-done-link readonly></label>
+    <label class="rp__field"><span class="micro">The message WhatsApp will open with</span>
+      <textarea class="rp__msgbox" data-done-msg readonly rows="7"></textarea></label>
+    <p class="rp__small-print" data-done-note></p>
+    <span class="rp__actions">
+      <button class="btn btn--ghost" type="button" data-copy>Copy link</button>
+      <a class="btn" data-wa target="_blank" rel="noopener noreferrer">Open in WhatsApp</a>
+    </span>
+    <p class="rp__small-print">WhatsApp opens a chat to the guest with the message typed in. Nothing is sent until you press send.</p>
+    <span class="rp__actions"><button class="btn btn--ghost" type="button" data-dlg-close>Done</button></span>
+  </div>
+</dialog>
+
+</body>
+</html>

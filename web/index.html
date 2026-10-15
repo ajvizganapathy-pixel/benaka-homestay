@@ -117,9 +117,10 @@
 <link rel="preload" href="fonts/instrument-serif-400-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/fonts.css?v=20260926-2">
-<link rel="stylesheet" href="css/tokens.css?v=20260926-2">
-<link rel="stylesheet" href="css/site.css?v=20260926-2">
+<link rel="stylesheet" href="css/fonts.css?v=20261015-1">
+<link rel="stylesheet" href="css/tokens.css?v=20261015-1">
+<link rel="stylesheet" href="css/site.css?v=20261015-1">
+<link rel="stylesheet" href="css/reviews.css?v=20261015-1">
 </head>
 <body>
 
@@ -153,6 +154,9 @@
     <li><a href="#grounds">The grounds</a></li>
     <li><a href="#explore">Explore</a></li>
     <li><a href="#gallery">Photographs</a></li>
+    <!-- Hidden until reviews.js has published reviews to show, so the menu
+         never points at a section that is not there. -->
+    <li data-reviews-nav hidden><a href="#reviews">Reviews</a></li>
     <li><a href="#visit">Contact</a></li>
     <li><a href="#venue">Find us</a></li>
   </ul>
@@ -283,6 +287,27 @@
     <div data-gallery><noscript><p>Enable JavaScript to browse the photographs.</p></noscript></div>
   </section>
 
+  <!-- Guest reviews. Empty and hidden in the HTML on purpose: reviews.js
+       fills it from review-api/public.php after the page has loaded, and shows
+       it only when that returns valid JSON with at least one review. Anything
+       else (the API down, the switch off, or GitHub Pages, which serves the PHP
+       as plain text) leaves it hidden, and the page reads exactly as before.
+       Only reviews the owners approved AND the guest agreed to show are ever
+       returned. -->
+  <section class="section reviews" id="reviews" aria-labelledby="reviews-h" data-reviews hidden>
+    <header class="section__head reviews__head">
+      <span class="micro">Guests</span>
+      <h2 class="macro" id="reviews-h">In their words.</h2>
+      <p>Reviews from guests we invited after their stay. The owners read each one before it appears here.</p>
+    </header>
+    <div class="reviews__months" role="group" aria-label="Show reviews from" data-review-months></div>
+    <div class="reviews__track" role="region" aria-label="Guest reviews, scrolls sideways" tabindex="0" data-review-track></div>
+    <div class="reviews__nav" data-review-nav hidden>
+      <button type="button" data-review-prev aria-label="Earlier reviews">&larr;</button>
+      <button type="button" data-review-next aria-label="More reviews">&rarr;</button>
+    </div>
+  </section>
+
   <footer class="foot" id="visit" aria-labelledby="visit-h">
     <div class="foot__grid">
       <div class="reveal">
@@ -390,6 +415,7 @@
   </div>
 </div>
 
-<script defer src="js/site.js?v=20260926-2"></script>
+<script defer src="js/site.js?v=20261015-1"></script>
+<script defer src="js/reviews.js?v=20261015-1"></script>
 </body>
 </html>

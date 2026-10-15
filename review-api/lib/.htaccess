@@ -1,0 +1,3 @@
+# Shared PHP for review-api, never an endpoint. The root .htaccess already
+# answers 404 for this folder; this is the second wall.
+Require all denied

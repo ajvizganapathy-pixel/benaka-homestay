@@ -17,3 +17,8 @@ __pycache__/
 .data/
 benaka-data/
 assets/enhanced/
+
+# Guest reviews: the real config and the owner's code hash live ABOVE
+# public_html and must never be committed, even by accident in a working copy.
+benaka-reviews-config.php
+*.hash

@@ -1,0 +1,94 @@
+/* ============================================================================
+   #reviews: approved guest reviews as bento cards in a slow sideways slider.
+
+   Built from the page's own tokens (it sits inside .after, so ivory) and its
+   two registers: the guest's name in the serif, the date and the month chips
+   in the tracked micro sans, the review itself in body prose like every other
+   paragraph on the page. Cards are the gallery's print mount (#fbf9f5) with a
+   hairline, and no shadow: these are words, not photographs.
+
+   A card's size follows its length: short ones take one cell, longer ones two
+   columns, the longest two columns and both rows. grid-auto-flow: column dense
+   packs the small ones into the holes, which is the bento.
+   ========================================================================== */
+
+.reviews { border-top: 1px solid var(--s-line); padding-left: 0; padding-right: 0; }
+.reviews__head { padding: 0 var(--s-gut); }
+
+.reviews__months {
+  display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto;
+  padding: 0 var(--s-gut) 4px; margin: 0 0 clamp(18px, 3vh, 28px);
+  scrollbar-width: none;
+}
+.reviews__months::-webkit-scrollbar { display: none; }
+.reviews__chip {
+  flex: none; min-height: 44px; padding: 0 16px;
+  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: var(--s-micro-track); text-transform: uppercase;
+  color: var(--s-ink-soft);
+  border: 1px solid var(--s-line); border-radius: var(--s-radius);
+  transition: color var(--s-quick), border-color var(--s-quick);
+}
+.reviews__chip:hover { color: var(--s-ink); border-color: var(--s-ink-faint); }
+.reviews__chip[aria-pressed="true"] { color: var(--s-ink); border-color: var(--s-ink); }
+
+.reviews__track {
+  display: grid;
+  grid-auto-flow: column dense;
+  grid-template-rows: repeat(2, auto);
+  /* At least a card's width each; when there are few, they widen to fill the
+     row instead of stopping short of the right edge. */
+  grid-auto-columns: minmax(clamp(240px, 24vw, 330px), 1fr);
+  gap: 12px;
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  padding: 2px var(--s-gut) 14px;
+  scroll-padding-inline: var(--s-gut);
+  scrollbar-width: thin;
+  scrollbar-color: var(--s-line) transparent;
+}
+/* One to three reviews: they simply sit side by side, in one row. */
+.reviews__track.is-few { grid-template-rows: auto; }
+.reviews__track:focus-visible { outline: 2px solid var(--s-accent); outline-offset: -2px; }
+
+.rcard {
+  display: flex; flex-direction: column; gap: 12px;
+  margin: 0; padding: clamp(18px, 2vw, 26px);
+  background: #fbf9f5;
+  border: 1px solid var(--s-line); border-radius: var(--s-radius);
+  min-width: 0;
+}
+.rcard--wide { grid-column: span 2; }
+.rcard--tall { grid-column: span 2; grid-row: span 2; }
+.reviews__track.is-few .rcard--tall { grid-row: auto; }
+
+.rcard__stars { color: var(--s-accent); letter-spacing: 3px; font-size: .95rem; line-height: 1; }
+.rcard__body { margin: 0; color: var(--s-ink); }
+.rcard__body p { margin: 0 0 .7em; overflow-wrap: anywhere; }
+.rcard__body p:last-child { margin-bottom: 0; }
+.rcard__body.is-clamped {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 9; line-clamp: 9; overflow: hidden;
+}
+.rcard__more {
+  align-self: start; min-height: 44px; padding: 0;
+  font-family: var(--s-font-micro); font-size: var(--s-micro); font-weight: 600;
+  letter-spacing: var(--s-micro-track); text-transform: uppercase; color: var(--s-accent);
+}
+.rcard__by { margin-top: auto; padding-top: 6px; display: grid; gap: 4px; }
+.rcard__name { font-family: var(--s-font-macro); font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.1; font-style: normal; }
+.rcard__date { color: var(--s-ink-faint); }
+
+.reviews__nav { display: flex; gap: 8px; justify-content: flex-end; padding: 10px var(--s-gut) 0; }
+.reviews__nav button {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--s-line); border-radius: var(--s-radius); color: var(--s-ink);
+}
+.reviews__nav button:hover { border-color: var(--s-accent); color: var(--s-accent); }
+
+/* Phones: one row of cards most of a screen wide, so a long review reads as a
+   column of prose instead of a wall. */
+@media (max-width: 700px) {
+  .reviews__track { grid-template-rows: auto; grid-auto-columns: min(82vw, 340px); align-items: start; }
+  .rcard--wide, .rcard--tall { grid-column: auto; grid-row: auto; }
+  .reviews__nav { display: none; }
+}

@@ -1,0 +1,8 @@
+# /owner/ is private: never indexed, never cached. (The page also says
+# noindex in a meta tag, and review-api sends its own no-store headers.)
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-store"
+  </FilesMatch>
+</IfModule>

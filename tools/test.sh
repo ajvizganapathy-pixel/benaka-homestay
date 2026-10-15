@@ -7,10 +7,11 @@
 #
 #   bash tools/test.sh
 #
-# There is no server side any more. The booking endpoint and the section of this
-# suite that drove it over HTTP were removed with the booking flow; enquiries go
-# straight to WhatsApp or the phone from plain links. See CLAUDE.md for how to
-# recover the endpoint from history if it is ever wanted again.
+# The booking endpoint and the section of this suite that drove it over HTTP
+# were removed with the booking flow; enquiries go straight to WhatsApp or the
+# phone from plain links. See CLAUDE.md for how to recover the endpoint from
+# history if it is ever wanted again. The only server side now is the guest
+# review system (review-api/), tested in section 4 on a real database.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
@@ -21,6 +22,8 @@ bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; [ $# -gt 1 ] && printf '    
 head_() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+# Section 4's browser suite needs playwright; a global install is found here.
+export NODE_PATH="${NODE_PATH:-$(npm root -g 2>/dev/null)}"
 
 # ===========================================================================
 head_ "1. Syntax"
@@ -335,6 +338,141 @@ PY2
 grep -q "Content-Security-Policy" .htaccess && ok ".htaccess sets a CSP" || bad ".htaccess has no CSP"
 grep -q "Options -Indexes"       .htaccess && ok ".htaccess disables directory listing" || bad "no Options -Indexes"
 grep -q "RewriteCond %{HTTPS}"   .htaccess && ok ".htaccess forces HTTPS" || bad "no HTTPS redirect"
+
+# ===========================================================================
+head_ "4. Guest reviews"
+# ===========================================================================
+# The invitation-only review system: review-api/ (PHP), /owner/ (the 3D lock
+# and the dashboard), /review/ (the guest form) and #reviews on the homepage.
+# Static checks first, then the two suites in tests/reviews/:
+#   api-test.php      real HTTP on a real MySQL/MariaDB   [automated]
+#   browser-test.cjs  the pages in Chromium                [browser]
+# A suite that cannot run here (no database, no browser) prints "skip" and is
+# NOT counted as passed. CI sets REVIEWS_REQUIRE_DB=1, which turns a database
+# skip into a failure.
+
+for f in review-api/*.php review-api/lib/*.php tests/reviews/*.php; do
+  if out=$(php -l "$f" 2>&1); then ok "php -l $f"; else bad "php -l $f" "$out"; fi
+done
+for f in owner/owner.js owner/lock.js; do
+  if out=$(node --input-type=module --check < "$f" 2>&1); then ok "node --check (module) $f"; else bad "node --check $f" "$out"; fi
+done
+for f in review/review.js tests/reviews/browser-test.cjs; do
+  if out=$(node --check "$f" 2>&1); then ok "node --check $f"; else bad "node --check $f" "$out"; fi
+done
+
+# Every file in lib/ refuses to run unless an endpoint loaded it, for any host
+# that ignores .htaccess.
+nog=$(for f in review-api/lib/*.php; do grep -q "if (!defined('BENAKA_REVIEWS')) { http_response_code(404); exit; }" "$f" || echo "$f"; done)
+[ -z "$nog" ] && ok "every review-api/lib file refuses a direct request" || bad "lib file without the BENAKA_REVIEWS guard" "$nog"
+
+# .htaccess keeps the shared code, the SQL and the tests off the web.
+for rule in '^/review-api/lib(/|$)' '^/(migrations|tests)(/|$)'; do
+  grep -qF "RedirectMatch 404 (?i)$rule" .htaccess && ok ".htaccess answers 404 for $rule" || bad ".htaccess lost the 404 rule for $rule"
+done
+[ -f review-api/lib/.htaccess ] && grep -q 'Require all denied' review-api/lib/.htaccess \
+  && ok "review-api/lib/.htaccess denies everything" || bad "review-api/lib/.htaccess is missing or open"
+
+# No secret ever in git. The template holds placeholders only, ships switched
+# off, with Secure cookies and no test clock; the real config and the code hash
+# live above public_html and are never tracked.
+cfgbad=$(php -r '
+  $c = require "review-api/config.example.php"; $e = [];
+  if ($c["REVIEWS_ENABLED"] !== false) $e[] = "REVIEWS_ENABLED is not false";
+  if ($c["COOKIE_SECURE"] !== true) $e[] = "COOKIE_SECURE is not true";
+  if ($c["TEST_CLOCK_FILE"] !== "") $e[] = "TEST_CLOCK_FILE is set";
+  if ($c["OWNER_CODE_HASH"] !== "" || $c["SETUP_KEY"] !== "") $e[] = "a code hash or setup phrase is filled in";
+  if ($c["DB_PASS"] !== "CHANGE-ME" || strpos($c["PEPPER"], "CHANGE-ME") !== 0) $e[] = "DB_PASS or PEPPER is not a placeholder";
+  echo implode("; ", $e);')
+[ -z "$cfgbad" ] && ok "config.example.php: placeholders only, switched off, Secure cookies, no test clock" \
+                 || bad "config.example.php" "$cfgbad"
+tracked=$(git ls-files | grep -E '(^|/)(benaka-reviews-config\.php|config\.php|[^/]*\.hash)$')
+[ -z "$tracked" ] && ok "no real config or code-hash file is tracked" || bad "a config or hash file is tracked" "$tracked"
+if git grep -nIE '\$argon2id\$v=[0-9]+\$m=' -- . ':!tools/test.sh' >/dev/null 2>&1; then
+  bad "an Argon2id hash is committed" "$(git grep -nIE '\$argon2id\$v=' -- . ':!tools/test.sh' | head -3)"
+else
+  ok "no Argon2id hash anywhere in the tree"
+fi
+
+# The two new pages follow the same rules as the homepage: no inline script
+# (CSP script-src 'self'), never indexed, and every local CSS/JS link carries
+# the SAME ?v= as web/index.html, so one bump covers a deploy.
+pagebad=$(python3 - <<'PY3'
+import re
+home = set(re.findall(r'\?v=([0-9A-Za-z._-]+)"', open('web/index.html').read()))
+bad = []
+for page in ('owner/index.html', 'review/index.html'):
+    s = re.sub(r'<!--.*?-->', '', open(page).read(), flags=re.S)
+    for attrs, body in re.findall(r'<script\b([^>]*)>(.*?)</script>', s, re.S):
+        if 'src=' not in attrs or body.strip():
+            bad.append(f'{page}: inline <script{attrs}>')
+    if '<meta name="robots" content="noindex, nofollow">' not in s:
+        bad.append(f'{page}: no noindex meta')
+    refs = re.findall(r'(?:href|src)="([^"]+\.(?:css|js)(?:\?[^"]*)?)"', s)
+    for r in refs:
+        m = re.search(r'\?v=([0-9A-Za-z._-]+)$', r)
+        if not m: bad.append(f'{page}: {r} has no ?v=')
+        elif m.group(1) not in home: bad.append(f'{page}: {r} is not on the homepage version {sorted(home)}')
+    if re.search(r'wa\.me/\d', s): bad.append(f'{page}: a wa.me/<digits> link in the markup')
+print('\n'.join(bad))
+PY3
+)
+[ -z "$pagebad" ] && ok "/owner/ and /review/: no inline script, noindex, same ?v= as the homepage, no wa.me number in markup" \
+                  || bad "/owner/ or /review/" "$pagebad"
+
+# Guest text reaches the page only as text.
+if grep -nE '\.(innerHTML|outerHTML)\s*=|insertAdjacentHTML|document\.write' web/js/reviews.js owner/owner.js owner/lock.js review/review.js >/dev/null; then
+  bad "review scripts write HTML" "$(grep -nE '\.(innerHTML|outerHTML)\s*=|insertAdjacentHTML|document\.write' web/js/reviews.js owner/owner.js owner/lock.js review/review.js | head -3)"
+else
+  ok "review scripts never use innerHTML/insertAdjacentHTML/document.write"
+fi
+
+# Three.js is self-hosted at a pinned version, unmodified, and only /owner/
+# loads it.
+three=owner/vendor/three-0.169.0.module.min.js
+if [ "$(sha256sum "$three" 2>/dev/null | cut -d' ' -f1)" = f7cee3c7533449a1505cc12cb5128b89e3d4fd3d7ea62b05f9f5464a217472ee ]; then
+  ok "Three.js r169 is vendored unmodified (sha256 matches npm three@0.169.0)"
+else
+  bad "the vendored Three.js is missing or changed" "$three"
+fi
+if grep -rqE 'three[-.]' web/index.html web/js/ 2>/dev/null; then bad "the homepage references Three.js"; else ok "the homepage never loads Three.js"; fi
+
+# The migration only adds; its down script removes only what it added.
+mig=$(python3 - <<'PY3'
+import re
+up = re.sub(r'--[^\n]*', '', open('migrations/001_guest_reviews.sql').read())
+down = re.sub(r'--[^\n]*', '', open('migrations/001_guest_reviews.down.sql').read())
+bad = [s.strip()[:50] for s in up.split(';') if s.strip() and not re.match(r'CREATE\s+(TABLE\s+IF\s+NOT\s+EXISTS|OR\s+REPLACE\s+VIEW)\s+gr_', s.strip(), re.I)]
+bad += ['down: ' + s.strip()[:50] for s in down.split(';') if s.strip() and not re.match(r'DROP\s+(TABLE|VIEW)\s+IF\s+EXISTS\s+gr_', s.strip(), re.I)]
+print('\n'.join(bad))
+PY3
+)
+[ -z "$mig" ] && ok "migration 001 only creates gr_* objects; its down script only drops them" || bad "migration 001" "$mig"
+
+# --- the server suite, on a real database ----------------------------------
+out=$(php tests/reviews/api-test.php 2>&1); rc=$?
+if [ $rc -eq 3 ]; then
+  if [ "${REVIEWS_REQUIRE_DB:-0}" = 1 ]; then bad "review API suite could not reach a database" "$out"
+  else printf '  \033[33mskip\033[0m  review API suite: no MySQL/MariaDB here (set REVIEWS_TEST_DSN/USER/PASS)\n'; fi
+else
+  printf '%s\n' "$out" | grep -vE '^ *[0-9]+ passed, [0-9]+ failed' | sed '/^$/d; s/^/  /'
+  p=$(printf '%s\n' "$out" | sed -nE 's/^ *([0-9]+) passed, ([0-9]+) failed.*/\1/p'); f=$(printf '%s\n' "$out" | sed -nE 's/^ *([0-9]+) passed, ([0-9]+) failed.*/\2/p')
+  if [ -n "$p" ]; then PASS=$((PASS + p)); FAIL=$((FAIL + f)); else bad "review API suite did not finish" "$(printf '%s\n' "$out" | tail -5)"; fi
+fi
+
+# --- the browser suite -------------------------------------------------------
+if node -e "try{require('playwright')}catch(e){require('playwright-core')}" >/dev/null 2>&1 && php tests/reviews/api-test.php --probe >/dev/null 2>&1 || [ "${REVIEWS_REQUIRE_BROWSER:-0}" = 1 ]; then
+  out=$(node tests/reviews/browser-test.cjs 2>&1); rc=$?
+  if [ $rc -eq 3 ]; then
+    printf '  \033[33mskip\033[0m  review browser suite: %s\n' "$(printf '%s' "$out" | tail -1)"
+  else
+    printf '%s\n' "$out" | grep -vE '^ *[0-9]+ passed, [0-9]+ failed' | sed '/^$/d; s/^/  /'
+    p=$(printf '%s\n' "$out" | sed -nE 's/^ *([0-9]+) passed, ([0-9]+) failed.*/\1/p'); f=$(printf '%s\n' "$out" | sed -nE 's/^ *([0-9]+) passed, ([0-9]+) failed.*/\2/p')
+    if [ -n "$p" ]; then PASS=$((PASS + p)); FAIL=$((FAIL + f)); else bad "review browser suite did not finish" "$(printf '%s\n' "$out" | tail -5)"; fi
+  fi
+else
+  printf '  \033[33mskip\033[0m  review browser suite: needs playwright, Chromium and a database\n'
+fi
 
 # ===========================================================================
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$PASS" "$FAIL"
