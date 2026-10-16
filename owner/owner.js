@@ -2,9 +2,10 @@
    /owner/: setup, the lock and the dashboard.
 
    The page asks the server where to start (owner.php?action=session) and
-   shows one view. The 3D lock (lock.js, and Three.js with it) is imported
+   shows one view. The 3D dial (lock.js, and Three.js with it) is imported
    only when the lock is actually shown, so a signed-in owner and a paused
-   site never download it.
+   site never download it. The keys are plain buttons in the page and work
+   whether or not the dial loads.
 
    Everything a guest wrote is put on the page with textContent, never
    innerHTML. The code typed here is posted once and never kept in a variable
@@ -15,7 +16,7 @@ const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 let csrf = '';
-let lock = null;          // the 3D lock, when it loaded
+let lock = null;          // the 3D dial, when it loaded
 let data = null;          // the last dashboard
 let lockTimer = 0;
 
@@ -100,15 +101,55 @@ const field = () => $('#code');
 function paintDots() {
   const n = field().value.length;
   $('[data-lock-dots]').textContent = '●'.repeat(n);
+  // The CSS dial's ring turns a notch a digit, as the 3D one does.
+  $('[data-lock-stage]').style.setProperty('--turn', `${n * 12}deg`);
+  if (lock) lock.turnTo(n);
 }
 
+let checking = false;     // a code is with the server: keys wait
+
+/** One digit into the field. The only thing a key does. */
 function press(d) {
   const f = field();
-  if (f.disabled || f.value.length >= 32) return;
+  if (f.disabled || checking || f.value.length >= 32) return;
   f.value += d;
-  if (lock) lock.press(d);
+  setRing('');
   $('[data-lock-msg]').textContent = '';
   paintDots();
+}
+
+/* ---- the keys: a real press, held at least long enough to see ---------- */
+const HOLD_MS = 90;
+function hold(k) {
+  clearTimeout(k._up);
+  k._down = performance.now();
+  k.classList.add('is-pressed');
+}
+function release(k) {
+  if (!k.classList.contains('is-pressed')) return;
+  const left = HOLD_MS - (performance.now() - (k._down || 0));
+  clearTimeout(k._up);
+  k._up = setTimeout(() => k.classList.remove('is-pressed'), Math.max(0, left));
+}
+/** A digit typed on the keyboard presses its key too. */
+function flash(d) {
+  const k = $(`.lock__key[data-key="${d}"]`);
+  if (k) { hold(k); release(k); }
+}
+
+/** The status ring: '' (dark), 'ok' (the server said yes) or 'err'. Green
+    is set in exactly one place, after a 200 from login. */
+function setRing(state) {
+  const view = $('[data-view="lock"]');
+  if (!state && view.classList.contains('is-locked')) return;   // red while locked out
+  view.classList.toggle('lock--ok', state === 'ok');
+  view.classList.toggle('lock--err', state === 'err');
+}
+function shake() {
+  const st = $('[data-lock-stage]');
+  st.classList.remove('is-shaking');
+  void st.offsetWidth;                 // restart the animation
+  st.classList.add('is-shaking');
 }
 
 let lockWired = false;
@@ -119,19 +160,20 @@ async function showLock(retryAfter, message) {
   if (!lockWired) {
     lockWired = true;
     wireLock();
-    // The 3D keypad, if this device can draw it. If not, the plain field is
-    // already on screen and is the whole sign-in.
+    // The 3D dial, if this device can draw it. If not, the same dial is
+    // drawn in CSS under the same keys, and nothing else changes.
     try {
-      const mod = await import('./lock.js?v=20261015-1');
-      if (document.fonts) await Promise.race([document.fonts.load('500 84px Inter'), new Promise(r => setTimeout(r, 1500))]);
-      lock = mod.mountLock(stage, { onPress: press });
+      const mod = await import('./lock.js?v=20261016-1');
+      lock = mod.mountLock(stage);
       view.classList.add('lock--3d');
     } catch {
       lock = null;
       view.classList.add('lock--flat');
-      stage.remove();
     }
   }
+  checking = false;
+  view.classList.remove('lock--ok', 'lock--err');
+  if (lock) lock.clear();
   $('[data-lock-msg]').textContent = message || '';
   setLocked(retryAfter);
   if (matchMedia('(pointer: fine)').matches && !field().disabled) field().focus({ preventScroll: true });
@@ -147,37 +189,67 @@ function wireLock() {
     paintDots();
   });
   // Typing a digit anywhere on the lock screen goes to the field, and
-  // presses the matching 3D button.
+  // presses the matching key.
   input.addEventListener('keydown', e => {
-    if (/^[0-9]$/.test(e.key) && !e.metaKey && !e.ctrlKey) { e.preventDefault(); press(e.key); }
+    if (/^[0-9]$/.test(e.key) && !e.metaKey && !e.ctrlKey) { e.preventDefault(); flash(e.key); press(e.key); }
   });
   document.addEventListener('keydown', e => {
     if (document.body.dataset.screen !== 'lock' || e.target === input) return;
-    if (/^[0-9]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement)) { e.preventDefault(); press(e.key); }
+    if (/^[0-9]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement)) { e.preventDefault(); flash(e.key); press(e.key); }
     if (e.key === 'Enter' && e.target === document.body) f.requestSubmit();
     if (e.key === 'Backspace' && e.target === document.body) { input.value = input.value.slice(0, -1); paintDots(); }
   });
+
+  // The keys. pointerdown is cancelled so a tap never takes focus from the
+  // field (and never opens a phone's keyboard); the digit goes in on click,
+  // which every tap and every mouse press ends with, however fast.
+  $$('.lock__key').forEach(k => {
+    k.addEventListener('pointerdown', e => {
+      if (e.button > 0 || field().disabled) return;
+      e.preventDefault();
+      hold(k);
+      if (e.pointerType === 'touch' && navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => k.addEventListener(t, () => release(k)));
+    k.addEventListener('click', () => press(k.dataset.key));
+  });
+  // Clear and Unlock press the same way.
+  $$('.lock__buttons .btn').forEach(b => {
+    b.addEventListener('pointerdown', e => { if (e.button <= 0 && !b.disabled) hold(b); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => b.addEventListener(t, () => release(b)));
+  });
+
   $('[data-lock-clear]').addEventListener('click', () => {
     input.value = ''; paintDots(); if (lock) lock.clear();
+    setRing('');
     $('[data-lock-msg]').textContent = '';
   });
   f.addEventListener('submit', async e => {
     e.preventDefault();
     const msg = $('[data-lock-msg]');
     if (input.disabled) return;
+    if (checking) return;
     if (!/^[0-9]{8,32}$/.test(input.value)) { msg.textContent = 'Codes are 8 digits or more.'; return; }
+    checking = true;
     $('[data-lock-go]').disabled = true;
     msg.textContent = 'Checking…';
     const r = await call('POST', { action: 'login', code: input.value });
     input.value = ''; paintDots();
     $('[data-lock-go]').disabled = false;
-    if (r.ok) {
+    if (r.ok) {                          // keys stay still (checking) until the dashboard is up
       csrf = r.csrf;
       msg.textContent = 'Unlocked.';
-      if (lock) await lock.open();
+      setRing('ok');
+      // Long enough to see the ring go green and the bolt turn.
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      await Promise.all([lock ? lock.open() : null, new Promise(res => setTimeout(res, still ? 500 : 900))]);
       return openDashboard();
     }
-    if (lock) lock.shake();
+    checking = false;
+    if (lock) lock.clear();
+    // Red says only "not accepted": the whole ring, the same for every
+    // refusal, and nothing about any digit.
+    if (r.error === 'wrong' || r.error === 'locked') { setRing('err'); shake(); }
     if (r.error === 'locked') { msg.textContent = ''; return setLocked(r.retry_after); }
     if (r.error === 'wrong') {
       msg.textContent = r.tries_left === 1
@@ -197,11 +269,15 @@ function setLocked(secs) {
   clearInterval(lockTimer);
   const on = secs > 0;
   const view = $('[data-view="lock"]');
+  const was = view.classList.contains('is-locked');
   view.classList.toggle('is-locked', on);
   field().disabled = on;
   $('[data-lock-go]').disabled = on;
   $('[data-lock-clear]').disabled = on;
+  $$('.lock__key').forEach(k => { k.disabled = on; });
   if (lock) lock.setLocked(on);
+  if (on) setRing('err');
+  else if (was) setRing('');
   if (!on) return;
   const until = Date.now() + secs * 1000;
   const tick = () => {
@@ -264,6 +340,7 @@ function wireDashboard() {
     signedOut('Signed out.');
   });
   wireInviteDialog();
+  wireDeleteDialog();
 }
 
 /* Small DOM builder: every string goes in as text. */
@@ -390,11 +467,15 @@ function render() {
 
   /* Invitations */
   if (!data.invitations.length) I.append(el('p', 'rp__empty', 'No invitations yet. Use New invitation after a guest checks out.'));
+  else I.append(el('p', 'rp__small-print dash__legend', 'Revoke stops a link and keeps the record. Delete removes the invitation for good. An invitation with a review stays until its card dissolves.'));
   const LABEL = { active: 'Open', verified: 'Verified, open', used: 'Used', revoked: 'Revoked', expired: 'Expired' };
   data.invitations.forEach(inv => {
     const c = el('article', 'acard acard--inv');
     const top = el('div', 'acard__top');
-    top.append(el('h3', 'acard__name', inv.name), el('span', `acard__status is-${inv.status}`, LABEL[inv.status] || inv.status));
+    const side = el('span', 'acard__side');
+    side.append(el('span', `acard__status is-${inv.status}`, LABEL[inv.status] || inv.status));
+    if (inv.deletable) side.append(binButton(inv));
+    top.append(el('h3', 'acard__name', inv.name), side);
     c.append(top);
     const meta = el('div', 'acard__meta');
     const nights = Math.round((ymd(inv.stay_to) - ymd(inv.stay_from)) / 86400000);
@@ -423,6 +504,74 @@ function render() {
     }
     if (acts.childNodes.length) c.append(acts);
     I.append(c);
+  });
+}
+
+/* ---- deleting an invitation --------------------------------------------------- */
+const SVG = 'http://www.w3.org/2000/svg';
+/** The bin on an invitation card. Opens the dialog for exactly this card. */
+function binButton(inv) {
+  const b = el('button', 'acard__del');
+  b.type = 'button';
+  b.title = 'Delete invitation';
+  b.setAttribute('aria-label', `Delete the invitation for ${inv.name}`);
+  b.dataset.del = String(inv.id);
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
+  svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+  for (const d of ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12', 'M9 7V4h6v3']) {
+    const path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+  }
+  b.append(svg);
+  b.addEventListener('click', () => openDelete(inv, b));
+  return b;
+}
+
+let pendingDelete = null;      // { id, name, from } while the dialog is open
+function openDelete(inv, from) {
+  const dlg = $('[data-delete-dialog]');
+  pendingDelete = { id: inv.id, name: inv.name, from };
+  $('[data-del-text]').textContent =
+    `This permanently removes the invitation for ${inv.name}. Its link stops working and can never be used again. This cannot be undone. To stop a link but keep the record, use Revoke instead.`;
+  $('[data-del-msg]').textContent = '';
+  $('[data-del-go]').disabled = false;
+  $('[data-del-cancel]').disabled = false;
+  dlg.showModal();
+  $('[data-del-cancel]').focus();          // the safe choice is the default
+}
+
+function wireDeleteDialog() {
+  const dlg = $('[data-delete-dialog]');
+  const go = $('[data-del-go]'), cancel = $('[data-del-cancel]');
+  let busy = false;
+  cancel.addEventListener('click', () => dlg.close());
+  dlg.addEventListener('cancel', e => { if (busy) e.preventDefault(); });   // Escape waits for an answer
+  dlg.addEventListener('close', () => {
+    const from = pendingDelete && pendingDelete.from;
+    pendingDelete = null;
+    if (from && from.isConnected) from.focus();
+  });
+  go.addEventListener('click', async () => {
+    if (busy || !pendingDelete) return;
+    busy = true;
+    go.disabled = cancel.disabled = true;
+    const { id, name } = pendingDelete;
+    $('[data-del-msg]').textContent = 'Deleting…';
+    const r = await act({ action: 'delete', id });
+    busy = false;
+    const say = t => { $('[data-dash-msg]').textContent = t; };
+    if (r.status === 401 || r.status === 503) { dlg.close(); return; }
+    if (r.ok) { dlg.close(); say(`Deleted: the invitation for ${name}. Its link no longer works.`); return refresh(); }
+    if (r.error === 'gone') { dlg.close(); say(`Already removed: the invitation for ${name}.`); return refresh(); }
+    if (r.error === 'has_review') {
+      dlg.close();
+      say(`${name} has left a review, so this invitation stays until the review's card dissolves.`);
+      return refresh();
+    }
+    $('[data-del-msg]').textContent = 'That did not go through. Check the connection and try again.';
+    go.disabled = cancel.disabled = false;
   });
 }
 

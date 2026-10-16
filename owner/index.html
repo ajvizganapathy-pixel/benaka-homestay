@@ -11,11 +11,11 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#1c2f26">
 <link rel="icon" href="../assets/brand/favicon-48.png" type="image/png" sizes="48x48">
-<link rel="stylesheet" href="../web/css/fonts.css?v=20261015-1">
-<link rel="stylesheet" href="../web/css/tokens.css?v=20261015-1">
-<link rel="stylesheet" href="../web/css/site.css?v=20261015-1">
-<link rel="stylesheet" href="../web/css/review-pages.css?v=20261015-1">
-<script type="module" src="owner.js?v=20261015-1"></script>
+<link rel="stylesheet" href="../web/css/fonts.css?v=20261016-1">
+<link rel="stylesheet" href="../web/css/tokens.css?v=20261016-1">
+<link rel="stylesheet" href="../web/css/site.css?v=20261016-1">
+<link rel="stylesheet" href="../web/css/review-pages.css?v=20261016-1">
+<script type="module" src="owner.js?v=20261016-1"></script>
 </head>
 <body class="after rp">
 
@@ -75,15 +75,32 @@
     </div>
   </section>
 
-  <!-- The lock. The 3D keypad (lock.js) is drawn into data-lock-stage and is
-       hidden from assistive technology; the real control is the digit field
-       below it, which a screen reader, a keyboard and a phone without WebGL
-       all use directly. -->
+  <!-- The lock. The dial (lock.js in WebGL, or CSS without it) and the ten
+       keys over it are hidden from assistive technology: the real control is
+       the digit field below them, which a screen reader and a keyboard use
+       directly. The keys only add digits to that field; tabindex -1 and the
+       pointerdown handler in owner.js keep focus where it is. The halo is
+       the status ring: emerald only after the server accepts a code, red
+       when it refuses one. -->
   <section class="lock band--forest" data-view="lock" hidden>
     <div class="lock__inner">
       <p class="micro lock__eyebrow">Benaka By The Hills</p>
       <h1 class="lock__h">Owner sign-in</h1>
-      <div class="lock__stage" data-lock-stage></div>
+      <div class="lock__stage" data-lock-stage aria-hidden="true">
+        <span class="lock__halo" data-lock-halo></span>
+        <div class="lock__keys" data-lock-keys>
+          <button class="lock__key" type="button" tabindex="-1" data-key="1">1</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="2">2</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="3">3</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="4">4</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="5">5</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="6">6</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="7">7</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="8">8</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="9">9</button>
+          <button class="lock__key" type="button" tabindex="-1" data-key="0">0</button>
+        </div>
+      </div>
       <p class="lock__dots" data-lock-dots aria-hidden="true"></p>
       <form class="lock__form" data-lock-form novalidate>
         <label class="lock__label" for="code">Sign-in code, digits only</label>
@@ -121,6 +138,19 @@
   </section>
 
 </main>
+
+<!-- Delete an invitation. Opened from the bin on its card; the id it acts on
+     is the card's, held by owner.js while this is open. -->
+<dialog class="dlg dlg--confirm" data-delete-dialog aria-labelledby="del-h" aria-describedby="del-p">
+  <p class="micro">Invitation</p>
+  <h2 class="dlg__h" id="del-h">Delete invitation?</h2>
+  <p class="dlg__p" id="del-p" data-del-text></p>
+  <p class="rp__msg" data-del-msg role="status" aria-live="polite"></p>
+  <span class="rp__actions">
+    <button class="btn btn--ghost" type="button" data-del-cancel>Cancel</button>
+    <button class="btn btn--danger" type="button" data-del-go>Delete</button>
+  </span>
+</dialog>
 
 <!-- New invitation. -->
 <dialog class="dlg" data-invite-dialog aria-labelledby="dlg-h">
