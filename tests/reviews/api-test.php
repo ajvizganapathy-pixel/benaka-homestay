@@ -92,7 +92,7 @@ section('2. Owner functions without a session or CSRF token');
 $before = (int)$db->query('SELECT COUNT(*) FROM gr_invitations')->fetchColumn();
 $acts = [['action' => 'create', 'name' => 'Test Guest X', 'phone' => '9000000099', 'stay_from' => '2026-10-01', 'stay_to' => '2026-10-02'],
          ['action' => 'revoke', 'id' => 1], ['action' => 'verify', 'id' => 1], ['action' => 'reveal', 'id' => 1],
-         ['action' => 'approve', 'id' => 1], ['action' => 'reject', 'id' => 1], ['action' => 'takedown', 'id' => 1], ['action' => 'logout']];
+         ['action' => 'approve', 'id' => 1], ['action' => 'reject', 'id' => 1], ['action' => 'takedown', 'id' => 1], ['action' => 'delete', 'id' => 1], ['action' => 'logout']];
 $fails = [];
 foreach ($acts as $a) {
     $r = $env->client()->post($OWNER_API, $a);
@@ -207,6 +207,74 @@ check($r['status'] === 200 && $rv && $rv['display_name'] === 'Test Guest Check',
 [, $iNo] = $env->invite($owner, ['name' => 'Test Guest NoCheck', 'require_check' => false]);
 $r = $owner->post($OWNER_API, ['action' => 'verify', 'id' => $iNo['id']]);
 check($r['status'] === 409, '8. Verified does nothing on an invitation with the check off', j($r));
+
+/* ======================================================================== */
+section('8b. Deleting an invitation');
+$owner = $env->owner();
+$dashInv = function () use ($owner, $OWNER_API) {
+    $r = $owner->get("$OWNER_API?action=dashboard");
+    $by = [];
+    foreach ($r['json']['invitations'] ?? [] as $x) $by[$x['id']] = $x;
+    return $by;
+};
+[$tD, $iD] = $env->invite($owner, ['name' => 'Test Guest Delete']);
+[, $iKeep] = $env->invite($owner, ['name' => 'Test Guest Keep']);
+$by = $dashInv();
+check(($by[$iD['id']]['deletable'] ?? null) === true && ($by[$inv['id']]['deletable'] ?? null) === false,
+      '8b. the dashboard marks an open invitation deletable, and a used one with a review not', json_encode([$by[$iD['id']] ?? null, $by[$inv['id']] ?? null]));
+$countBefore = (int)$db->query('SELECT COUNT(*) FROM gr_invitations')->fetchColumn();
+$reviewsBefore = (int)$db->query('SELECT COUNT(*) FROM gr_reviews')->fetchColumn();
+$r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $iD['id']]);
+check($r['status'] === 200 && ($r['json']['ok'] ?? null) === true, '8b. the owner can delete an open invitation', j($r));
+check((int)$db->query('SELECT COUNT(*) FROM gr_invitations WHERE id=' . (int)$iD['id'])->fetchColumn() === 0, '8b. its row is gone from the database');
+check((int)$db->query('SELECT COUNT(*) FROM gr_invitations')->fetchColumn() === $countBefore - 1
+      && (int)$db->query('SELECT COUNT(*) FROM gr_invitations WHERE id=' . (int)$iKeep['id'])->fetchColumn() === 1,
+      '8b. and only that one: every other invitation is still there');
+check((int)$db->query('SELECT COUNT(*) FROM gr_reviews')->fetchColumn() === $reviewsBefore, '8b. no review was touched');
+$r1 = $g->post($GUEST_API, ['action' => 'check', 'token' => $tD]);
+$r2 = $env->submit($tD);
+check($r1['body'] === $dead['body'] && $r2['body'] === $dead['body'], '8b. a deleted link gets the dead-link answer for check and submit', j($r1) . ' / ' . j($r2));
+check(!isset($dashInv()[$iD['id']]), '8b. the dashboard no longer lists it');
+$r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $iD['id']]);
+check($r['status'] === 404 && ($r['json']['error'] ?? '') === 'gone', '8b. deleting it again answers 404, and changes nothing', j($r));
+$r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $inv['id']]);
+check($r['status'] === 409 && ($r['json']['error'] ?? '') === 'has_review', '8b. an invitation with a review cannot be deleted', j($r));
+check((int)$db->query('SELECT COUNT(*) FROM gr_invitations WHERE id=' . (int)$inv['id'])->fetchColumn() === 1
+      && (int)$db->query('SELECT COUNT(*) FROM gr_reviews WHERE invitation_id=' . (int)$inv['id'])->fetchColumn() === 1,
+      '8b. and both it and its review are still there');
+$r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $iR['id']]);
+check($r['status'] === 200, '8b. a revoked invitation can be deleted too', j($r));
+$bad = [];
+foreach (['abc', -1, 0, 1.5, '1 OR 1=1', null, [1]] as $v) {
+    $r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $v]);
+    if ($r['status'] !== 422) $bad[] = json_encode($v) . ' -> ' . $r['status'];
+}
+check(!$bad && (int)$db->query('SELECT COUNT(*) FROM gr_invitations')->fetchColumn() === $countBefore - 2,
+      '8b. an id that is not a positive whole number is refused (422) and deletes nothing', implode('; ', $bad));
+$r = $owner->post($OWNER_API, ['action' => 'delete', 'id' => $iKeep['id']], ['X-CSRF-Token' => str_repeat('0', 64)]);
+$r2 = $env->client()->post($OWNER_API, ['action' => 'delete', 'id' => $iKeep['id']]);
+check($r['status'] === 403 && $r2['status'] === 401 && (int)$db->query('SELECT COUNT(*) FROM gr_invitations WHERE id=' . (int)$iKeep['id'])->fetchColumn() === 1,
+      '8b. with a wrong CSRF token (403) or no session (401) the invitation stays', j($r) . ' / ' . j($r2));
+
+// The guest submits at the very moment the owner deletes: one of them wins
+// cleanly, every time. Never a review with no card, never a half delete.
+$res = [];
+for ($k = 0; $k < 12; $k++) {
+    $db->exec('DELETE FROM gr_rate_limits');
+    [$tt, $ii] = $env->invite($owner, ['name' => "Test Guest DelRace $k"]);
+    $mh = curl_multi_init();
+    $hSub = $env->client()->handle('POST', $GUEST_API, ['action' => 'submit', 'token' => $tt, 'rating' => 4, 'body' => "Test race text number $k, not a real review.", 'consent' => true, 'website' => '']);
+    $hDel = $owner->handle('POST', $OWNER_API, ['action' => 'delete', 'id' => $ii['id']]);
+    curl_multi_add_handle($mh, $hSub); curl_multi_add_handle($mh, $hDel);
+    do { curl_multi_exec($mh, $running); curl_multi_select($mh); } while ($running);
+    $cs = (int)curl_getinfo($hSub, CURLINFO_RESPONSE_CODE); $cd = (int)curl_getinfo($hDel, CURLINFO_RESPONSE_CODE);
+    curl_multi_remove_handle($mh, $hSub); curl_multi_remove_handle($mh, $hDel);
+    $invRows = (int)$db->query('SELECT COUNT(*) FROM gr_invitations WHERE id=' . (int)$ii['id'])->fetchColumn();
+    $revRows = (int)$db->query("SELECT COUNT(*) FROM gr_reviews WHERE body = 'Test race text number $k, not a real review.'")->fetchColumn();
+    $res[] = [$cs, $cd, $invRows, $revRows];
+}
+$clean = array_filter($res, fn($x) => ($x === [200, 409, 1, 1]) || ($x === [410, 200, 0, 0]));
+check(count($clean) === count($res), '8b. submit and delete at the same moment, 12 times: either the review lands and delete is refused, or the link is gone and the submit is dead', json_encode($res));
 
 /* ======================================================================== */
 section('9-10. Rating and text validation');

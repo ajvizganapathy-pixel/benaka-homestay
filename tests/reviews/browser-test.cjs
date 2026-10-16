@@ -131,19 +131,214 @@ const setEnabled = (s, on) => {
     check(r.label.includes('Sign-in code') && r.hidden === 'true', 'screen readers get a labelled digit field; the 3D canvas is hidden from them', JSON.stringify(r));
     await p.context().close();
 
-    p = await page({ viewport: { width: 390, height: 844 } });
-    await p.context().browser();
-    const ctxNo = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    // Without WebGL the same keys sit on a dial drawn in CSS, and work.
+    const ctxNo = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
     await ctxNo.addInitScript(() => { HTMLCanvasElement.prototype.getContext = () => null; });
     const pn = await ctxNo.newPage();
+    const noErr = [];
+    pn.on('pageerror', e => noErr.push(e.message));
     await pn.goto(B + '/owner/');
     await pn.waitForSelector('.lock--flat', { timeout: 10000 }).catch(() => {});
-    const flat = await pn.evaluate(() => document.querySelector('[data-view="lock"]').className);
-    await pn.fill('#code', s.code);
-    await pn.click('[data-lock-go]');
+    const flat = await pn.evaluate(() => ({ cls: document.querySelector('[data-view="lock"]').className,
+      keys: [...document.querySelectorAll('.lock__key')].filter(k => k.getBoundingClientRect().width >= 56).length,
+      canvas: !!document.querySelector('.lock__canvas') }));
+    for (const d of s.code) await pn.tap(`.lock__key[data-key="${d}"]`);
+    await pn.tap('[data-lock-go]');
     const inNo = await pn.waitForSelector('[data-view="dash"]:not([hidden])', { timeout: 10000 }).then(() => true).catch(() => false);
-    check(/lock--flat/.test(flat) && inNo, 'without WebGL the plain field is shown, and signing in works with it', flat);
+    check(/lock--flat/.test(flat.cls) && flat.keys === 10 && !flat.canvas && inNo && !noErr.length,
+      'without WebGL the dial is drawn in CSS, the same ten keys are there, and signing in by tapping them works', JSON.stringify(flat) + noErr.join('|'));
     await ctxNo.close();
+    // And the plain field still signs in on its own (a paste, a password manager).
+    const ctxF = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxF.addInitScript(() => { HTMLCanvasElement.prototype.getContext = () => null; });
+    const pf = await ctxF.newPage();
+    await pf.goto(B + '/owner/');
+    await pf.waitForSelector('.lock--flat, .lock--3d');
+    await pf.fill('#code', s.code);
+    await pf.click('[data-lock-go]');
+    check(await pf.waitForSelector('[data-view="dash"]:not([hidden])', { timeout: 10000 }).then(() => true).catch(() => false),
+      'filling the digit field directly (paste, password manager) signs in too');
+    await ctxF.close();
+
+    /* ------------------------------------------------------------------ */
+    section('The lock: key size, press, status ring');
+    for (const [w, h] of [[360, 640], [360, 740], [390, 844], [412, 915], [1440, 900]]) {
+      p = await page({ viewport: { width: w, height: h }, hasTouch: w < 500 });
+      await p.goto(B + '/owner/');
+      await p.waitForSelector('.lock--3d, .lock--flat');
+      r = await p.evaluate(() => {
+        const st = document.querySelector('[data-lock-stage]').getBoundingClientRect();
+        const cx = st.left + st.width / 2, cy = st.top + st.height / 2, face = st.width * 0.45;
+        const ks = [...document.querySelectorAll('.lock__key')].map(k => k.getBoundingClientRect());
+        let minGap = Infinity, outside = 0;
+        ks.forEach((a, i) => {
+          const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+          if (Math.hypot(ax - cx, ay - cy) + a.width / 2 > face) outside++;
+          ks.forEach((b, j) => { if (j > i) minGap = Math.min(minGap, Math.hypot(ax - b.left - b.width / 2, ay - b.top - b.height / 2) - a.width / 2 - b.width / 2); });
+        });
+        const btns = [...document.querySelectorAll('.lock__buttons .btn')].map(b => b.getBoundingClientRect().height);
+        return { min: Math.min(...ks.map(k => Math.min(k.width, k.height))), max: Math.max(...ks.map(k => k.width)), n: ks.length,
+                 minGap: Math.round(minGap), outside, btns: Math.min(...btns),
+                 scroll: document.scrollingElement.scrollHeight - innerHeight };
+      });
+      check(r.n === 10 && r.min >= 56 && r.max <= 64.5 && r.minGap >= 8 && r.outside === 0 && r.btns >= 44 && r.scroll <= 0,
+        `${w}x${h}: ten keys 56-64px across, at least 8px apart, all on the face, Clear/Unlock 44px+, no scrolling`, JSON.stringify(r));
+      await p.context().close();
+    }
+
+    // The press: a key goes in while held and springs back when let go.
+    p = await page();
+    await p.goto(B + '/owner/');
+    await p.waitForSelector('.lock--3d, .lock--flat');
+    await p.locator('#code').focus();
+    const k5 = p.locator('.lock__key[data-key="5"]');
+    const kb = await k5.boundingBox();
+    await p.mouse.move(kb.x + kb.width / 2, kb.y + kb.height / 2);
+    await p.mouse.down();
+    await wait(120);
+    const down = await k5.evaluate(k => ({ pressed: k.classList.contains('is-pressed'), t: getComputedStyle(k).transform, sh: getComputedStyle(k).boxShadow }));
+    await p.mouse.up();
+    await wait(700);                     // the spring has settled
+    const up = await k5.evaluate(k => ({ pressed: k.classList.contains('is-pressed'), t: getComputedStyle(k).transform }));
+    const focusKept = await p.evaluate(() => document.activeElement && document.activeElement.id === 'code');
+    check(down.pressed && down.t !== 'none' && /inset/.test(down.sh) && !up.pressed && (up.t === 'none' || Math.abs(parseFloat((up.t.match(/matrix\(([-\d.e]+)/) || [])[1]) - 1) < 0.002),
+      'a key moves in (transform, inset shadow) while pressed and springs back on release', JSON.stringify({ down, up }));
+    check(focusKept && await p.inputValue('#code') === '5', 'the press put one digit in the field, and focus stayed in the field');
+    const go = p.locator('[data-lock-go]');
+    const gb = await go.boundingBox();
+    await p.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+    await p.mouse.down();
+    await wait(100);
+    const goT = await go.evaluate(b => getComputedStyle(b).transform);
+    await p.mouse.move(5, 5);
+    await p.mouse.up();
+    check(goT !== 'none', 'Unlock presses in the same way (Clear shares the rule)', goT);
+    // A typed digit presses its key too.
+    await p.locator('#code').focus();
+    await p.keyboard.down('7');
+    const typed = await p.evaluate(() => document.querySelector('.lock__key[data-key="7"]').classList.contains('is-pressed'));
+    await p.keyboard.up('7');
+    check(typed && await p.inputValue('#code') === '57', 'a digit typed on the keyboard presses the matching key');
+    await p.click('[data-lock-clear]');
+    check(await p.inputValue('#code') === '', 'Clear empties the field');
+    check(p.errors.length === 0, 'no errors on the lock', p.errors.join(' | '));
+    await p.context().close();
+
+    // Fast repeated taps: every tap is one digit, none lost, none doubled.
+    p = await page({ viewport: { width: 360, height: 640 }, hasTouch: true });
+    await p.goto(B + '/owner/');
+    await p.waitForSelector('.lock--3d, .lock--flat');
+    const seq = '1111222233330000';
+    for (const d of seq) await p.tap(`.lock__key[data-key="${d}"]`, { delay: 0 });
+    r = await p.evaluate(() => ({ v: document.querySelector('#code').value, dots: document.querySelector('[data-lock-dots]').textContent.length,
+                                  active: document.activeElement.tagName }));
+    check(r.v === seq && r.dots === seq.length, '16 rapid taps, the same key repeatedly: exactly 16 digits, in order', JSON.stringify(r));
+    check(r.active !== 'INPUT', 'tapping keys does not focus the field, so the phone keyboard stays closed', r.active);
+    await p.tap('[data-lock-clear]');
+
+    // A wrong code: red, the same for the whole ring, and gone at the next key.
+    for (const d of '00000001') await p.tap(`.lock__key[data-key="${d}"]`);
+    await p.tap('[data-lock-go]');
+    await p.waitForFunction(() => /Not accepted/.test(document.querySelector('[data-lock-msg]').textContent));
+    // The halo fades in over .35s: wait for it to finish, however slow the machine.
+    await p.waitForFunction(() => getComputedStyle(document.querySelector('.lock__halo')).opacity === '1', null, { timeout: 4000 }).catch(() => {});
+    r = await p.evaluate(() => { const v = document.querySelector('[data-view="lock"]'); const h = getComputedStyle(document.querySelector('.lock__halo'));
+      return { err: v.classList.contains('lock--err'), ok: v.classList.contains('lock--ok'), op: h.opacity, sh: h.boxShadow, msg: document.querySelector('[data-lock-msg]').textContent }; });
+    check(r.err && !r.ok && r.op === '1' && /232, 72, 72/.test(r.sh), 'a wrong code turns the ring red, never green', JSON.stringify(r));
+    check(!/\d+ of|digit|position|first|last|correct/i.test(r.msg.replace(/\d+ tries left/, '')), 'and the message says nothing about any digit', r.msg);
+    await p.tap('.lock__key[data-key="4"]');
+    check(await p.evaluate(() => !document.querySelector('[data-view="lock"]').classList.contains('lock--err')), 'the next key press clears the red');
+    await p.tap('[data-lock-clear]');
+    for (const d of '00000002') await p.tap(`.lock__key[data-key="${d}"]`);
+    await p.tap('[data-lock-go]');
+    await p.waitForSelector('.lock--err');
+    await p.tap('[data-lock-clear]');
+    check(await p.evaluate(() => !document.querySelector('[data-view="lock"]').className.match(/lock--(err|ok)/)), 'and so does Clear: the ring is dark again');
+
+    // The right code: nothing green until the server has said yes.
+    let release;
+    const held = new Promise(res => { release = res; });
+    await p.route('**/review-api/owner.php', async route => {
+      if (route.request().method() === 'POST' && /"login"/.test(route.request().postData() || '')) { await held; }
+      await route.continue();
+    });
+    for (const d of s.code) await p.tap(`.lock__key[data-key="${d}"]`);
+    await p.tap('[data-lock-go]');
+    const during = [];
+    for (let i = 0; i < 6; i++) { await wait(150); during.push(await p.evaluate(() => document.querySelector('[data-view="lock"]').className)); }
+    release();
+    await p.waitForSelector('.lock--ok', { timeout: 5000 }).catch(() => {});
+    await p.waitForFunction(() => getComputedStyle(document.querySelector('.lock__halo')).opacity === '1', null, { timeout: 4000 }).catch(() => {});
+    const after = await p.evaluate(() => ({ cls: document.querySelector('[data-view="lock"]').className, sh: getComputedStyle(document.querySelector('.lock__halo')).boxShadow }));
+    check(during.every(c => !/lock--ok|lock--err/.test(c)), 'while the server is still checking, the ring stays dark (no early green)', during.join(' / '));
+    check(/lock--ok/.test(after.cls) && /52, 211, 153/.test(after.sh), 'after the server accepts the code, the ring glows emerald', JSON.stringify(after));
+    check(await p.waitForSelector('[data-view="dash"]:not([hidden])', { timeout: 8000 }).then(() => true).catch(() => false), 'and the dashboard opens');
+    check(p.errors.length === 0, 'no errors through wrong, cleared and right codes', p.errors.join(' | '));
+    await p.context().close();
+
+    // Reduced motion: the press and the ring still show, without movement.
+    p = await page({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    await p.goto(B + '/owner/');
+    await p.waitForSelector('.lock--3d, .lock--flat');
+    const k1 = await p.locator('.lock__key[data-key="1"]').boundingBox();
+    await p.mouse.move(k1.x + 20, k1.y + 20);
+    await p.mouse.down();
+    await wait(60);
+    r = await p.evaluate(() => { const k = document.querySelector('.lock__key[data-key="1"]'); return { pressed: k.classList.contains('is-pressed'), t: getComputedStyle(k).transform, sh: getComputedStyle(k).boxShadow }; });
+    await p.mouse.up();
+    check(r.pressed && r.t === 'none' && /inset/.test(r.sh) && await p.inputValue('#code') === '1',
+      'under prefers-reduced-motion a key still shows it is pressed (shading), but does not move', JSON.stringify(r));
+    await p.context().close();
+
+    /* ------------------------------------------------------------------ */
+    section('Deleting an invitation');
+    p = await page();
+    await signIn(p);
+    const sess = await (await p.request.get(B + '/review-api/owner.php?action=session')).json();
+    const mk = async name => (await (await p.request.post(B + '/review-api/owner.php', { headers: { 'X-CSRF-Token': sess.csrf },
+      data: { action: 'create', name, phone: '+91 90000 00077', stay_from: '2026-10-10', stay_to: '2026-10-12', require_check: false } })).json());
+    const dA = await mk('Test Guest Delete A');
+    const dB = await mk('Test Guest Delete B');
+    const listInv = async () => (await (await p.request.get(B + '/review-api/owner.php?action=dashboard')).json()).invitations;
+    await p.click('[data-refresh]');
+    await p.click('[data-tab="invitations"]');
+    await p.waitForSelector(`[data-del="${dA.id}"]`);
+    r = await p.evaluate(() => [...document.querySelectorAll('[data-panel="invitations"] .acard')].map(c => ({
+      used: !!c.querySelector('.acard__status.is-used'), bin: !!c.querySelector('.acard__del') })));
+    check(r.some(x => x.bin) && r.filter(x => x.used).every(x => !x.bin), 'open invitations show a bin; used ones (with a review) do not', JSON.stringify(r));
+    const nBefore = (await listInv()).length;
+    const binBox = await p.locator(`[data-del="${dA.id}"]`).boundingBox();
+    check(binBox.width >= 44 && binBox.height >= 44, 'the bin is a 44px touch target', JSON.stringify(binBox));
+    await p.click(`[data-del="${dA.id}"]`);
+    r = await p.evaluate(() => ({ open: document.querySelector('[data-delete-dialog]').open, h: document.querySelector('#del-h').textContent,
+      t: document.querySelector('[data-del-text]').textContent, focus: document.activeElement.textContent }));
+    check(r.open && r.h === 'Delete invitation?' && r.t.includes('Test Guest Delete A') && /permanently/.test(r.t) && /never be used again/.test(r.t) && r.focus === 'Cancel',
+      'the bin opens "Delete invitation?", naming the guest, saying it is permanent and the link dies; Cancel has focus', JSON.stringify(r));
+    await p.click('[data-del-cancel]');
+    check(!(await p.evaluate(() => document.querySelector('[data-delete-dialog]').open)) && (await listInv()).length === nBefore
+      && await p.locator(`[data-del="${dA.id}"]`).count() === 1, 'Cancel closes it and changes nothing');
+    await p.click(`[data-del="${dA.id}"]`);
+    await p.keyboard.press('Escape');
+    check((await listInv()).length === nBefore, 'Escape cancels too');
+    const delReqs = [];
+    p.on('request', q => { if (q.method() === 'POST' && /"delete"/.test(q.postData() || '')) delReqs.push(q.postData()); });
+    await p.click(`[data-del="${dA.id}"]`);
+    await p.dblclick('[data-del-go]');
+    await p.waitForFunction(() => /Deleted/.test(document.querySelector('[data-dash-msg]').textContent));
+    await wait(300);
+    const after2 = await listInv();
+    check(delReqs.length === 1 && JSON.parse(delReqs[0]).id === dA.id, 'Delete sends exactly one request, for that invitation, even on a double tap', JSON.stringify(delReqs));
+    check(after2.length === nBefore - 1 && !after2.some(x => x.id === dA.id) && after2.some(x => x.id === dB.id),
+      'only that invitation is gone; the others, including one made at the same moment, stay', JSON.stringify(after2.map(x => x.id)));
+    check(await p.locator(`[data-del="${dA.id}"]`).count() === 0 && /Its link no longer works/.test(await p.textContent('[data-dash-msg]')),
+      'the dashboard refreshes and says it is done');
+    const tokA = dA.link.split('#t=')[1];
+    const g = await (await p.request.post(B + '/review-api/invite.php', { data: { action: 'check', token: tokA } }));
+    check(g.status() === 410, 'the deleted invitation\'s link is dead', String(g.status()));
+    // The request carries the CSRF header: the page sent it, and without it the server says no.
+    const noCsrf = await p.request.post(B + '/review-api/owner.php', { data: { action: 'delete', id: dB.id } });
+    check(noCsrf.status() === 403 && (await listInv()).some(x => x.id === dB.id), 'a delete without the CSRF token is refused (403) and deletes nothing', String(noCsrf.status()));
+    check(p.errors.length === 0, 'no errors on the dashboard', p.errors.join(' | '));
     await p.context().close();
 
     /* ------------------------------------------------------------------ */

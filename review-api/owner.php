@@ -11,6 +11,7 @@
  *   POST {action:'logout'}
  *   POST {action:'create', name, phone, stay_from, stay_to, expiry_days, require_check}
  *   POST {action:'revoke'|'verify'|'reveal', id}           (invitation id)
+ *   POST {action:'delete', id}                 (invitation id; only one no review hangs on)
  *   POST {action:'approve'|'reject'|'takedown', id}         (review id)
  */
 declare(strict_types=1);
@@ -166,6 +167,28 @@ switch ($action) {
         if ($p === false) gr_json(404, ['ok' => false, 'error' => 'gone']);
         gr_json(200, ['ok' => true, 'phone' => $p]);
 
+    case 'delete':
+        // Revoke stops a link and keeps the record; delete removes the record.
+        // Only an invitation that no review hangs on can go: a review keeps
+        // its card (and with it approve and reject) until day 30, and the
+        // purge removes both then. The row is taken FOR UPDATE, as the guest's
+        // submit takes it, so a review arriving at the same moment either
+        // lands first (and this answers has_review) or finds no link (dead).
+        $id = gr_v_id($in['id'] ?? null) ?? gr_json(422, ['ok' => false, 'error' => 'invalid']);
+        $r = gr_tx($db, function (PDO $db) use ($id) {
+            $st = $db->prepare('SELECT id FROM gr_invitations WHERE id = ? FOR UPDATE');
+            $st->execute([$id]);
+            if ($st->fetchColumn() === false) return 'gone';
+            $st = $db->prepare('SELECT COUNT(*) FROM gr_reviews WHERE invitation_id = ?');
+            $st->execute([$id]);
+            if ((int)$st->fetchColumn() > 0) return 'has_review';
+            $db->prepare('DELETE FROM gr_invitations WHERE id = ?')->execute([$id]);
+            return 'ok';
+        });
+        if ($r === 'ok') gr_json(200, ['ok' => true]);
+        $r === 'gone' ? gr_json(404, ['ok' => false, 'error' => 'gone'])
+                      : gr_json(409, ['ok' => false, 'error' => 'has_review']);
+
     case 'approve':
     case 'reject':
         $id = gr_v_id($in['id'] ?? null) ?? gr_json(422, ['ok' => false, 'error' => 'invalid']);
@@ -254,9 +277,10 @@ function gr_dashboard(PDO $db): array {
         else                                 $published[] = $row;
     }
 
-    $invs = $db->query('SELECT id, guest_name, phone_e164, stay_from, stay_to, require_check, check_code, status,
-                               created_at, expires_at, verified_at, used_at, revoked_at
-                          FROM gr_invitations ORDER BY created_at DESC')->fetchAll();
+    $invs = $db->query('SELECT i.id, i.guest_name, i.phone_e164, i.stay_from, i.stay_to, i.require_check, i.check_code,
+                               i.status, i.created_at, i.expires_at, i.verified_at, i.used_at, i.revoked_at,
+                               EXISTS(SELECT 1 FROM gr_reviews r WHERE r.invitation_id = i.id) AS has_review
+                          FROM gr_invitations i ORDER BY i.created_at DESC')->fetchAll();
     $invitations = [];
     foreach ($invs as $i) {
         $status = $i['status'];
@@ -275,6 +299,7 @@ function gr_dashboard(PDO $db): array {
             'verified'      => gr_iso($i['verified_at']),
             'used'          => gr_iso($i['used_at']),
             'revoked'       => gr_iso($i['revoked_at']),
+            'deletable'     => !(int)$i['has_review'],
         ];
     }
     return ['now' => gr_iso(gr_sql($now)), 'waiting' => $waiting, 'rejected' => $rejected,

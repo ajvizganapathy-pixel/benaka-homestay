@@ -115,7 +115,7 @@ web/fonts/            self-hosted woff2 (no CDN at runtime)
 web/js/reviews.js     #reviews: fetches review-api/public.php, month chips, the slider
 web/css/reviews.css   #reviews; web/css/review-pages.css styles /owner/ and /review/
 review-api/           guest reviews server: public.php, invite.php, owner.php, lib/ (never served)
-owner/                /owner/: the 3D safe-lock (lock.js + vendor/three r169) and the dashboard
+owner/                /owner/: the safe-lock (keys in HTML, dial in lock.js + vendor/three r169) and the dashboard
 review/               /review/#t=<token>: the guest's form
 migrations/           001_guest_reviews.sql + .down.sql (additive, gr_* tables only)
 tests/reviews/        api-test.php (real HTTP, real MySQL), browser-test.cjs, seed.php
@@ -480,9 +480,17 @@ Things that will bite:
    `reviews.js`, `owner.js`, `lock.js` or `review.js` uses `innerHTML`.
 9. **Three.js loads only on `/owner/`**, self-hosted as
    `owner/vendor/three-0.169.0.module.min.js`, hash-checked by `tools/test.sh`.
-   The 3D lock only fills the `#code` field; if WebGL fails, the plain field is
-   the whole sign-in. Screenshots in headless Chromium need SwiftShader:
+   It draws only the dial (body, knurled ring, mark), square-on with an
+   orthographic camera. The ten keys are plain `<button>`s in
+   `owner/index.html`, laid over the face in CSS so they are 56-64px on any
+   phone. They only append to `#code`, the real control. Without WebGL the
+   same dial is drawn in CSS and the keys work unchanged. The key radii in
+   `review-pages.css` and the ones in `lock.js` must move together. Screenshots
+   in headless Chromium need SwiftShader:
    `--enable-unsafe-swiftshader --use-angle=swiftshader`.
+   **The ring goes green in exactly one place**, after a 200 from `login` in
+   `owner.js` (`setRing('ok')`). It goes red on `wrong`/`locked`, the whole
+   ring, never a per-digit hint, and clears at the next key or Clear.
 10. **The `?v=` on `/owner/` and `/review/` must equal the homepage's.**
     `tools/test.sh` checks this. Bump all three pages together.
 11. **Tests need a database.** `tools/test.sh` section 4 runs
@@ -491,7 +499,14 @@ Things that will bite:
     sets `REVIEWS_REQUIRE_DB=1`. In a workspace, `apt-get install mariadb-server`
     and start `mysqld_safe`. Test data is always "Test Guest …". Never invent a
     review, a name or a rating, not even for a screenshot.
-12. **The Google reviews link is deliberately absent** until the owner supplies
+12. **Delete vs Revoke.** Revoke keeps the invitation row and stops the link.
+    Delete (`owner.php` action `delete`, the bin on a card) removes the row,
+    and only when **no review references it**. Otherwise it answers 409
+    `has_review` and the card shows no bin. A review needs its invitation
+    until day 30 for its card and for approve/reject, and the purge removes
+    both then. Delete takes the row `FOR UPDATE`, as the guest's submit does,
+    so the two cannot both win.
+13. **The Google reviews link is deliberately absent** until the owner supplies
     the listing's reviews URL.
 
 ### Two entry points, on purpose

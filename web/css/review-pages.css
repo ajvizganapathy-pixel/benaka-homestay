@@ -5,7 +5,7 @@
    those already define: the --s-* tokens (the body carries .after, so the
    ivory palette; the lock carries .band--forest), the two type registers
    (.macro serif, .micro tracked sans) and .btn. No new colour, no third size
-   of type, no shadow beyond the site's own.
+   of type, no shadow beyond the site's own, except on the lock (see there).
    ========================================================================== */
 
 /* `hidden` must win over the display values below (site.css does not say so). */
@@ -66,7 +66,19 @@ body[data-screen="lock"] .rp__bar .micro { color: #a9b6ac; }
 .rp__phone { display: inline-flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
 .btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
 
-/* --- the lock ---------------------------------------------------------------- */
+/* --- the lock ----------------------------------------------------------------
+   The one place on these pages with its own shadows and two colours of its
+   own (the emerald and red of the status ring), at the owner's request: it
+   is a machined object, so it gets light and depth that the rest does not.
+
+   Geometry. The stage is a square D wide and is the container the keys are
+   sized against (1cqw = D/100). The face is 45cqw in radius, the knurled
+   ring 45-49cqw, the rim 49-50cqw: the same radii lock.js draws. A key is
+   b = min(64px, 17cqw) across. Key centres are s apart, laid out so the
+   corner keys and the 0 are the same distance from the centre (1.667s);
+   s is chosen so that distance plus b/2 is 2.8cqw inside the face. At D 336
+   (a 360px phone) b is 57px with 11px between keys; at D 377 and up, 64px.
+   ---------------------------------------------------------------------------- */
 .lock {
   flex: 1; min-height: 100svh;
   display: grid; place-items: center;
@@ -75,34 +87,150 @@ body[data-screen="lock"] .rp__bar .micro { color: #a9b6ac; }
 .lock__inner { width: 100%; max-width: 460px; display: grid; justify-items: center; text-align: center; gap: 6px; }
 .lock__eyebrow { color: var(--s-ink-soft); }
 .lock__h { font-family: var(--s-font-macro); font-weight: 400; font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1.05; margin: 4px 0 6px; }
-.lock__stage { width: min(100%, 420px); aspect-ratio: 1; position: relative; touch-action: manipulation; }
-.lock__canvas { display: block; width: 100%; height: 100%; }
+
+.lock__stage {
+  --d: min(100%, 420px, max(260px, calc(100svh - 340px)));
+  width: var(--d); aspect-ratio: 1; position: relative;
+  container-type: inline-size;
+  touch-action: manipulation;          /* no double-tap zoom, no tap delay */
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 50%;
+  /* The dial without WebGL, and under the 3D one while it loads: face,
+     steel line, ring, rim. The knurl and the mark are the two pseudos. */
+  background: radial-gradient(circle closest-side,
+    #121416 0 89.4%, #8e9296 89.4% 90.2%, #2c3034 90.2% 98%, #1d2023 98% 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.lock__stage::before {                  /* the knurled ring, turning a notch a digit */
+  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 255, 255, .11) 0 1.2deg, rgba(0, 0, 0, .28) 1.2deg 2.727deg);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 90.6%, #000 91.2% 97.4%, transparent 98%);
+          mask: radial-gradient(circle closest-side, transparent 90.6%, #000 91.2% 97.4%, transparent 98%);
+  transform: rotate(var(--turn, 0deg));
+  transition: transform .28s cubic-bezier(.34, 1.56, .64, 1);
+}
+.lock__stage::after {                   /* the index mark at twelve o'clock */
+  content: ''; position: absolute; pointer-events: none;
+  left: 49.45%; top: 6.9%; width: 1.1%; height: 3.4%; border-radius: 99px;
+  background: #f1ece1;
+}
+.lock.is-locked .lock__stage::after { background: #c9683d; }
+.lock--3d .lock__stage::before, .lock--3d .lock__stage::after { display: none; }
+.lock__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border-radius: 50%; }
+
+/* The status ring, over the knurl. Dark until the server answers. */
+.lock__halo {
+  position: absolute; inset: 2.6%; border-radius: 50%; pointer-events: none;
+  opacity: 0; transition: opacity .35s ease, box-shadow .35s ease;
+  --glow: 0, 0, 0;
+}
+.lock--ok .lock__halo, .lock--err .lock__halo {
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgb(var(--glow)), 0 0 18px 4px rgba(var(--glow), .5), inset 0 0 14px 2px rgba(var(--glow), .4);
+}
+.lock--ok .lock__halo  { --glow: 52, 211, 153; animation: lock-pulse 1.8s ease-in-out infinite; }
+.lock--err .lock__halo { --glow: 232, 72, 72; }
+@keyframes lock-pulse {
+  50% { box-shadow: 0 0 0 2px rgb(var(--glow)), 0 0 30px 8px rgba(var(--glow), .62), inset 0 0 20px 4px rgba(var(--glow), .5); }
+}
+.lock__stage.is-shaking { animation: lock-shake .42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes lock-shake {
+  15%, 85% { transform: translateX(-2px); }
+  30%, 70% { transform: translateX(5px); }
+  45%, 55% { transform: translateX(-6px); }
+}
+
+/* The ten keys. */
+.lock__keys {
+  position: absolute; inset: 0;
+  --b: min(64px, 17cqw);
+  --s: calc((42.2cqw - var(--b) / 2) * .6);
+}
+.lock__key {
+  position: absolute; display: grid; place-items: center; padding: 0;
+  width: var(--b); height: var(--b);
+  left: calc(50% + var(--x) * var(--s) - var(--b) / 2);
+  top:  calc(50% + var(--y) * var(--s) - var(--b) / 2);
+  border-radius: 50%; border: 1px solid #0c0d0e;
+  font: 500 calc(var(--b) * .4)/1 var(--s-font-micro); font-variant-numeric: tabular-nums;
+  color: #ece9e2; cursor: pointer;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  background: radial-gradient(circle at 50% 28%, #3c4146 0%, #2a2e32 46%, #1b1e21 100%);
+  box-shadow: 0 3px 0 #0a0b0c, 0 6px 10px rgba(0, 0, 0, .5),
+              inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -3px 5px rgba(0, 0, 0, .45);
+  /* Release: a quick spring back. Press is faster still (below). */
+  transition: transform .26s cubic-bezier(.34, 1.56, .64, 1), box-shadow .2s ease, background .2s ease, color .2s ease;
+}
+.lock__key[data-key="1"] { --x: -1; --y: -1.3333; }
+.lock__key[data-key="2"] { --x: 0;  --y: -1.3333; }
+.lock__key[data-key="3"] { --x: 1;  --y: -1.3333; }
+.lock__key[data-key="4"] { --x: -1; --y: -.3333; }
+.lock__key[data-key="5"] { --x: 0;  --y: -.3333; }
+.lock__key[data-key="6"] { --x: 1;  --y: -.3333; }
+.lock__key[data-key="7"] { --x: -1; --y: .6667; }
+.lock__key[data-key="8"] { --x: 0;  --y: .6667; }
+.lock__key[data-key="9"] { --x: 1;  --y: .6667; }
+.lock__key[data-key="0"] { --x: 0;  --y: 1.6667; }
+@media (hover: hover) {
+  .lock__key:not(:disabled):hover { background: radial-gradient(circle at 50% 28%, #444a50 0%, #2f3337 46%, #1d2023 100%); }
+}
+.lock__key.is-pressed:not(:disabled) {
+  transform: translateY(2px) scale(.955);
+  transition-duration: .05s;
+  color: #e08b60;
+  background: radial-gradient(circle at 50% 72%, #2d3135 0%, #202326 55%, #16181a 100%);
+  box-shadow: 0 1px 0 #0a0b0c, 0 1px 3px rgba(0, 0, 0, .5),
+              inset 0 3px 7px rgba(0, 0, 0, .72), inset 0 0 0 1.5px rgba(201, 104, 61, .8);
+}
+.lock__key:disabled { cursor: not-allowed; color: #6f7377; box-shadow: 0 1px 0 #0a0b0c, inset 0 2px 4px rgba(0, 0, 0, .5); }
+
 .lock__dots { min-height: 1.6em; margin: 0; padding: 2px 10px; letter-spacing: .35em; color: var(--s-accent); font-size: .9rem; }
+.lock__dots:empty::before { content: 'Type or tap your code'; letter-spacing: var(--s-micro-track); font-size: var(--s-micro); text-transform: uppercase; color: var(--s-ink-faint); }
+/* The field keeps focus while the keys are up, so typed digits land in it;
+   the dots under the dial are what show it is listening. */
+.lock:has(.lock__input:focus) .lock__dots { outline: 1px solid var(--s-line); outline-offset: 3px; border-radius: var(--s-radius); }
 .lock__form { display: grid; gap: 16px; justify-items: center; width: 100%; margin-top: 4px; }
-.lock__buttons { display: flex; gap: 10px; }
-.lock__buttons .btn { min-height: 44px; min-width: 112px; justify-content: center; }
+.lock__buttons { display: flex; gap: 12px; }
+.lock__buttons .btn {
+  min-height: 48px; min-width: 120px; justify-content: center;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .16);
+  transition: transform .26s cubic-bezier(.34, 1.56, .64, 1), box-shadow .2s ease, background var(--s-quick), border-color var(--s-quick);
+}
+.lock__buttons .btn--ghost { box-shadow: 0 3px 0 rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.lock__buttons .btn:not(:disabled):active, .lock__buttons .btn.is-pressed:not(:disabled) {
+  transform: translateY(2px) scale(.97);
+  transition-duration: .05s;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .35), inset 0 2px 6px rgba(0, 0, 0, .38);
+}
 .lock__msg { min-height: 3em; margin: 6px 0 0; color: var(--s-ink-soft); max-width: 34ch; }
 .lock.is-locked .lock__msg { color: var(--s-accent); }
-.lock__label {
-  /* With the 3D keypad the field is still there, for screen readers and the
-     keyboard, but visually it is the keypad and the dots. */
-  font-family: var(--s-font-micro); font-size: var(--s-micro); letter-spacing: var(--s-micro-track);
-  text-transform: uppercase; color: var(--s-ink-soft);
-}
-.lock__input {
-  width: min(100%, 280px); min-height: 52px; padding: 10px 14px; text-align: center;
-  font: 500 1.4rem var(--s-font-micro); letter-spacing: .3em; color: var(--s-ink);
-  background: var(--s-bg-raised); border: 1px solid var(--s-line); border-radius: var(--s-radius);
-}
-.lock__input:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 2px; }
-.lock--3d .lock__label, .lock--3d .lock__input {
+/* The digit field is the real control (screen readers, the keyboard, paste)
+   but on screen it is the keys and the dots. */
+.lock__label, .lock__input {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; padding: 0;
 }
-/* The field keeps focus while the 3D keypad is up, so typed digits land in it;
-   the dots under the keypad are what show it is listening. */
-.lock--3d:has(.lock__input:focus) .lock__dots { outline: 1px solid var(--s-line); outline-offset: 6px; border-radius: var(--s-radius); }
-.lock--3d .lock__dots:empty::before { content: 'Type or tap your code'; letter-spacing: var(--s-micro-track); font-size: var(--s-micro); text-transform: uppercase; color: var(--s-ink-faint); }
-.lock--flat .lock__dots { display: none; }
+
+/* Short screens (a 360x640 Android, a phone with its address bar showing):
+   the eyebrow moves up into the bar's row beside the logo, and the dial
+   takes what height is left, so the whole lock fits without scrolling. */
+@media (max-width: 420px) {
+  .lock { padding-left: 12px; padding-right: 12px; }
+}
+@media (max-height: 760px) {
+  .lock { padding-top: 21px; padding-bottom: 8px; }
+  .lock__inner { gap: 4px; }
+  .lock__eyebrow { line-height: 18px; margin: 0; }
+  .lock__h { font-size: 1.75rem; margin: 2px 0 0; }
+  .lock__stage { --d: min(100%, 420px, max(260px, calc(100svh - 218px))); }
+  .lock__dots { min-height: 22px; padding: 0 10px; line-height: 22px; }
+  .lock__form { gap: 0; margin-top: 2px; }
+  .lock__msg { min-height: 2.6em; line-height: 1.3; margin: 2px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lock__key, .lock__buttons .btn, .lock__stage::before { transition: none; }
+  .lock__key.is-pressed:not(:disabled), .lock__buttons .btn:not(:disabled):active, .lock__buttons .btn.is-pressed:not(:disabled) { transform: none; }
+  .lock--ok .lock__halo, .lock__stage.is-shaking { animation: none; }
+}
 
 /* --- dashboard --------------------------------------------------------------- */
 .dash { width: 100%; max-width: 980px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) var(--s-gut) 80px; }
@@ -135,6 +263,16 @@ body[data-screen="lock"] .rp__bar .micro { color: #a9b6ac; }
 .acard__body p { margin: 0 0 10px; max-width: 64ch; overflow-wrap: anywhere; }
 .acard__consent { margin: 0; color: var(--s-ink-soft); font-size: .92em; }
 .acard__act { display: flex; flex-wrap: wrap; gap: 10px; }
+.acard__side { display: inline-flex; align-items: center; gap: 6px; }
+.acard__del {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; margin: -10px -10px -10px 0;
+  border-radius: 50%; color: var(--s-ink-soft); cursor: pointer;
+  transition: color var(--s-quick), background var(--s-quick);
+}
+.acard__del svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.acard__del:hover, .acard__del:focus-visible { color: #b3261e; background: var(--s-bg-raised); }
+.acard__del:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 1px; }
+.dash__legend { padding-top: 18px; }
 .acard__times { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
 .acard__times dd { margin: 0; color: var(--s-ink-soft); font-variant-numeric: tabular-nums; }
 
@@ -151,6 +289,14 @@ body[data-screen="lock"] .rp__bar .micro { color: #a9b6ac; }
 .dlg .rp__form { margin-top: 0; }
 .dlg__h { font-family: var(--s-font-macro); font-weight: 400; font-size: clamp(1.6rem, 4vw, 2.1rem); line-height: 1.1; margin: 0; }
 .dlg__done { display: grid; gap: 16px; }
+.dlg--confirm { width: min(440px, calc(100vw - 24px)); display: grid; gap: 14px; }
+.dlg--confirm:not([open]) { display: none; }
+.dlg--confirm .micro, .dlg__p { margin: 0; }
+.dlg--confirm .rp__msg { min-height: 0; }
+.dlg__p { color: var(--s-ink-soft); }
+/* Delete is the one red button: it cannot be undone. */
+.btn--danger { background: #b3261e; }
+.btn--danger:hover { background: #c9352c; }
 
 /* --- the guest form ------------------------------------------------------------ */
 .gform__who { font-family: var(--s-font-macro); font-size: clamp(1.4rem, 4vw, 1.8rem); margin: 0; }
