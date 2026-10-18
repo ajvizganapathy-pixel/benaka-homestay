@@ -372,6 +372,26 @@ const setEnabled = (s, on) => {
       check((await p.textContent('[data-form-msg]')).includes('at least 20'), `16. ${w}px: too short is caught before sending, with a plain message`);
       await p.context().close();
     }
+    // Names are required now: no tick box, and the form says what will show.
+    p = await page({ viewport: { width: 390, height: 844 } });
+    await p.goto(await mkLink(false));
+    await p.waitForSelector('[data-view="form"]:not([hidden])');
+    r = await p.evaluate(() => ({ boxes: document.querySelectorAll('[data-view="form"] input[type="checkbox"]').length,
+      shown: document.querySelector('[data-shown]').textContent }));
+    check(r.boxes === 0 && /your name/.test(r.shown) && /dates of your stay/.test(r.shown),
+      'the guest form has no "show my name" tick box, and says the name and stay dates will appear', JSON.stringify(r));
+    await p.click('label[for="r4"]');
+    await p.fill('textarea[name=body]', 'Test text sent from the form, not a real review.');
+    const sent = p.waitForRequest(q => q.method() === 'POST' && /"submit"/.test(q.postData() || ''));
+    await p.click('[data-send]');
+    const body = JSON.parse((await sent).postData());
+    await p.waitForSelector('[data-view="thanks"]:not([hidden])');
+    const waiting = (await (await own.request.get('/review-api/owner.php?action=dashboard')).json()).waiting;
+    const mine = waiting.find(x => x.body === 'Test text sent from the form, not a real review.');
+    check(!('consent' in body) && mine && mine.consent === true && /with your name/.test(await p.textContent('[data-thanks-line]')),
+      'a review sent from the form carries no consent field and is stored to show the name', JSON.stringify({ body: Object.keys(body), mine: mine && mine.consent }));
+    check(p.errors.length === 0, 'no errors on the guest form', p.errors.join(' | '));
+    await p.context().close();
     await own.close();
 
     /* ------------------------------------------------------------------ */
@@ -463,8 +483,10 @@ const setEnabled = (s, on) => {
       pressed: document.querySelector('[data-review-months] [aria-pressed="true"]').textContent }));
     check(r.n === 2 && r.pressed === 'September 2026' && r.st.enabled === false, '25. a month chip filters, and with 1-3 reviews the slider stays still', JSON.stringify(r));
     await p.click('[data-review-months] button:nth-child(2)');
-    r = await p.evaluate(() => [...document.querySelectorAll('.rcard__date')].map(d => d.textContent));
-    check(r.length > 0 && r.every(d => d.endsWith('Oct 2026')), '15. "October 2026" shows only October reviews', r.join(', '));
+    r = await p.evaluate(() => [...document.querySelectorAll('.rcard')].map(c => ({ m: c.dataset.month, d: c.querySelector('.rcard__date').textContent })));
+    check(r.length > 0 && r.every(x => x.m === '2026-10'), '15. "October 2026" shows only reviews written in October', JSON.stringify(r));
+    check(r.every(x => /^\d{1,2}( [A-Z][a-z]{2})?( \d{4})?\s?–\s?\d{1,2} [A-Z][a-z]{2} \d{4} · \d+ nights?$/.test(x.d)) && r.some(x => x.d === '28 Sep – 1 Oct 2026 · 3 nights'),
+      'each card shows the stay (check-in, check-out, nights) where it used to show a date', r.map(x => x.d).join(', '));
     await p.context().close();
 
     p = await page({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });

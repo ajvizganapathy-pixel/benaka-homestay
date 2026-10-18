@@ -48,6 +48,7 @@ final class Env {
         $root = new PDO($c[0], $c[1], $c[2], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $root->exec("CREATE DATABASE `{$e->dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $e->migrate('001_guest_reviews.sql');
+        $e->migrate('002_review_stay_dates.sql');
 
         $e->cfgPath = $e->dir . '/config.php';
         $e->clockFile = $e->dir . '/clock';

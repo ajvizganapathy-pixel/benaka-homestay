@@ -23,7 +23,7 @@ if ($month !== null && (!is_string($month) || !preg_match('/^\d{4}-(0[1-9]|1[0-2
     gr_json(400, ['ok' => false, 'error' => 'month']);
 }
 
-$sql = 'SELECT display_name, rating, body, submitted_at, month_key FROM gr_public_reviews';
+$sql = 'SELECT display_name, rating, body, submitted_at, month_key, stay_from, stay_to FROM gr_public_reviews';
 $args = [];
 if ($month !== null) { $sql .= ' WHERE month_key = ?'; $args[] = $month; }
 $sql .= ' ORDER BY submitted_at DESC LIMIT 300';
@@ -38,6 +38,13 @@ foreach ($st as $r) {
         'body'   => $r['body'],
         'date'   => gr_ist_date($r['submitted_at']),
         'month'  => $r['month_key'],
+        // The guest's stay, shown on the card. Null only for a review older
+        // than migration 002 whose invitation had already gone.
+        'stay'   => ($r['stay_from'] && $r['stay_to']) ? [
+            'from'   => $r['stay_from'],
+            'to'     => $r['stay_to'],
+            'nights' => (int)round((strtotime($r['stay_to']) - strtotime($r['stay_from'])) / 86400),
+        ] : null,
     ];
 }
 gr_json(200, ['ok' => true, 'reviews' => $out]);

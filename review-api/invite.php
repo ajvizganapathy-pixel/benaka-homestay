@@ -2,7 +2,7 @@
 /*
  * POST /review-api/invite.php   (JSON)
  *   {action:'check',  token}
- *   {action:'submit', token, rating, body, consent, website}
+ *   {action:'submit', token, rating, body, website}   (consent: optional, see below)
  *
  * The guest's endpoint. The token arrives in the request BODY: the page reads
  * it from the URL fragment (#t=...), which browsers never send to a server, so
@@ -28,7 +28,7 @@ function dead(): void { gr_json(410, ['ok' => false, 'error' => 'dead']); }
 
 /** The invitation row if the link is live now, else null. */
 function live_invitation(PDO $db, string $token, bool $forUpdate): ?array {
-    $st = $db->prepare('SELECT id, guest_name, require_check, check_code, status, expires_at
+    $st = $db->prepare('SELECT id, guest_name, stay_from, stay_to, require_check, check_code, status, expires_at
                           FROM gr_invitations WHERE token_hash = ?' . ($forUpdate ? ' FOR UPDATE' : ''));
     $st->execute([hash('sha256', $token)]);
     $inv = $st->fetch();
@@ -69,7 +69,11 @@ if ($action === 'submit') {
 
     $rating  = gr_v_rating($in['rating'] ?? null);
     $body    = gr_v_body($in['body'] ?? null);
-    $consent = $in['consent'] ?? null;
+    // Showing the name is a condition of reviewing now: the form says so and
+    // no longer asks. A page opened before that change still sends its tick
+    // box, and an explicit false from it is honoured: that guest was told
+    // their review would stay private.
+    $consent = array_key_exists('consent', $in) ? $in['consent'] : true;
     $errors = [];
     if ($rating === null) $errors[] = 'rating';
     if ($body === null)   $errors[] = 'body';
@@ -89,10 +93,13 @@ if ($action === 'submit') {
         $claim->execute([gr_sql($now), $inv['id'], gr_sql($now)]);
         if ($claim->rowCount() !== 1) return 'dead';
         // UNIQUE(invitation_id) is the backstop if anything above were wrong.
+        // The stay is copied: the invitation goes at day 30, the card on the
+        // site keeps showing it.
         $db->prepare('INSERT INTO gr_reviews (invitation_id, display_name, rating, body, consent_public,
-                                              status, submitted_at, month_key, purge_at)
-                      VALUES (?, ?, ?, ?, ?, \'pending\', ?, ?, ?)')
+                                              stay_from, stay_to, status, submitted_at, month_key, purge_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, \'pending\', ?, ?, ?)')
            ->execute([$inv['id'], $inv['guest_name'], $rating, $body, $consent ? 1 : 0,
+                      $inv['stay_from'], $inv['stay_to'],
                       gr_sql($now), gr_month_key($now), gr_sql($now->modify('+' . GR_CARD_DAYS . ' days'))]);
         return 'ok';
     });

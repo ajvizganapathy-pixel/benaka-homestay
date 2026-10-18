@@ -168,10 +168,23 @@ and write that folder above `public_html`.
    check the homepage, then take it down from Published and revoke anything
    left. Then run the live checks below.
 
+### Later migrations: run them BEFORE merging
+
+Each one is additive and safe on a live site. Run it in phpMyAdmin first,
+because the code that needs it goes live within a minute of the merge.
+
+- **002 — stay dates on reviews** (`migrations/002_review_stay_dates.sql`).
+  It adds two empty columns, `stay_from` and `stay_to`, to `gr_reviews`, and
+  copies the stay onto every review whose invitation still exists. It also
+  widens `gr_public_reviews` by those two columns. Take an hPanel database
+  backup, then phpMyAdmin → the database → **SQL** tab → paste the file → Go.
+  Run it once: a second run stops at "Duplicate column name" and changes
+  nothing. Undo with `002_review_stay_dates.down.sql`, after reverting the code.
+
 ### Live checks (only the live server can answer these)
 
 ```bash
-for p in review-api/lib/db.php review-api/lib/ migrations/001_guest_reviews.sql \
+for p in review-api/lib/db.php review-api/lib/ migrations/001_guest_reviews.sql migrations/002_review_stay_dates.sql \
          tests/reviews/harness.php review-api/config.example.php; do
   printf '%s  ' "$(curl -s -o /dev/null -w '%{http_code}' https://benakahomestay.com/$p)"; echo "$p"
 done                       # every line must be 403 or 404

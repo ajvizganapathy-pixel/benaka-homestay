@@ -117,7 +117,7 @@ web/css/reviews.css   #reviews; web/css/review-pages.css styles /owner/ and /rev
 review-api/           guest reviews server: public.php, invite.php, owner.php, lib/ (never served)
 owner/                /owner/: the safe-lock (keys in HTML, dial in lock.js + vendor/three r169) and the dashboard
 review/               /review/#t=<token>: the guest's form
-migrations/           001_guest_reviews.sql + .down.sql (additive, gr_* tables only)
+migrations/           001_guest_reviews.sql, 002_review_stay_dates.sql, each + .down.sql (additive, gr_* only)
 tests/reviews/        api-test.php (real HTTP, real MySQL), browser-test.cjs, seed.php
 assets/raw/           the property photographs — the gallery and the mosaic
 assets/brand/         the logo, the hero images and the owner's reference (README there)
@@ -472,8 +472,9 @@ Things that will bite:
    the server. Lift a lock early with `DELETE FROM gr_login_locks`.
 6. **Day 30 runs at the start of every API request** (`lib/purge.php`). There is
    no cron to forget. 30 days after submission the invitation (number, stay dates)
-   is deleted. An approved, consented review keeps name, stars, text and date.
-   Everything else is deleted.
+   is deleted. An approved, consented review keeps name, stars, text, date and
+   its own copy of the stay dates (migration 002, copied at submit), because the
+   homepage card shows the stay. Everything else is deleted.
 7. **One clock.** All times come from `gr_now()`, never SQL `NOW()`, so the tests
    can move time. Stored in UTC; months and dates shown in Asia/Kolkata.
 8. **Guest text is only ever `textContent`.** `tools/test.sh` fails if
@@ -504,9 +505,22 @@ Things that will bite:
     and only when **no review references it**. Otherwise it answers 409
     `has_review` and the card shows no bin. A review needs its invitation
     until day 30 for its card and for approve/reject, and the purge removes
-    both then. Delete takes the row `FOR UPDATE`, as the guest's submit does,
-    so the two cannot both win.
-13. **The Google reviews link is deliberately absent** until the owner supplies
+    both then. Delete locks the row **through `token_hash`, the same index
+    path the guest's submit uses**, so the two queue instead of deadlocking.
+    Locking by primary key (even `WHERE token_hash = ? AND id = ?`, which the
+    optimiser serves from the primary key) deadlocked about 1 race in 12.
+    The 30-round race test in `api-test.php` catches that.
+13. **Names are required, at the owner's request.** The guest form has no
+    "show my name" tick box. It says the name, stars and stay dates will
+    appear. `invite.php` treats a missing `consent` as true. An explicit
+    `false`, which only a page opened before the change can send, is still
+    honoured. Reviews already stored with consent 0 stay off the site. Do
+    not flip them: those guests were told their name would stay private.
+14. **The homepage card shows the stay, not the date written**:
+    "15–17 Oct 2026 · 2 nights", from `stay` in `public.php`. The month chips
+    still filter by the month the review was written. A review with no stay
+    copy falls back to its date.
+15. **The Google reviews link is deliberately absent** until the owner supplies
     the listing's reviews URL.
 
 ### Two entry points, on purpose
