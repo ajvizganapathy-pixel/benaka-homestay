@@ -163,7 +163,7 @@ async function showLock(retryAfter, message) {
     // The 3D dial, if this device can draw it. If not, the same dial is
     // drawn in CSS under the same keys, and nothing else changes.
     try {
-      const mod = await import('./lock.js?v=20261016-1');
+      const mod = await import('./lock.js?v=20261018-1');
       lock = mod.mountLock(stage);
       view.classList.add('lock--3d');
     } catch {
@@ -415,9 +415,11 @@ function reviewCard(rv, actions) {
   rv.body.split('\n').filter(Boolean).forEach(p => body.append(el('p', '', p)));
   c.append(body);
 
+  // Every review sent since the tick box went shows its name. Only a review
+  // sent before that, by a guest who left the box unticked, stays private.
   c.append(el('p', 'acard__consent', rv.consent
-    ? 'Agreed to show their full name on the site.'
-    : 'Did not agree to show their name. This review will never appear on the site, even if approved.'));
+    ? 'Appears on the site with their name once approved.'
+    : 'Sent before names became required, with "keep my name private" chosen. It never appears on the site, even if approved.'));
 
   const row = el('div', 'acard__act');
   actions.forEach(a => row.append(a));

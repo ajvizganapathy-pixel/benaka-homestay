@@ -64,10 +64,25 @@
 
   const fmtDate = ymd => { const [y, m, d] = ymd.split('-').map(Number); return `${d} ${SHORT[m - 1]} ${y}`; };
   const fmtMonth = ym => { const [y, m] = ym.split('-').map(Number); return `${MONTHS[m - 1]} ${y}`; };
+  const YMD = /^\d{4}-\d{2}-\d{2}$/;
+  /** The stay, as the owner's dashboard writes it: "15–17 Oct 2026 · 2 nights".
+      Null if the API sent no usable stay (a review older than the stay
+      dates), and the card then shows the date it was written instead. */
+  function fmtStay(s) {
+    if (!s || typeof s !== 'object' || !YMD.test(s.from) || !YMD.test(s.to)
+        || !Number.isInteger(s.nights) || s.nights < 1) return null;
+    const [y1, m1, d1] = s.from.split('-').map(Number);
+    const [y2, m2] = s.to.split('-').map(Number);
+    const range = y1 === y2 && m1 === m2 ? `${d1}–${fmtDate(s.to)}`
+                : y1 === y2 ? `${d1} ${SHORT[m1 - 1]} – ${fmtDate(s.to)}`
+                : `${fmtDate(s.from)} – ${fmtDate(s.to)}`;
+    return `${range} · ${s.nights} night${s.nights === 1 ? '' : 's'}`;
+  }
 
   function card(r) {
     const len = r.body.length;
     const fig = document.createElement('figure');
+    fig.dataset.month = r.month;
     fig.className = 'rcard' + (len > 420 ? ' rcard--tall' : len > 150 ? ' rcard--wide' : '');
 
     const stars = document.createElement('p');
@@ -109,7 +124,8 @@
     name.textContent = r.name;
     const date = document.createElement('span');
     date.className = 'micro rcard__date';
-    date.textContent = fmtDate(r.date);
+    const stay = fmtStay(r.stay);
+    date.textContent = stay || fmtDate(r.date);
     by.append(name, date);
     fig.appendChild(by);
     return fig;

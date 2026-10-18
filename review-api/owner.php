@@ -171,15 +171,28 @@ switch ($action) {
         // Revoke stops a link and keeps the record; delete removes the record.
         // Only an invitation that no review hangs on can go: a review keeps
         // its card (and with it approve and reject) until day 30, and the
-        // purge removes both then. The row is taken FOR UPDATE, as the guest's
-        // submit takes it, so a review arriving at the same moment either
-        // lands first (and this answers has_review) or finds no link (dead).
+        // purge removes both then.
+        //
+        // A guest may submit at this very moment. Their submit locks the row
+        // through the token_hash index, so this locks it the same way: taking
+        // it by primary key instead deadlocks against a submit (each holds one
+        // index entry and waits for the other). The hash is read before the
+        // transaction so the transaction's first read is the lock itself, and
+        // the review count is a locking read, so it sees a review committed a
+        // moment ago. Either the review lands first (has_review) or the guest
+        // finds no link (dead).
         $id = gr_v_id($in['id'] ?? null) ?? gr_json(422, ['ok' => false, 'error' => 'invalid']);
-        $r = gr_tx($db, function (PDO $db) use ($id) {
-            $st = $db->prepare('SELECT id FROM gr_invitations WHERE id = ? FOR UPDATE');
-            $st->execute([$id]);
-            if ($st->fetchColumn() === false) return 'gone';
-            $st = $db->prepare('SELECT COUNT(*) FROM gr_reviews WHERE invitation_id = ?');
+        $st = $db->prepare('SELECT token_hash FROM gr_invitations WHERE id = ?');
+        $st->execute([$id]);
+        $th = $st->fetchColumn();
+        if ($th === false) gr_json(404, ['ok' => false, 'error' => 'gone']);
+        $r = gr_tx($db, function (PDO $db) use ($id, $th) {
+            // token_hash alone: with "AND id = ?" the optimiser picks the
+            // primary key and the lock order flips back.
+            $st = $db->prepare('SELECT id FROM gr_invitations WHERE token_hash = ? FOR UPDATE');
+            $st->execute([$th]);
+            if ((int)$st->fetchColumn() !== $id) return 'gone';
+            $st = $db->prepare('SELECT COUNT(*) FROM gr_reviews WHERE invitation_id = ? LOCK IN SHARE MODE');
             $st->execute([$id]);
             if ((int)$st->fetchColumn() > 0) return 'has_review';
             $db->prepare('DELETE FROM gr_invitations WHERE id = ?')->execute([$id]);

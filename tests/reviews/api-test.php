@@ -259,7 +259,7 @@ check($r['status'] === 403 && $r2['status'] === 401 && (int)$db->query('SELECT C
 // The guest submits at the very moment the owner deletes: one of them wins
 // cleanly, every time. Never a review with no card, never a half delete.
 $res = [];
-for ($k = 0; $k < 12; $k++) {
+for ($k = 0; $k < 30; $k++) {
     $db->exec('DELETE FROM gr_rate_limits');
     [$tt, $ii] = $env->invite($owner, ['name' => "Test Guest DelRace $k"]);
     $mh = curl_multi_init();
@@ -274,7 +274,7 @@ for ($k = 0; $k < 12; $k++) {
     $res[] = [$cs, $cd, $invRows, $revRows];
 }
 $clean = array_filter($res, fn($x) => ($x === [200, 409, 1, 1]) || ($x === [410, 200, 0, 0]));
-check(count($clean) === count($res), '8b. submit and delete at the same moment, 12 times: either the review lands and delete is refused, or the link is gone and the submit is dead', json_encode($res));
+check(count($clean) === count($res), '8b. submit and delete at the same moment, 30 times: either the review lands and delete is refused, or the link is gone and the submit is dead', json_encode($res));
 
 /* ======================================================================== */
 section('9-10. Rating and text validation');
@@ -301,7 +301,7 @@ foreach (['yes', 1, null] as $v) {
     $r = $env->submit($tV, ['consent' => $v]);
     if ($r['status'] !== 422) $why .= 'consent ' . json_encode($v) . ': ' . j($r);
 }
-check($why === '', '10. consent must be true or false', $why);
+check($why === '', '10. consent, if sent at all, must be true or false', $why);
 check((int)$db->query("SELECT COUNT(*) FROM gr_invitations WHERE status='used' AND token_hash='" . hash('sha256', $tV) . "'")->fetchColumn() === 0,
       '10. a refused submission does not use up the link');
 $r = $env->submit($tV, ['body' => str_repeat('é', 1500)]);
@@ -349,6 +349,15 @@ $mk = function (string $name, bool $consent, ?string $fate, string $when) use ($
 [$idA] = $mk('Test Guest Approved', true, 'approve', $T0);
 [$idN] = $mk('Test Guest NoConsent', false, 'approve', $T0);
 [$idJ] = $mk('Test Guest Rejected', true, 'reject', $T0);
+// The form no longer asks: a review sent without the field shows its name.
+$at($T0);
+[$tO, $iO] = $env->invite($env->owner(), ['name' => 'Test Guest Named', 'phone' => '+91 90000 00123', 'stay_from' => '2026-09-28', 'stay_to' => '2026-10-02']);
+$r = $env->client()->post($GUEST_API, ['action' => 'submit', 'token' => $tO, 'rating' => 4, 'body' => 'Test text from Test Guest Named, not a real review.', 'website' => '']);
+$idO = (int)$db->query('SELECT id FROM gr_reviews WHERE invitation_id=' . (int)$iO['id'])->fetchColumn();
+$rowO = $db->query("SELECT consent_public, stay_from, stay_to FROM gr_reviews WHERE id=$idO")->fetch();
+check($r['status'] === 200 && (int)$rowO['consent_public'] === 1, 'a review sent without a consent field (the form as it is now) is stored as shown-with-name', j($r));
+check($rowO['stay_from'] === '2026-09-28' && $rowO['stay_to'] === '2026-10-02', 'the review keeps its own copy of the stay dates', json_encode($rowO));
+$env->owner()->post($OWNER_API, ['action' => 'approve', 'id' => $idO]);
 $owner = $env->owner();
 $row = $db->query("SELECT status, moderated_at FROM gr_reviews WHERE id=$idA")->fetch();
 check($row['status'] === 'approved' && $row['moderated_at'] === gmdate('Y-m-d H:i:s', strtotime($T0)), '12. approving sets the status and the moderation time');
@@ -362,10 +371,13 @@ check($r['status'] === 422, '12. a non-integer id is refused', j($r));
 $pub = $env->client()->get($PUBLIC_API);
 $names = array_column($pub['json']['reviews'] ?? [], 'name');
 check(in_array('Test Guest Approved', $names, true), '13. an approved, consented review is public');
+check(in_array('Test Guest Named', $names, true), '13. so is an approved review sent by the new form (no tick box)');
 check(!array_intersect(['Test Guest Pending', 'Test Guest NoConsent', 'Test Guest Rejected'], $names), '13. pending, rejected and unconsented reviews are not', implode(', ', $names));
 $keys = array_unique(array_merge(...array_map('array_keys', $pub['json']['reviews'] ?: [[]])));
 sort($keys);
-check($keys === ['body', 'date', 'month', 'name', 'rating'], '13. a public review carries only name, rating, body, date and month', implode(',', $keys));
+check($keys === ['body', 'date', 'month', 'name', 'rating', 'stay'], '13. a public review carries only name, rating, body, date, month and stay', implode(',', $keys));
+$named = array_values(array_filter($pub['json']['reviews'], fn($x) => $x['name'] === 'Test Guest Named'))[0] ?? null;
+check(($named['stay'] ?? null) === ['from' => '2026-09-28', 'to' => '2026-10-02', 'nights' => 4], '13. the stay is check-in, check-out and nights, and nothing else (no phone)', json_encode($named));
 $r = $owner->post($OWNER_API, ['action' => 'reject', 'id' => $idA]);
 $names = array_column($env->client()->get($PUBLIC_API)['json']['reviews'] ?? [], 'name');
 check($r['status'] === 200 && !in_array('Test Guest Approved', $names, true), '13. rejecting an approved review takes it off the site at once');
@@ -513,6 +525,8 @@ foreach (['gr_reviews', 'gr_invitations', 'gr_sessions', 'gr_login_locks', 'gr_r
 $leak = array_filter($phones, fn($p) => $p !== '+919000000077' && strpos($all, substr($p, -10)) !== false);
 check(!$leak, '24. no reviewed guest\'s number is left anywhere in the database', implode(',', $leak));
 check(array_column($pub['json']['reviews'] ?? [], 'name') === ['Test Guest Keep'], '24. the kept review is still on the site');
+check(($pub['json']['reviews'][0]['stay'] ?? null) === ['from' => '2026-10-01', 'to' => '2026-10-04', 'nights' => 3],
+      '24. and still shows its stay, from its own copy, after the invitation has gone', json_encode($pub['json']['reviews'][0] ?? null));
 $o = $env->owner();
 $dash = $o->get("$OWNER_API?action=dashboard")['json'];
 check(count($dash['published']) === 1 && $dash['published'][0]['card'] === null && !$dash['waiting'] && !$dash['rejected'],
@@ -637,6 +651,31 @@ $notCreate = array_filter($stmts, fn($x) => !preg_match('/^CREATE\s+(TABLE\s+IF\
 check(count($stmts) === 6 && !$notCreate, 'the up script is additive: 6 statements, every one CREATE TABLE IF NOT EXISTS or CREATE OR REPLACE VIEW', implode(' | ', array_map(fn($x) => substr($x, 0, 40), $notCreate)));
 $cols = $db->query("SHOW COLUMNS FROM gr_public_reviews")->fetchAll(PDO::FETCH_COLUMN);
 check($cols === ['display_name', 'rating', 'body', 'submitted_at', 'month_key'], 'the public view has no id, invitation, phone or status column', implode(',', $cols));
+
+// 002 on a database that already holds data, as production does.
+$db->exec("INSERT INTO gr_invitations (id, token_hash, guest_name, phone_e164, stay_from, stay_to, require_check, check_code, status, created_at, expires_at)
+           VALUES (1, REPEAT('a', 64), 'Test Guest Mig', '+919000000055', '2026-10-15', '2026-10-17', 0, 'ABC-DEF', 'used', '2026-10-17 00:00:00', '2026-11-16 00:00:00')");
+$db->exec("INSERT INTO gr_reviews (id, invitation_id, display_name, rating, body, consent_public, status, submitted_at, month_key, purge_at)
+           VALUES (1, 1, 'Test Guest Mig', 5, 'Test text, not a real review.', 1, 'approved', '2026-10-17 01:00:00', '2026-10', '2026-11-16 01:00:00'),
+                  (2, NULL, 'Test Guest Old', 4, 'Test text, not a real review.', 1, 'approved', '2026-09-01 01:00:00', '2026-09', '2026-10-01 01:00:00')");
+$env->migrate('002_review_stay_dates.sql');
+$rows = $db->query('SELECT id, stay_from, stay_to FROM gr_reviews ORDER BY id')->fetchAll();
+check($rows === [['id' => 1, 'stay_from' => '2026-10-15', 'stay_to' => '2026-10-17'], ['id' => 2, 'stay_from' => null, 'stay_to' => null]]
+      || json_encode($rows) === '[{"id":"1","stay_from":"2026-10-15","stay_to":"2026-10-17"},{"id":"2","stay_from":null,"stay_to":null}]',
+      '002 copies the stay onto a review whose invitation still exists, and leaves an older one empty', json_encode($rows));
+$cols = $db->query("SHOW COLUMNS FROM gr_public_reviews")->fetchAll(PDO::FETCH_COLUMN);
+check($cols === ['display_name', 'rating', 'body', 'submitted_at', 'month_key', 'stay_from', 'stay_to'], '002 widens the public view by the two stay columns only', implode(',', $cols));
+$pub = $env->client()->get($PUBLIC_API);
+$byName = array_column($pub['json']['reviews'] ?? [], 'stay', 'name');
+check(($byName['Test Guest Mig'] ?? null) === ['from' => '2026-10-15', 'to' => '2026-10-17', 'nights' => 2] && array_key_exists('Test Guest Old', $byName) && $byName['Test Guest Old'] === null,
+      'after 002 the site shows that stay, and an older review without one still appears (stay null)', json_encode($byName));
+$env->migrate('002_review_stay_dates.down.sql');
+$cols = $db->query("SHOW COLUMNS FROM gr_reviews")->fetchAll(PDO::FETCH_COLUMN);
+check(!in_array('stay_from', $cols, true) && !in_array('stay_to', $cols, true) && (int)$db->query('SELECT COUNT(*) FROM gr_reviews')->fetchColumn() === 2
+      && $db->query("SHOW COLUMNS FROM gr_public_reviews")->fetchAll(PDO::FETCH_COLUMN) === ['display_name', 'rating', 'body', 'submitted_at', 'month_key'],
+      '002 down removes only the two columns and narrows the view; every review stays');
+$env->migrate('002_review_stay_dates.sql');
+check((int)$db->query("SELECT COUNT(*) FROM gr_reviews WHERE stay_from = '2026-10-15'")->fetchColumn() === 1, '002 can be run again after its down script');
 
 } catch (Throwable $e) {
     bad('the suite crashed', get_class($e) . ': ' . $e->getMessage() . ' at line ' . $e->getLine());

@@ -101,13 +101,11 @@
     const send = $('[data-send]');
     send.disabled = true;
     msg.textContent = 'Sending…';
-    const consent = form.consent.checked;
-    const r = await post({ action: 'submit', token, rating, body: body.value, consent, website: form.website.value });
+    const r = await post({ action: 'submit', token, rating, body: body.value, website: form.website.value });
     send.disabled = false;
     if (r.ok) {
-      $('[data-thanks-line]').textContent = consent
-        ? 'Your review has reached the owners. It will appear on the site with your name once they have read it.'
-        : 'Your review has reached the owners. As you asked, it will not appear on the site.';
+      $('[data-thanks-line]').textContent =
+        'Your review has reached the owners. It will appear on the site with your name once they have read it.';
       return show('thanks');
     }
     if (r.error === 'dead') return show('dead');

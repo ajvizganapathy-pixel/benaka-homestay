@@ -448,6 +448,21 @@ print('\n'.join(bad))
 PY3
 )
 [ -z "$mig" ] && ok "migration 001 only creates gr_* objects; its down script only drops them" || bad "migration 001" "$mig"
+# 002 only adds two nullable columns to gr_reviews, fills them, and widens the
+# view; its down script narrows the view and drops exactly those columns.
+mig=$(python3 - <<'PY3'
+import re
+up = re.sub(r'--[^\n]*', '', open('migrations/002_review_stay_dates.sql').read())
+down = re.sub(r'--[^\n]*', '', open('migrations/002_review_stay_dates.down.sql').read())
+ok_up = [r'ALTER\s+TABLE\s+gr_reviews\s+ADD\s+COLUMN\s+stay_from\s+DATE\s+NULL\b[^,]*,\s*ADD\s+COLUMN\s+stay_to\s+DATE\s+NULL\b[^,]*$',
+         r'UPDATE\s+gr_reviews\s+r\s+JOIN\s+gr_invitations\s+i\b', r'CREATE\s+OR\s+REPLACE\s+VIEW\s+gr_']
+ok_down = [r'CREATE\s+OR\s+REPLACE\s+VIEW\s+gr_', r'ALTER\s+TABLE\s+gr_reviews\s+DROP\s+COLUMN\s+stay_to\s*,\s*DROP\s+COLUMN\s+stay_from$']
+bad = [s.strip()[:60] for s in up.split(';') if s.strip() and not any(re.match(x, s.strip(), re.I | re.S) for x in ok_up)]
+bad += ['down: ' + s.strip()[:60] for s in down.split(';') if s.strip() and not any(re.match(x, s.strip(), re.I | re.S) for x in ok_down)]
+print('\n'.join(bad))
+PY3
+)
+[ -z "$mig" ] && ok "migration 002 only adds the two stay columns, fills them and widens the view; its down script undoes exactly that" || bad "migration 002" "$mig"
 
 # --- the server suite, on a real database ----------------------------------
 out=$(php tests/reviews/api-test.php 2>&1); rc=$?
